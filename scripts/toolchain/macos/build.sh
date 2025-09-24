@@ -11,10 +11,11 @@
 #   targets macOS 11+ SDK, and emits a .tar.zst archive.
 #
 # Usage:
-#   scripts/toolchain/macos/build.sh <ref> <install_prefix> [targets]
+#   scripts/toolchain/macos/build.sh <ref> <install_prefix> [targets] [cpu_flags]
 #     ref            Git ref or tag (e.g., llvmorg-19.1.7 or a commit SHA)
 #     install_prefix Absolute install directory for the final toolchain
 #     targets        LLVM_TARGETS_TO_BUILD (default: "X86;AArch64")
+#     cpu_flags      Overrides TOOLCHAIN_CPU_FLAGS env var
 #
 # Environment:
 #   TOOLCHAIN_CLEAN=1           Wipe prior builds before building (default: 0)
@@ -40,6 +41,7 @@ set -euo pipefail
 REF=${1:?ref}
 PREFIX=${2:?install_prefix}
 TARGETS_ARG=${3:-}
+CPU_FLAGS_ARG=${4:-}
 # Normalize 'auto' to empty so we compute from host
 if [[ "${TARGETS_ARG:-}" == "auto" ]]; then TARGETS_ARG=""; fi
 
@@ -134,8 +136,8 @@ if [[ "$UNAME_ARCH" == "x86_64" ]]; then
 elif [[ "$UNAME_ARCH" == "arm64" || "$UNAME_ARCH" == "aarch64" ]]; then
   CPU_FLAGS_DEFAULT="-mcpu=apple-m1 -mtune=apple-m1"
 fi
-# Allow override via TOOLCHAIN_CPU_FLAGS
-CPU_FLAGS=${TOOLCHAIN_CPU_FLAGS:-$CPU_FLAGS_DEFAULT}
+# Allow override via TOOLCHAIN_CPU_FLAGS (arg takes precedence)
+CPU_FLAGS=${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-$CPU_FLAGS_DEFAULT}}
 
 # Share common CMake args across stages
 COMMON_LLVM_ARGS=(
@@ -157,7 +159,9 @@ if [[ -n "${OSX_SYSROOT:-}" ]]; then
   COMMON_LLVM_ARGS+=( -DCMAKE_OSX_SYSROOT="${OSX_SYSROOT}" )
 fi
 # Append launcher and ccache build knob if present
-COMMON_LLVM_ARGS+=( "${LAUNCHER_ARGS[@]}" )
+if (( ${#LAUNCHER_ARGS[@]} > 0 )); then
+  COMMON_LLVM_ARGS+=( "${LAUNCHER_ARGS[@]}" )
+fi
 if (( CCACHE_ON == 1 )); then
   COMMON_LLVM_ARGS+=( -DLLVM_CCACHE_BUILD=ON )
 fi

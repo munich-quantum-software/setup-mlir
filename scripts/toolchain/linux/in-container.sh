@@ -62,15 +62,19 @@ mkdir -p /tmp/pgoprof
 if [[ -d llvm-project/.git ]]; then
   pushd llvm-project >/dev/null
   git remote set-url origin https://github.com/llvm/llvm-project.git || true
-  git fetch --depth 1 origin ${REF}
-  git checkout -f FETCH_HEAD
+  if ! git checkout -f "$REF"; then
+    git fetch --depth 1 origin "$REF" || git fetch --tags origin
+    git checkout -f "$REF" || git checkout -f "FETCH_HEAD"
+  fi
   popd >/dev/null
 else
-  git clone --depth 1 https://github.com/llvm/llvm-project.git
-  cd llvm-project
-  git fetch origin ${REF} --depth 1
-  git checkout ${REF}
-  cd ..
+  git clone https://github.com/llvm/llvm-project.git
+  pushd llvm-project >/dev/null
+  if ! git checkout -f "$REF"; then
+    git fetch --depth 1 origin "$REF" || git fetch --tags origin
+    git checkout -f "$REF" || git checkout -f "FETCH_HEAD"
+  fi
+  popd >/dev/null
 fi
 
 # Install uv and lit (no venv)

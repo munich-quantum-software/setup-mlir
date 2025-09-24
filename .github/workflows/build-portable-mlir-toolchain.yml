@@ -69,7 +69,7 @@ jobs:
       TOOLCHAIN_STAGE_TO: ${{ github.event.inputs.stage_to || '2' }}
       TOOLCHAIN_CPU_FLAGS: ${{ github.event.inputs.cpu_flags || '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5.0.0
 
       - name: Prepare directories
         shell: bash
@@ -83,22 +83,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS"
+          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
 
       - name: Build (macOS)
         if: matrix.os == 'macos'
         shell: bash
-        working-directory: portable-mlir-toolchain/tmp/${{ matrix.name }}
         run: |
           set -euo pipefail
-          bash "$GITHUB_WORKSPACE/scripts/toolchain/macos/build.sh" "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS"
+          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
 
       - name: Build (Windows)
         if: matrix.os == 'windows'
         shell: bash
         run: |
           set -euo pipefail
-          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS"
+          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

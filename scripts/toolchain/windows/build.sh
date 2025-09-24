@@ -12,10 +12,11 @@
 #   Uses ccache when available and emits a .tar.zst archive via tar | zstd.
 #
 # Usage:
-#   scripts/toolchain/windows/build.sh <ref> <install_prefix> [targets]
+#   scripts/toolchain/windows/build.sh <ref> <install_prefix> [targets] [cpu_flags]
 #     ref            Git ref/tag/commit (e.g., llvmorg-20.1.8 or SHA)
 #     install_prefix Absolute install directory for the final toolchain
 #     targets        LLVM_TARGETS_TO_BUILD (default: auto → host)
+#     cpu_flags      Overrides TOOLCHAIN_CPU_FLAGS env var
 #
 # Environment:
 #   TOOLCHAIN_CLEAN=1           Clean before building
@@ -32,6 +33,7 @@ set -euo pipefail
 REF=${1:?ref}
 PREFIX=${2:?install_prefix}
 TARGETS_ARG=${3:-auto}
+CPU_FLAGS_ARG=${4:-}
 # Normalize 'auto' to empty so we compute from host
 if [[ "${TARGETS_ARG:-}" == "auto" ]]; then TARGETS_ARG=""; fi
 
@@ -61,7 +63,7 @@ if [[ "$UNAME_ARCH" == "x86_64" || "$UNAME_ARCH" == "amd64" ]]; then
 else
   CPU_FLAGS_DEFAULT=""
 fi
-CPU_FLAGS=${TOOLCHAIN_CPU_FLAGS:-$CPU_FLAGS_DEFAULT}
+CPU_FLAGS=${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-$CPU_FLAGS_DEFAULT}}
 
 # Clone or update llvm-project
 if [[ -d llvm-project/.git ]]; then
@@ -140,6 +142,7 @@ fi
 
 # Prefer stage0 clang if present; otherwise system clang
 if [[ -x "$WORKDIR/stage0-install/bin/clang.exe" && -x "$WORKDIR/stage0-install/bin/clang++.exe" ]]; then
+  export PATH="$WORKDIR/stage0-install/bin:$PATH"
   export CC="$WORKDIR/stage0-install/bin/clang.exe"
   export CXX="$WORKDIR/stage0-install/bin/clang++.exe"
 else

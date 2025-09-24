@@ -8,10 +8,11 @@
 #   Uses ccache (mounted from the workspace) and emits a .tar.zst archive in the output directory.
 #
 # Usage:
-#   scripts/toolchain/linux/build.sh <ref> <install_prefix> [targets]
+#   scripts/toolchain/linux/build.sh <ref> <install_prefix> [targets] [cpu_flags]
 #     ref            Git ref or commit SHA (e.g., llvmorg-20.1.8 or 179d30f...)
 #     install_prefix Absolute path on the host for the final install (also where archive is written)
 #     targets        LLVM_TARGETS_TO_BUILD (default: "X86;AArch64")
+#     cpu_flags      Overrides TOOLCHAIN_CPU_FLAGS env var
 #
 # Environment (forwarded into container):
 #   TOOLCHAIN_CLEAN=1           Wipe previous builds inside the container workspace
@@ -32,6 +33,7 @@ set -euo pipefail
 REF=${1:?ref}
 PREFIX=${2:?install_prefix}
 TARGETS=${3:-"X86;AArch64"}
+CPU_FLAGS_ARG=${4:-}
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 ROOT_DIR=$(cd "$SCRIPT_DIR/../../.." && pwd)
 
@@ -70,7 +72,7 @@ sudo docker run --rm --privileged \
   -e TOOLCHAIN_STAGE_FROM="${TOOLCHAIN_STAGE_FROM:-0}" \
   -e TOOLCHAIN_STAGE_TO="${TOOLCHAIN_STAGE_TO:-2}" \
   -e TOOLCHAIN_HOST_TRIPLE="${TOOLCHAIN_HOST_TRIPLE:-}" \
-  -e TOOLCHAIN_CPU_FLAGS="${TOOLCHAIN_CPU_FLAGS:-}" \
+  -e TOOLCHAIN_CPU_FLAGS="${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-}}" \
   -e CCACHE_DIR="/work/.ccache" \
   "$IMG_TAG" \
   bash "$IN_CONTAINER_SCRIPT"
