@@ -81,7 +81,6 @@ jobs:
       - name: Build (Linux)
         if: matrix.os == 'linux'
         shell: bash
-        working-directory: portable-mlir-toolchain
         run: |
           set -euo pipefail
           bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS"
@@ -92,12 +91,11 @@ jobs:
         working-directory: portable-mlir-toolchain/tmp/${{ matrix.name }}
         run: |
           set -euo pipefail
-          bash "$GITHUB_WORKSPACE/portable-mlir-toolchain/scripts/toolchain/macos/build.sh" "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS"
+          bash "$GITHUB_WORKSPACE/scripts/toolchain/macos/build.sh" "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS"
 
       - name: Build (Windows)
         if: matrix.os == 'windows'
         shell: bash
-        working-directory: portable-mlir-toolchain
         run: |
           set -euo pipefail
           bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS"
