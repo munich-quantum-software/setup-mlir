@@ -1,12 +1,13 @@
 name: Portable LLVM/MLIR Toolchain (PGO + ThinLTO)
 
 on:
+  pull_request:
   workflow_dispatch:
     inputs:
       ref:
-        description: "llvm/llvm-project ref (e.g., llvmorg-20.1.8 or commit SHA)"
+        description: "llvm/llvm-project ref (e.g., llvmorg-21.1.0 or commit SHA)"
         type: string
-        default: "llvmorg-20.1.8"
+        default: "llvmorg-21.1.0"
         required: true
       targets:
         description: "LLVM_TARGETS_TO_BUILD (use 'auto' to infer from host)"
@@ -61,12 +62,12 @@ jobs:
             os: windows
     runs-on: ${{ matrix.runner }}
     env:
-      REF: ${{ inputs.ref }}
-      TARGETS: ${{ inputs.targets }}
-      TOOLCHAIN_CLEAN: ${{ inputs.toolchain_clean }}
-      TOOLCHAIN_STAGE_FROM: ${{ inputs.stage_from }}
-      TOOLCHAIN_STAGE_TO: ${{ inputs.stage_to }}
-      TOOLCHAIN_CPU_FLAGS: ${{ inputs.cpu_flags }}
+      REF: ${{ github.event.inputs.ref || 'llvmorg-21.1.0' }}
+      TARGETS: ${{ github.event.inputs.targets || 'auto' }}
+      TOOLCHAIN_CLEAN: ${{ github.event.inputs.toolchain_clean || '0' }}
+      TOOLCHAIN_STAGE_FROM: ${{ github.event.inputs.stage_from || '0' }}
+      TOOLCHAIN_STAGE_TO: ${{ github.event.inputs.stage_to || '2' }}
+      TOOLCHAIN_CPU_FLAGS: ${{ github.event.inputs.cpu_flags || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -104,7 +105,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: llvm-mlir_${{ inputs.ref }}_${{ matrix.name }}
+          name: llvm-mlir_${{ env.REF }}_${{ matrix.name }}
           if-no-files-found: warn
           compression-level: 0
           path: |
