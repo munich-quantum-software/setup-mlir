@@ -113,6 +113,7 @@ cmake_build() { cmake --build "$1" --config Release --target "${2:-install}"; }
 # Common CMake args
 COMMON_LLVM_ARGS=(
   -G Ninja
+  -DCMAKE_TOOLCHAIN_FILE=../llvm-project/llvm/cmake/platforms/clang-msvc-ninja.cmake
   -DCMAKE_BUILD_TYPE=Release
   -DLLVM_INCLUDE_TESTS=OFF -DLLVM_BUILD_TESTS=OFF
   -DLLVM_INCLUDE_EXAMPLES=OFF
@@ -159,7 +160,6 @@ if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_INCLUDE_TESTS=ON -DLLVM_BUILD_TESTS=ON \
     -DLLVM_ENABLE_PROJECTS=mlir \
-    -DCMAKE_C_COMPILER="${CC}" -DCMAKE_CXX_COMPILER="${CXX}" -DCMAKE_ASM_COMPILER="${CC}" \
     -DCMAKE_C_FLAGS="${INSTR_FLAGS}" -DCMAKE_CXX_FLAGS="${INSTR_FLAGS}" \
     -DLLVM_EXTERNAL_LIT="${LIT_BIN}" \
     -DCMAKE_INSTALL_PREFIX="$WORKDIR/stage1-install"
@@ -184,7 +184,6 @@ if (( STAGE_FROM <= 2 && 2 <= STAGE_TO )); then
   cmake_gen llvm-project/llvm build_stage2 \
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_ENABLE_PROJECTS=mlir \
-    -DCMAKE_C_COMPILER="${CC}" -DCMAKE_CXX_COMPILER="${CXX}" -DCMAKE_ASM_COMPILER="${CC}" \
     -DCMAKE_C_FLAGS="${USE_FLAGS}" -DCMAKE_CXX_FLAGS="${USE_FLAGS}" \
     -DLLVM_EXTERNAL_LIT="${LIT_BIN}" \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}"

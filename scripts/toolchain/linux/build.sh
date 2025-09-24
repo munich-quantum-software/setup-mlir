@@ -65,6 +65,7 @@ sudo docker run --rm --privileged \
   -v "$ROOT_DIR":/work:rw \
   -v "$PREFIX":/out:rw \
   -v "$CCACHE_HOST_DIR":/work/.ccache:rw \
+  -e HOME=/work \
   -e REF="$REF" \
   -e TARGETS="$TARGETS" \
   -e PREFIX="/out" \
