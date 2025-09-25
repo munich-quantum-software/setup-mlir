@@ -88,13 +88,14 @@ else
   fi
 fi
 
-# Install uv and lit (no venv)
+# Install uv and tools (no venv)
+export PATH="$HOME/.local/bin:$PATH"
 if ! command -v uv >/dev/null 2>&1; then
   # uv Windows installer is a PowerShell script, but GitHub Windows runners also ship a sh installer
   curl -LsSf https://astral.sh/uv/install.sh | sh
-  export PATH="$HOME/.local/bin:$PATH"
 fi
 uv tool install lit
+uv tool install ninja
 LIT_BIN=$(which lit)
 
 # Optional ccache
@@ -110,10 +111,15 @@ fi
 cmake_gen() { cmake -S "$1" -B "$2" "${@:3}"; }
 cmake_build() { cmake --build "$1" --config Release --target "${2:-install}"; }
 
+# Determine generator: avoid Ninja for Stage0; use Ninja for later stages if available
+GEN_NINJA=()
+if command -v ninja >/dev/null 2>&1; then
+  GEN_NINJA=( -G Ninja )
+fi
+GEN_STAGE0=()
+
 # Common CMake args
 COMMON_LLVM_ARGS=(
-  -G Ninja
-  -DCMAKE_TOOLCHAIN_FILE=../llvm-project/llvm/cmake/platforms/clang-msvc-ninja.cmake
   -DCMAKE_BUILD_TYPE=Release
   -DLLVM_INCLUDE_TESTS=OFF -DLLVM_BUILD_TESTS=OFF
   -DLLVM_INCLUDE_EXAMPLES=OFF
@@ -130,6 +136,7 @@ COMMON_LLVM_ARGS=(
 # Stage0: clang + compiler-rt (profile)
 if (( STAGE_FROM <= 0 && 0 <= STAGE_TO )); then
   cmake_gen llvm-project/llvm build_stage0 \
+    "${GEN_STAGE0[@]}" \
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_ENABLE_PROJECTS=clang \
     -DLLVM_ENABLE_RUNTIMES=compiler-rt \
@@ -157,6 +164,7 @@ if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then
   export LLVM_PROFILE_FILE="$RAW_DIR/%p-%m.profraw"
   INSTR_FLAGS="-fprofile-instr-generate ${CPU_FLAGS}"
   cmake_gen llvm-project/llvm build_stage1 \
+    "${GEN_NINJA[@]}" \
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_INCLUDE_TESTS=ON -DLLVM_BUILD_TESTS=ON \
     -DLLVM_ENABLE_PROJECTS=mlir \
@@ -182,6 +190,7 @@ fi
 if (( STAGE_FROM <= 2 && 2 <= STAGE_TO )); then
   USE_FLAGS="-fprofile-use=$PROFDATA -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date ${CPU_FLAGS}"
   cmake_gen llvm-project/llvm build_stage2 \
+    "${GEN_NINJA[@]}" \
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_ENABLE_PROJECTS=mlir \
     -DCMAKE_C_FLAGS="${USE_FLAGS}" -DCMAKE_CXX_FLAGS="${USE_FLAGS}" \
