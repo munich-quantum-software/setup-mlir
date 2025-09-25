@@ -125,7 +125,6 @@ COMMON_LLVM_ARGS=(
   -DLLVM_INCLUDE_EXAMPLES=OFF
   -DLLVM_ENABLE_ASSERTIONS=OFF
   -DLLVM_TARGETS_TO_BUILD="${TARGETS}"
-  -DLLVM_ENABLE_LTO=Thin
   -DLLVM_ENABLE_ZSTD=ON
   -DLLVM_INSTALL_UTILS=ON
   -DLLVM_ENABLE_BINDINGS=OFF
@@ -138,7 +137,7 @@ if (( STAGE_FROM <= 0 && 0 <= STAGE_TO )); then
   cmake_gen llvm-project/llvm build_stage0 \
     "${GEN_STAGE0[@]}" \
     "${COMMON_LLVM_ARGS[@]}" \
-    -DLLVM_ENABLE_PROJECTS=clang \
+    -DLLVM_ENABLE_PROJECTS=clang;lld \
     -DLLVM_ENABLE_RUNTIMES=compiler-rt \
     -DCOMPILER_RT_BUILD_PROFILE=ON \
     -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
@@ -166,6 +165,8 @@ if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then
   cmake_gen llvm-project/llvm build_stage1 \
     "${GEN_NINJA[@]}" \
     "${COMMON_LLVM_ARGS[@]}" \
+    -DLLVM_ENABLE_LTO=Thin \
+    -DCMAKE_LINKER="$WORKDIR/stage0-install/bin/lld-link.exe" \
     -DLLVM_INCLUDE_TESTS=ON -DLLVM_BUILD_TESTS=ON \
     -DLLVM_ENABLE_PROJECTS=mlir \
     -DCMAKE_C_FLAGS="${INSTR_FLAGS}" -DCMAKE_CXX_FLAGS="${INSTR_FLAGS}" \
@@ -192,6 +193,8 @@ if (( STAGE_FROM <= 2 && 2 <= STAGE_TO )); then
   cmake_gen llvm-project/llvm build_stage2 \
     "${GEN_NINJA[@]}" \
     "${COMMON_LLVM_ARGS[@]}" \
+    -DLLVM_ENABLE_LTO=Thin \
+    -DCMAKE_LINKER="$WORKDIR/stage0-install/bin/lld-link.exe" \
     -DLLVM_ENABLE_PROJECTS=mlir \
     -DCMAKE_C_FLAGS="${USE_FLAGS}" -DCMAKE_CXX_FLAGS="${USE_FLAGS}" \
     -DLLVM_EXTERNAL_LIT="${LIT_BIN}" \

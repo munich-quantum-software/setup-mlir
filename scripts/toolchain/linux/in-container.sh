@@ -86,14 +86,12 @@ uv tool install lit
 LIT_BIN=$(which lit)
 
 # Optional ccache
-LAUNCHER_ARGS=()
 if command -v ccache >/dev/null 2>&1; then
   export CCACHE_DIR=${CCACHE_DIR:-/work/.ccache}
   mkdir -p "$CCACHE_DIR" || true
   export CCACHE_COMPRESS=1
   export CCACHE_COMPRESSLEVEL=${CCACHE_COMPRESSLEVEL:-19}
   export CCACHE_MAXSIZE=${CCACHE_MAXSIZE:-10G}
-  LAUNCHER_ARGS+=( -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache )
   CCACHE_ON=1
 else
   CCACHE_ON=0
@@ -134,11 +132,7 @@ COMMON_LLVM_ARGS=(
   -DLLVM_INSTALL_UTILS=ON
   -DLLVM_ENABLE_BINDINGS=OFF
   -DLLVM_HOST_TRIPLE=${HOST_TRIPLE}
-  "${LAUNCHER_ARGS[@]}"
 )
-if (( CCACHE_ON == 1 )); then
-  COMMON_LLVM_ARGS+=( -DLLVM_CCACHE_BUILD=ON )
-fi
 
 # Stage0: clang toolchain (+compiler-rt profile) for subsequent builds
 if (( STAGE_FROM <= 0 && 0 <= STAGE_TO )); then
