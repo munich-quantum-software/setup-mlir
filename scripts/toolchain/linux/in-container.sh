@@ -56,7 +56,7 @@ STAGE_TO=${TOOLCHAIN_STAGE_TO:-2}
 if [[ "$CLEAN" == "1" ]]; then
   rm -rf llvm-project build_stage0 build_stage1 build_stage2 /tmp/pgoprof stage0-install stage1-install
 fi
-mkdir -p /tmp/pgoprof
+mkdir -p /work/pgoprof /work/pgoprof/raw
 
 # Clone/update llvm-project at specific commit
 if [[ -d llvm-project/.git ]]; then
@@ -163,7 +163,7 @@ else
 fi
 
 # Stage1: instrumented build with tests, collect .profraw via check-mlir
-PGO_DIR=/tmp/pgoprof
+PGO_DIR=/work/pgoprof
 RAW_DIR=$PGO_DIR/raw
 mkdir -p "$RAW_DIR"
 if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then

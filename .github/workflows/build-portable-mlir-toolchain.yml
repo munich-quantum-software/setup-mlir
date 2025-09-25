@@ -35,9 +35,13 @@ on:
         default: ""
         required: false
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  build:
-    name: ${{ matrix.name }}
+  pipeline:
+    name: Build pipeline (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
@@ -64,43 +68,129 @@ jobs:
     env:
       REF: ${{ github.event.inputs.ref || 'llvmorg-21.1.0' }}
       TARGETS: ${{ github.event.inputs.targets || 'auto' }}
-      TOOLCHAIN_CLEAN: ${{ github.event.inputs.toolchain_clean || '0' }}
-      TOOLCHAIN_STAGE_FROM: ${{ github.event.inputs.stage_from || '0' }}
-      TOOLCHAIN_STAGE_TO: ${{ github.event.inputs.stage_to || '2' }}
       TOOLCHAIN_CPU_FLAGS: ${{ github.event.inputs.cpu_flags || '' }}
     steps:
       - uses: actions/checkout@v5.0.0
 
       - name: Prepare directories
-        shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}"
           mkdir -p "$GITHUB_WORKSPACE/portable-mlir-toolchain/tmp/${{ matrix.name }}"
 
-      - name: Build (Linux)
+      # Stage 0
+      - name: Build Stage0 (Linux)
         if: matrix.os == 'linux'
-        shell: bash
+        env:
+          TOOLCHAIN_CLEAN: ${{ github.event.inputs.toolchain_clean || '0' }}
+          TOOLCHAIN_STAGE_FROM: "0"
+          TOOLCHAIN_STAGE_TO: "0"
         run: |
           set -euo pipefail
           bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
 
-      - name: Build (macOS)
+      - name: Build Stage0 (macOS)
         if: matrix.os == 'macos'
-        shell: bash
+        env:
+          TOOLCHAIN_CLEAN: ${{ github.event.inputs.toolchain_clean || '0' }}
+          TOOLCHAIN_STAGE_FROM: "0"
+          TOOLCHAIN_STAGE_TO: "0"
         run: |
           set -euo pipefail
           bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
 
-      - name: Build (Windows)
+      - name: Build Stage0 (Windows)
         if: matrix.os == 'windows'
-        shell: bash
+        env:
+          TOOLCHAIN_CLEAN: ${{ github.event.inputs.toolchain_clean || '0' }}
+          TOOLCHAIN_STAGE_FROM: "0"
+          TOOLCHAIN_STAGE_TO: "0"
         run: |
           set -euo pipefail
           bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Stage0 install
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: stage0-${{ matrix.name }}
+          if-no-files-found: error
+          compression-level: 0
+          path: |
+            ${{ github.workspace }}/stage0-install/**
+
+      # Stage 1
+      - name: Build Stage1 (Linux)
+        if: matrix.os == 'linux'
+        env:
+          TOOLCHAIN_CLEAN: "0"
+          TOOLCHAIN_STAGE_FROM: "1"
+          TOOLCHAIN_STAGE_TO: "1"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
+
+      - name: Build Stage1 (macOS)
+        if: matrix.os == 'macos'
+        env:
+          TOOLCHAIN_CLEAN: "0"
+          TOOLCHAIN_STAGE_FROM: "1"
+          TOOLCHAIN_STAGE_TO: "1"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
+
+      - name: Build Stage1 (Windows)
+        if: matrix.os == 'windows'
+        env:
+          TOOLCHAIN_CLEAN: "0"
+          TOOLCHAIN_STAGE_FROM: "1"
+          TOOLCHAIN_STAGE_TO: "1"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
+
+      - name: Upload profiles
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: pgoprof-${{ matrix.name }}
+          if-no-files-found: warn
+          compression-level: 0
+          path: |
+            ${{ github.workspace }}/pgoprof/**
+
+      # Stage 2
+      - name: Build Stage2 (Linux)
+        if: matrix.os == 'linux'
+        env:
+          TOOLCHAIN_CLEAN: "0"
+          TOOLCHAIN_STAGE_FROM: "2"
+          TOOLCHAIN_STAGE_TO: "2"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
+
+      - name: Build Stage2 (macOS)
+        if: matrix.os == 'macos'
+        env:
+          TOOLCHAIN_CLEAN: "0"
+          TOOLCHAIN_STAGE_FROM: "2"
+          TOOLCHAIN_STAGE_TO: "2"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
+
+      - name: Build Stage2 (Windows)
+        if: matrix.os == 'windows'
+        env:
+          TOOLCHAIN_CLEAN: "0"
+          TOOLCHAIN_STAGE_FROM: "2"
+          TOOLCHAIN_STAGE_TO: "2"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
+
+      - name: Upload final artifacts
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: llvm-mlir_${{ env.REF }}_${{ matrix.name }}
           if-no-files-found: warn
