@@ -32,7 +32,7 @@ set -euo pipefail
 
 REF=${1:?ref}
 PREFIX=${2:?install_prefix}
-TARGETS_ARG=${3:-auto}
+TARGETS_ARG=${3:-}
 CPU_FLAGS_ARG=${4:-}
 # Normalize 'auto' to empty so we compute from host
 if [[ "${TARGETS_ARG:-}" == "auto" ]]; then TARGETS_ARG=""; fi
@@ -52,8 +52,8 @@ UNAME_ARCH=$(uname -m)
 case "$UNAME_ARCH" in
   x86_64|amd64) HOST_TRIPLE_COMPUTED="x86_64-pc-windows-msvc"; HOST_TARGET="X86" ;;
   aarch64|arm64) HOST_TRIPLE_COMPUTED="aarch64-pc-windows-msvc"; HOST_TARGET="AArch64" ;;
-  *) HOST_TRIPLE_COMPUTED="x86_64-pc-windows-msvc"; HOST_TARGET="X86" ;;
-esac
+  *) echo "Unsupported architecture on Windows: ${UNAME_ARCH}. Only x86_64/amd64 and arm64/aarch64 are supported." >&2; exit 1 ;;
+cesac
 if [[ -n "${TARGETS_ARG}" ]]; then TARGETS="${TARGETS_ARG}"; else TARGETS="${HOST_TARGET}"; fi
 HOST_TRIPLE=${TOOLCHAIN_HOST_TRIPLE:-$HOST_TRIPLE_COMPUTED}
 
@@ -116,7 +116,12 @@ GEN_NINJA=()
 if command -v ninja >/dev/null 2>&1; then
   GEN_NINJA=( -G Ninja )
 fi
-GEN_STAGE0=()
+# Force MSVC generator for Stage0 to use ClangCL toolset
+case "$UNAME_ARCH" in
+  x86_64|amd64) GEN_STAGE0=( -G "Visual Studio 17 2022" -A x64 ); ;;
+  aarch64|arm64) GEN_STAGE0=( -G "Visual Studio 17 2022" -A ARM64 ); ;;
+  *) GEN_STAGE0=( -G "Visual Studio 17 2022" ); ;;
+esac
 
 # Common CMake args
 COMMON_LLVM_ARGS=(
@@ -136,6 +141,7 @@ COMMON_LLVM_ARGS=(
 if (( STAGE_FROM <= 0 && 0 <= STAGE_TO )); then
   cmake_gen llvm-project/llvm build_stage0 \
     "${GEN_STAGE0[@]}" \
+    -T ClangCL \
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_ENABLE_PROJECTS="clang;lld" \
     -DLLVM_ENABLE_RUNTIMES=compiler-rt \
@@ -153,8 +159,8 @@ if [[ -x "$WORKDIR/stage0-install/bin/clang.exe" && -x "$WORKDIR/stage0-install/
   export CC="$WORKDIR/stage0-install/bin/clang.exe"
   export CXX="$WORKDIR/stage0-install/bin/clang++.exe"
 else
-  export CC=${CC:-clang}
-  export CXX=${CXX:-clang++}
+  echo "stage0-install clang(.exe) not found. Run Stage0 first or provide stage0-install." >&2
+  exit 1
 fi
 
 # Stage1: instrumented build + tests to collect .profraw

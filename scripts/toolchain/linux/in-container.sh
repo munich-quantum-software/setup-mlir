@@ -115,12 +115,11 @@ elif [[ "$UNAME_ARCH" == "aarch64" || "$UNAME_ARCH" == "arm64" ]]; then
   HOST_TRIPLE_COMPUTED="aarch64-unknown-linux-gnu"
   HOST_TARGET="AArch64"
 else
-  CPU_FLAGS=${TOOLCHAIN_CPU_FLAGS:-""}
-  HOST_TRIPLE_COMPUTED="${UNAME_ARCH}-unknown-linux-gnu"
-  HOST_TARGET="X86"
+  echo "Unsupported architecture on Linux: ${UNAME_ARCH}. Only x86_64 and aarch64 are supported." >&2
+  exit 1
 fi
-  HOST_TRIPLE=${TOOLCHAIN_HOST_TRIPLE:-$HOST_TRIPLE_COMPUTED}
-  if [[ -n "$TARGETS_ENV" ]]; then
+HOST_TRIPLE=${TOOLCHAIN_HOST_TRIPLE:-$HOST_TRIPLE_COMPUTED}
+if [[ -n "$TARGETS_ENV" ]]; then
   TARGETS="$TARGETS_ENV"
 else
   TARGETS="$HOST_TARGET"
@@ -154,13 +153,17 @@ if (( STAGE_FROM <= 0 && 0 <= STAGE_TO )); then
     -DCMAKE_INSTALL_PREFIX=/work/stage0-install
   cmake --build build_stage0 --target install --config Release
 fi
+# Restore execute bits for stage0-install if artifact download stripped them
+if [[ -d /work/stage0-install/bin ]]; then
+  chmod +x /work/stage0-install/bin/* 2>/dev/null || true
+fi
 # Prefer stage0 clang if present; otherwise fall back to system clang
 if [[ -x /work/stage0-install/bin/clang && -x /work/stage0-install/bin/clang++ ]]; then
   export CC=/work/stage0-install/bin/clang
   export CXX=/work/stage0-install/bin/clang++
 else
-  export CC=${CC:-clang}
-  export CXX=${CXX:-clang++}
+  echo "stage0-install clang not found. Run Stage0 first or provide /work/stage0-install." >&2
+  exit 1
 fi
 
 # Stage1: instrumented build with tests, collect .profraw via check-mlir

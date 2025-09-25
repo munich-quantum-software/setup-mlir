@@ -66,10 +66,13 @@ if [[ "$UNAME_ARCH" == "arm64" || "$UNAME_ARCH" == "aarch64" ]]; then
   HOST_TRIPLE_COMPUTED="arm64-apple-darwin"
   OSX_ARCHS="arm64"
   HOST_TARGET="AArch64"
-else
+elif [[ "$UNAME_ARCH" == "x86_64" ]]; then
   HOST_TRIPLE_COMPUTED="x86_64-apple-darwin"
   OSX_ARCHS="x86_64"
   HOST_TARGET="X86"
+else
+  echo "Unsupported architecture on macOS: ${UNAME_ARCH}. Only x86_64 and arm64 are supported." >&2
+  exit 1
 fi
 # Compute default targets from host unless overridden
 if [[ -n "${TARGETS_ARG}" ]]; then
@@ -186,8 +189,8 @@ if [[ -x "$WORKDIR/stage0-install/bin/clang" && -x "$WORKDIR/stage0-install/bin/
   export CC="$WORKDIR/stage0-install/bin/clang"
   export CXX="$WORKDIR/stage0-install/bin/clang++"
 else
-  export CC=${CC:-clang}
-  export CXX=${CXX:-clang++}
+  echo "stage0-install clang not found. Run Stage0 first or provide stage0-install." >&2
+  exit 1
 fi
 
 # Prefer LLVM archivers if available (avoids Apple libtool vs. bitcode issues)

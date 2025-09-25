@@ -29,10 +29,10 @@
 #
 set -euo pipefail
 
-# Arguments: <ref-commit> <install_prefix> <targets>
+# Arguments: <ref-commit> <install_prefix> [targets] [cpu_flags]
 REF=${1:?ref}
 PREFIX=${2:?install_prefix}
-TARGETS=${3:-"X86;AArch64"}
+TARGETS_ARG=${3:-}
 CPU_FLAGS_ARG=${4:-}
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 ROOT_DIR=$(cd "$SCRIPT_DIR/../../.." && pwd)
@@ -59,22 +59,23 @@ mkdir -p "$CCACHE_HOST_DIR"
 REL_DIR="${SCRIPT_DIR#${ROOT_DIR}}"
 IN_CONTAINER_SCRIPT="/work${REL_DIR}/in-container.sh"
 
+# Build environment vars (only pass optional ones if provided)
+ENV_ARGS=( -e HOME=/work -e REF="$REF" -e PREFIX="/out" \
+  -e TOOLCHAIN_CLEAN="${TOOLCHAIN_CLEAN:-0}" \
+  -e TOOLCHAIN_STAGE_FROM="${TOOLCHAIN_STAGE_FROM:-0}" \
+  -e TOOLCHAIN_STAGE_TO="${TOOLCHAIN_STAGE_TO:-2}" \
+  -e TOOLCHAIN_HOST_TRIPLE="${TOOLCHAIN_HOST_TRIPLE:-}" \
+  -e CCACHE_DIR="/work/.ccache" )
+if [[ -n "${TARGETS_ARG:-}" ]]; then ENV_ARGS+=( -e TARGETS="$TARGETS_ARG" ); fi
+if [[ -n "${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-}}" ]]; then ENV_ARGS+=( -e TOOLCHAIN_CPU_FLAGS="${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-}}" ); fi
+
 # Run build inside container (privileged for perf)
 sudo docker run --rm --privileged \
   -u $(id -u):$(id -g) \
   -v "$ROOT_DIR":/work:rw \
   -v "$PREFIX":/out:rw \
   -v "$CCACHE_HOST_DIR":/work/.ccache:rw \
-  -e HOME=/work \
-  -e REF="$REF" \
-  -e TARGETS="$TARGETS" \
-  -e PREFIX="/out" \
-  -e TOOLCHAIN_CLEAN="${TOOLCHAIN_CLEAN:-0}" \
-  -e TOOLCHAIN_STAGE_FROM="${TOOLCHAIN_STAGE_FROM:-0}" \
-  -e TOOLCHAIN_STAGE_TO="${TOOLCHAIN_STAGE_TO:-2}" \
-  -e TOOLCHAIN_HOST_TRIPLE="${TOOLCHAIN_HOST_TRIPLE:-}" \
-  -e TOOLCHAIN_CPU_FLAGS="${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-}}" \
-  -e CCACHE_DIR="/work/.ccache" \
+  "${ENV_ARGS[@]}" \
   "$IMG_TAG" \
   bash -eu -o pipefail "$IN_CONTAINER_SCRIPT"
 
