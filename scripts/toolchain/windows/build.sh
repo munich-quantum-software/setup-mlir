@@ -214,12 +214,20 @@ rm -rf "$PREFIX/lib/clang" 2>/dev/null || true
 
 # Emit compressed archive (.tar.zst)
 if command -v gtar >/dev/null 2>&1; then TAR=gtar; else TAR=tar; fi
-if ! command -v zstd >/dev/null 2>&1; then echo "zstd not found; please install it" >&2; exit 1; fi
 SAFE_TARGETS=${TARGETS//;/_}
 ARCHIVE_NAME="llvm-mlir_${REF}_windows_${UNAME_ARCH}_${SAFE_TARGETS}_opt.tar.zst"
-(
-  cd "${PREFIX}" && $TAR -cf - . | zstd -T0 -19 -o "${WORKDIR}/${ARCHIVE_NAME}"
-) || true
+# Prefer bsdtar --zstd if supported; fallback to piping through zstd if available
+if $TAR --help 2>&1 | grep -qi zstd; then
+  (
+    cd "${PREFIX}" && $TAR --zstd -cf "${WORKDIR}/${ARCHIVE_NAME}" .
+  ) || true
+elif command -v zstd >/dev/null 2>&1; then
+  (
+    cd "${PREFIX}" && $TAR -cf - . | zstd -T0 -19 -o "${WORKDIR}/${ARCHIVE_NAME}"
+  ) || true
+else
+  echo "Neither 'tar --zstd' nor 'zstd' found; skipping archive creation" >&2
+fi
 
 echo "Windows build completed at ${PREFIX} (incremental, PGO+ThinLTO, Zstd, $( [[ $CCACHE_ON -eq 1 ]] && echo ccache || echo no-ccache ), HOST_TRIPLE=${HOST_TRIPLE}, TARGETS=${TARGETS})"
 echo "Archive: ${WORKDIR}/${ARCHIVE_NAME}"

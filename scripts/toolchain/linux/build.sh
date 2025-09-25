@@ -76,6 +76,6 @@ sudo docker run --rm --privileged \
   -e TOOLCHAIN_CPU_FLAGS="${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-}}" \
   -e CCACHE_DIR="/work/.ccache" \
   "$IMG_TAG" \
-  bash "$IN_CONTAINER_SCRIPT"
+  bash -eu -o pipefail "$IN_CONTAINER_SCRIPT"
 
 echo "Linux build completed at $PREFIX"

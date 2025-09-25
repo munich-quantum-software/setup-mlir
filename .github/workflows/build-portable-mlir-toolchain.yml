@@ -21,6 +21,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash
+
 env:
   REF: ${{ github.event.inputs.ref || 'llvmorg-21.1.0' }}
   TARGETS: ${{ github.event.inputs.targets || 'auto' }}
@@ -48,7 +52,9 @@ jobs:
             ccache-${{ matrix.short }}-${{ env.REF }}-
             ccache-${{ matrix.short }}-
       - name: Build Stage0 (Linux)
-        run: scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS"
         env:
           TOOLCHAIN_STAGE_FROM: 0
           TOOLCHAIN_STAGE_TO: 0
@@ -87,7 +93,9 @@ jobs:
           name: ${{ matrix.short }}-stage0-install
           path: stage0-install
       - name: Build Stage1 (Linux)
-        run: scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS"
         env:
           TOOLCHAIN_STAGE_FROM: 1
           TOOLCHAIN_STAGE_TO: 1
@@ -133,7 +141,9 @@ jobs:
           name: ${{ matrix.short }}-stage1-outputs
           path: .
       - name: Build Stage2 (Linux)
-        run: scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS"
         env:
           TOOLCHAIN_STAGE_FROM: 2
           TOOLCHAIN_STAGE_TO: 2
@@ -166,7 +176,9 @@ jobs:
             ccache-${{ matrix.short }}-${{ env.REF }}-
             ccache-${{ matrix.short }}-
       - name: Build Stage0 (macOS)
-        run: scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
         env:
           TOOLCHAIN_STAGE_FROM: 0
           TOOLCHAIN_STAGE_TO: 0
@@ -204,7 +216,9 @@ jobs:
           name: ${{ matrix.short }}-stage0-install
           path: stage0-install
       - name: Build Stage1 (macOS)
-        run: scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
         env:
           TOOLCHAIN_STAGE_FROM: 1
           TOOLCHAIN_STAGE_TO: 1
@@ -249,7 +263,9 @@ jobs:
           name: ${{ matrix.short }}-stage1-outputs
           path: .
       - name: Build Stage2 (macOS)
-        run: scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
         env:
           TOOLCHAIN_STAGE_FROM: 2
           TOOLCHAIN_STAGE_TO: 2
@@ -273,10 +289,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install zstd
-        run: choco install -y zstd
+        run: choco install -y zstandard
       - name: Build Stage0 (Windows)
-        shell: bash
-        run: scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
         env:
           TOOLCHAIN_STAGE_FROM: 0
           TOOLCHAIN_STAGE_TO: 0
@@ -301,15 +318,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install zstd
-        run: choco install -y zstd
+        run: choco install -y zstandard
       - name: Download stage0-install
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.short }}-stage0-install
           path: stage0-install
       - name: Build Stage1 (Windows)
-        shell: bash
-        run: scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
         env:
           TOOLCHAIN_STAGE_FROM: 1
           TOOLCHAIN_STAGE_TO: 1
@@ -336,7 +354,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install zstd
-        run: choco install -y zstd
+        run: choco install -y zstandard
       - name: Download stage0-install
         uses: actions/download-artifact@v4
         with:
@@ -348,8 +366,9 @@ jobs:
           name: ${{ matrix.short }}-stage1-outputs
           path: .
       - name: Build Stage2 (Windows)
-        shell: bash
-        run: scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        run: |
+          set -euo pipefail
+          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
         env:
           TOOLCHAIN_STAGE_FROM: 2
           TOOLCHAIN_STAGE_TO: 2
