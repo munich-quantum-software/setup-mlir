@@ -1,204 +1,361 @@
-name: Portable LLVM/MLIR Toolchain (PGO + ThinLTO)
+name: Build Portable MLIR Toolchain (staged)
 
 on:
-  pull_request:
   workflow_dispatch:
     inputs:
       ref:
-        description: "llvm/llvm-project ref (e.g., llvmorg-21.1.0 or commit SHA)"
-        type: string
-        default: "llvmorg-21.1.0"
+        description: "llvm-project ref or tag (e.g., llvmorg-21.1.0)"
         required: true
+        default: "llvmorg-21.1.0"
       targets:
-        description: "LLVM_TARGETS_TO_BUILD (use 'auto' to infer from host)"
-        type: string
+        description: "LLVM_TARGETS_TO_BUILD (e.g., X86;AArch64 or auto)"
+        required: false
         default: "auto"
-        required: false
-      toolchain_clean:
-        description: "Set 1 to wipe previous builds"
-        type: string
-        default: "0"
-        required: false
-      stage_from:
-        description: "Stage lower bound (0..2)"
-        type: string
-        default: "0"
-        required: false
-      stage_to:
-        description: "Stage upper bound (0..2)"
-        type: string
-        default: "2"
-        required: false
       cpu_flags:
-        description: "Extra CPU tuning flags"
-        type: string
-        default: ""
+        description: "Extra CPU flags (optional)"
         required: false
+        default: ""
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    shell: bash
+env:
+  REF: ${{ github.event.inputs.ref || 'llvmorg-21.1.0' }}
+  TARGETS: ${{ github.event.inputs.targets || 'auto' }}
+  CPU_FLAGS: ${{ github.event.inputs.cpu_flags || '' }}
 
 jobs:
-  pipeline:
-    name: Build pipeline (${{ matrix.name }})
+  linux-stage0:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: ubuntu-24.04
-            runner: ubuntu-24.04
-            os: linux
-          - name: ubuntu-24.04-arm
-            runner: ubuntu-24.04-arm
-            os: linux
-          - name: macos-14
-            runner: macos-14
-            os: macos
-          - name: macos-15-intel
-            runner: macos-15-intel
-            os: macos
-          - name: windows-2022
-            runner: windows-2022
-            os: windows
-          - name: windows-11-arm
-            runner: windows-11-arm
-            os: windows
+          - runner: ubuntu-24.04
+            short: linux
+          - runner: ubuntu-24.04-arm
+            short: linux-arm
     runs-on: ${{ matrix.runner }}
-    env:
-      REF: ${{ github.event.inputs.ref || 'llvmorg-21.1.0' }}
-      TARGETS: ${{ github.event.inputs.targets || 'auto' }}
-      TOOLCHAIN_CPU_FLAGS: ${{ github.event.inputs.cpu_flags || '' }}
     steps:
-      - uses: actions/checkout@v5.0.0
-
-      - name: Prepare directories
-        run: |
-          set -euo pipefail
-          mkdir -p "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}"
-          mkdir -p "$GITHUB_WORKSPACE/portable-mlir-toolchain/tmp/${{ matrix.name }}"
-
-      # Stage 0
+      - uses: actions/checkout@v4
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ matrix.short }}-${{ env.REF }}-${{ github.ref_name }}
+          restore-keys: |
+            ccache-${{ matrix.short }}-${{ env.REF }}-
+            ccache-${{ matrix.short }}-
       - name: Build Stage0 (Linux)
-        if: matrix.os == 'linux'
+        run: scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS"
         env:
-          TOOLCHAIN_CLEAN: ${{ github.event.inputs.toolchain_clean || '0' }}
-          TOOLCHAIN_STAGE_FROM: "0"
-          TOOLCHAIN_STAGE_TO: "0"
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
-
-      - name: Build Stage0 (macOS)
-        if: matrix.os == 'macos'
-        env:
-          TOOLCHAIN_CLEAN: ${{ github.event.inputs.toolchain_clean || '0' }}
-          TOOLCHAIN_STAGE_FROM: "0"
-          TOOLCHAIN_STAGE_TO: "0"
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
-
-      - name: Build Stage0 (Windows)
-        if: matrix.os == 'windows'
-        env:
-          TOOLCHAIN_CLEAN: ${{ github.event.inputs.toolchain_clean || '0' }}
-          TOOLCHAIN_STAGE_FROM: "0"
-          TOOLCHAIN_STAGE_TO: "0"
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
-
-      - name: Upload Stage0 install
-        uses: actions/upload-artifact@v4.6.2
+          TOOLCHAIN_STAGE_FROM: 0
+          TOOLCHAIN_STAGE_TO: 0
+          TOOLCHAIN_CPU_FLAGS: ${{ env.CPU_FLAGS }}
+      - name: Upload stage0-install
+        uses: actions/upload-artifact@v4
         with:
-          name: stage0-${{ matrix.name }}
+          name: ${{ matrix.short }}-stage0-install
+          path: stage0-install
           if-no-files-found: error
-          compression-level: 0
-          path: |
-            ${{ github.workspace }}/stage0-install/**
 
-      # Stage 1
+  linux-stage1:
+    needs: linux-stage0
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            short: linux
+          - runner: ubuntu-24.04-arm
+            short: linux-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ matrix.short }}-${{ env.REF }}-${{ github.ref_name }}
+          restore-keys: |
+            ccache-${{ matrix.short }}-${{ env.REF }}-
+            ccache-${{ matrix.short }}-
+      - name: Download stage0-install
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage0-install
+          path: stage0-install
       - name: Build Stage1 (Linux)
-        if: matrix.os == 'linux'
+        run: scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS"
         env:
-          TOOLCHAIN_CLEAN: "0"
-          TOOLCHAIN_STAGE_FROM: "1"
-          TOOLCHAIN_STAGE_TO: "1"
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
-
-      - name: Build Stage1 (macOS)
-        if: matrix.os == 'macos'
-        env:
-          TOOLCHAIN_CLEAN: "0"
-          TOOLCHAIN_STAGE_FROM: "1"
-          TOOLCHAIN_STAGE_TO: "1"
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
-
-      - name: Build Stage1 (Windows)
-        if: matrix.os == 'windows'
-        env:
-          TOOLCHAIN_CLEAN: "0"
-          TOOLCHAIN_STAGE_FROM: "1"
-          TOOLCHAIN_STAGE_TO: "1"
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
-
-      - name: Upload profiles
-        uses: actions/upload-artifact@v4.6.2
+          TOOLCHAIN_STAGE_FROM: 1
+          TOOLCHAIN_STAGE_TO: 1
+          TOOLCHAIN_CPU_FLAGS: ${{ env.CPU_FLAGS }}
+      - name: Upload pgoprof and stage1-install
+        uses: actions/upload-artifact@v4
         with:
-          name: pgoprof-${{ matrix.name }}
-          if-no-files-found: warn
-          compression-level: 0
+          name: ${{ matrix.short }}-stage1-outputs
           path: |
-            ${{ github.workspace }}/pgoprof/**
+            pgoprof
+            stage1-install
+          if-no-files-found: error
 
-      # Stage 2
+  linux-stage2:
+    needs: linux-stage1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            short: linux
+          - runner: ubuntu-24.04-arm
+            short: linux-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ matrix.short }}-${{ env.REF }}-${{ github.ref_name }}
+          restore-keys: |
+            ccache-${{ matrix.short }}-${{ env.REF }}-
+            ccache-${{ matrix.short }}-
+      - name: Download stage0-install
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage0-install
+          path: stage0-install
+      - name: Download stage1 outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage1-outputs
+          path: .
       - name: Build Stage2 (Linux)
-        if: matrix.os == 'linux'
+        run: scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS"
         env:
-          TOOLCHAIN_CLEAN: "0"
-          TOOLCHAIN_STAGE_FROM: "2"
-          TOOLCHAIN_STAGE_TO: "2"
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
-
-      - name: Build Stage2 (macOS)
-        if: matrix.os == 'macos'
-        env:
-          TOOLCHAIN_CLEAN: "0"
-          TOOLCHAIN_STAGE_FROM: "2"
-          TOOLCHAIN_STAGE_TO: "2"
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
-
-      - name: Build Stage2 (Windows)
-        if: matrix.os == 'windows'
-        env:
-          TOOLCHAIN_CLEAN: "0"
-          TOOLCHAIN_STAGE_FROM: "2"
-          TOOLCHAIN_STAGE_TO: "2"
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/artifacts/${{ matrix.name }}" "$TARGETS" "$TOOLCHAIN_CPU_FLAGS"
-
-      - name: Upload final artifacts
-        uses: actions/upload-artifact@v4.6.2
+          TOOLCHAIN_STAGE_FROM: 2
+          TOOLCHAIN_STAGE_TO: 2
+          TOOLCHAIN_CPU_FLAGS: ${{ env.CPU_FLAGS }}
+      - name: Upload Linux final artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: llvm-mlir_${{ env.REF }}_${{ matrix.name }}
-          if-no-files-found: warn
-          compression-level: 0
+          name: ${{ matrix.short }}-final-archive
+          path: llvm-install/*.tar.zst
+          if-no-files-found: error
+
+  macos-stage0:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            short: macos
+          - runner: macos-15-intel
+            short: macos-intel
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ matrix.short }}-${{ env.REF }}-${{ github.ref_name }}
+          restore-keys: |
+            ccache-${{ matrix.short }}-${{ env.REF }}-
+            ccache-${{ matrix.short }}-
+      - name: Build Stage0 (macOS)
+        run: scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        env:
+          TOOLCHAIN_STAGE_FROM: 0
+          TOOLCHAIN_STAGE_TO: 0
+      - name: Upload stage0-install
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage0-install
+          path: stage0-install
+          if-no-files-found: error
+
+  macos-stage1:
+    needs: macos-stage0
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            short: macos
+          - runner: macos-15-intel
+            short: macos-intel
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ matrix.short }}-${{ env.REF }}-${{ github.ref_name }}
+          restore-keys: |
+            ccache-${{ matrix.short }}-${{ env.REF }}-
+            ccache-${{ matrix.short }}-
+      - name: Download stage0-install
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage0-install
+          path: stage0-install
+      - name: Build Stage1 (macOS)
+        run: scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        env:
+          TOOLCHAIN_STAGE_FROM: 1
+          TOOLCHAIN_STAGE_TO: 1
+      - name: Upload pgoprof and stage1-install
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage1-outputs
           path: |
-            ${{ github.workspace }}/artifacts/${{ matrix.name }}/**/*.tar.zst
-            ${{ github.workspace }}/portable-mlir-toolchain/tmp/${{ matrix.name }}/*.tar.zst
+            pgoprof
+            stage1-install
+          if-no-files-found: error
+
+  macos-stage2:
+    needs: macos-stage1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            short: macos
+          - runner: macos-15-intel
+            short: macos-intel
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ matrix.short }}-${{ env.REF }}-${{ github.ref_name }}
+          restore-keys: |
+            ccache-${{ matrix.short }}-${{ env.REF }}-
+            ccache-${{ matrix.short }}-
+      - name: Download stage0-install
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage0-install
+          path: stage0-install
+      - name: Download stage1 outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage1-outputs
+          path: .
+      - name: Build Stage2 (macOS)
+        run: scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        env:
+          TOOLCHAIN_STAGE_FROM: 2
+          TOOLCHAIN_STAGE_TO: 2
+      - name: Upload macOS final artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.short }}-final-archive
+          path: llvm-install/*.tar.zst
+          if-no-files-found: error
+
+  windows-stage0:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            short: windows
+          - runner: windows-11-arm
+            short: windows-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zstd
+        run: choco install -y zstd
+      - name: Build Stage0 (Windows)
+        shell: bash
+        run: scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        env:
+          TOOLCHAIN_STAGE_FROM: 0
+          TOOLCHAIN_STAGE_TO: 0
+      - name: Upload stage0-install
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage0-install
+          path: stage0-install
+          if-no-files-found: error
+
+  windows-stage1:
+    needs: windows-stage0
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            short: windows
+          - runner: windows-11-arm
+            short: windows-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zstd
+        run: choco install -y zstd
+      - name: Download stage0-install
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage0-install
+          path: stage0-install
+      - name: Build Stage1 (Windows)
+        shell: bash
+        run: scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        env:
+          TOOLCHAIN_STAGE_FROM: 1
+          TOOLCHAIN_STAGE_TO: 1
+      - name: Upload pgoprof and stage1-install
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage1-outputs
+          path: |
+            pgoprof
+            stage1-install
+          if-no-files-found: error
+
+  windows-stage2:
+    needs: windows-stage1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            short: windows
+          - runner: windows-11-arm
+            short: windows-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zstd
+        run: choco install -y zstd
+      - name: Download stage0-install
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage0-install
+          path: stage0-install
+      - name: Download stage1 outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.short }}-stage1-outputs
+          path: .
+      - name: Build Stage2 (Windows)
+        shell: bash
+        run: scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install" "$TARGETS" "$CPU_FLAGS"
+        env:
+          TOOLCHAIN_STAGE_FROM: 2
+          TOOLCHAIN_STAGE_TO: 2
+      - name: Upload Windows final artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.short }}-final-archive
+          path: llvm-install/*.tar.zst
+          if-no-files-found: error
