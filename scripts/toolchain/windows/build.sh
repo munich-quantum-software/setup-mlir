@@ -53,7 +53,7 @@ case "$UNAME_ARCH" in
   x86_64|amd64) HOST_TRIPLE_COMPUTED="x86_64-pc-windows-msvc"; HOST_TARGET="X86" ;;
   aarch64|arm64) HOST_TRIPLE_COMPUTED="aarch64-pc-windows-msvc"; HOST_TARGET="AArch64" ;;
   *) echo "Unsupported architecture on Windows: ${UNAME_ARCH}. Only x86_64/amd64 and arm64/aarch64 are supported." >&2; exit 1 ;;
-cesac
+esac
 if [[ -n "${TARGETS_ARG}" ]]; then TARGETS="${TARGETS_ARG}"; else TARGETS="${HOST_TARGET}"; fi
 HOST_TRIPLE=${TOOLCHAIN_HOST_TRIPLE:-$HOST_TRIPLE_COMPUTED}
 
