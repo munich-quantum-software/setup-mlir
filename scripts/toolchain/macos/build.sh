@@ -190,6 +190,16 @@ else
   export CXX=${CXX:-clang++}
 fi
 
+# Prefer LLVM archivers if available (avoids Apple libtool vs. bitcode issues)
+EXTRA_ARCHIVER_ARGS=()
+if [[ -x "$WORKDIR/stage0-install/bin/llvm-ar" && -x "$WORKDIR/stage0-install/bin/llvm-ranlib" ]]; then
+  EXTRA_ARCHIVER_ARGS+=( -DCMAKE_AR="$WORKDIR/stage0-install/bin/llvm-ar" )
+  EXTRA_ARCHIVER_ARGS+=( -DCMAKE_RANLIB="$WORKDIR/stage0-install/bin/llvm-ranlib" )
+fi
+if [[ -x "$WORKDIR/stage0-install/bin/llvm-libtool-darwin" ]]; then
+  EXTRA_ARCHIVER_ARGS+=( -DCMAKE_LIBTOOL="$WORKDIR/stage0-install/bin/llvm-libtool-darwin" )
+fi
+
 # Stage1: instrumented build to generate profiles during build/tests
 if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then
   export LLVM_PROFILE_FILE="$WORKDIR/pgoprof/raw/%p-%m.profraw"
@@ -200,6 +210,7 @@ if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then
     -DLLVM_ENABLE_PROJECTS="mlir" \
     -DCMAKE_C_FLAGS="${INSTR_FLAGS}" -DCMAKE_CXX_FLAGS="${INSTR_FLAGS}" \
     -DLLVM_EXTERNAL_LIT="${LIT_BIN}" \
+    "${EXTRA_ARCHIVER_ARGS[@]}" \
     -DCMAKE_INSTALL_PREFIX="$WORKDIR/stage1-install"
   cmake --build build_stage1 --target install --config Release
   # Run tests to produce .profraw
@@ -226,6 +237,7 @@ if (( STAGE_FROM <= 2 && 2 <= STAGE_TO )); then
     -DCMAKE_C_FLAGS="${USE_FLAGS}" -DCMAKE_CXX_FLAGS="${USE_FLAGS}" \
     -DCMAKE_EXE_LINKER_FLAGS="${LD_FLAGS}" -DCMAKE_SHARED_LINKER_FLAGS="${LD_FLAGS}" \
     -DLLVM_EXTERNAL_LIT="${LIT_BIN}" \
+    "${EXTRA_ARCHIVER_ARGS[@]}" \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}"
   cmake --build build_stage2 --target install --config Release
 fi
