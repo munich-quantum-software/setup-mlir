@@ -137,7 +137,7 @@ if (( STAGE_FROM <= 0 && 0 <= STAGE_TO )); then
   cmake_gen llvm-project/llvm build_stage0 \
     "${GEN_STAGE0[@]}" \
     "${COMMON_LLVM_ARGS[@]}" \
-    -DLLVM_ENABLE_PROJECTS=clang;lld \
+    -DLLVM_ENABLE_PROJECTS="clang;lld" \
     -DLLVM_ENABLE_RUNTIMES=compiler-rt \
     -DCOMPILER_RT_BUILD_PROFILE=ON \
     -DCOMPILER_RT_BUILD_SANITIZERS=OFF \

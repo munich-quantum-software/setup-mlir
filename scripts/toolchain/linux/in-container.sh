@@ -49,6 +49,13 @@ if [[ "${TARGETS_ENV:-}" == "auto" ]]; then TARGETS_ENV=""; fi
 
 export DEBIAN_FRONTEND=noninteractive
 
+# Enable modern GCC from gcc-toolset-14 if available (manylinux provides it)
+if [[ -f /opt/rh/gcc-toolset-14/enable ]]; then
+  source /opt/rh/gcc-toolset-14/enable
+elif [[ -d /opt/rh/gcc-toolset-14/root/usr/bin ]]; then
+  export PATH="/opt/rh/gcc-toolset-14/root/usr/bin:$PATH"
+fi
+
 cd /work
 CLEAN=${TOOLCHAIN_CLEAN:-0}
 STAGE_FROM=${TOOLCHAIN_STAGE_FROM:-0}
@@ -127,7 +134,6 @@ COMMON_LLVM_ARGS=(
   -DLLVM_INCLUDE_EXAMPLES=OFF
   -DLLVM_ENABLE_ASSERTIONS=OFF
   -DLLVM_TARGETS_TO_BUILD="${TARGETS}"
-  -DLLVM_ENABLE_LTO=Thin
   -DLLVM_ENABLE_ZSTD=ON
   -DLLVM_INSTALL_UTILS=ON
   -DLLVM_ENABLE_BINDINGS=OFF
@@ -138,12 +144,13 @@ COMMON_LLVM_ARGS=(
 if (( STAGE_FROM <= 0 && 0 <= STAGE_TO )); then
   cmake -S llvm-project/llvm -B build_stage0 \
     "${COMMON_LLVM_ARGS[@]}" \
-    -DLLVM_ENABLE_PROJECTS="clang;bolt" \
+    -DLLVM_ENABLE_PROJECTS="clang;bolt;lld" \
     -DLLVM_ENABLE_RUNTIMES="compiler-rt" \
     -DCOMPILER_RT_BUILD_PROFILE=ON \
     -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
     -DCOMPILER_RT_BUILD_XRAY=OFF \
     -DCOMPILER_RT_BUILD_MEMPROF=OFF \
+    -DLLVM_ENABLE_LTO=OFF \
     -DCMAKE_INSTALL_PREFIX=/work/stage0-install
   cmake --build build_stage0 --target install --config Release
 fi
@@ -163,15 +170,18 @@ mkdir -p "$RAW_DIR"
 if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then
   export LLVM_PROFILE_FILE="$RAW_DIR/%p-%m.profraw"
   INSTR_FLAGS="-fprofile-instr-generate ${CPU_FLAGS}"
-  RELOCS_FLAGS="-Wl,--emit-relocs"
+  LINKER_FLAGS="-Wl,--emit-relocs -fuse-ld=lld"
 
   cmake -S llvm-project/llvm -B build_stage1 \
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_INCLUDE_TESTS=ON -DLLVM_BUILD_TESTS=ON \
     -DLLVM_ENABLE_PROJECTS="mlir" \
+    -DLLVM_ENABLE_LTO=Thin \
     -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_ASM_COMPILER=${CC} \
     -DCMAKE_C_FLAGS="$INSTR_FLAGS" -DCMAKE_CXX_FLAGS="$INSTR_FLAGS" \
-    -DCMAKE_EXE_LINKER_FLAGS="$RELOCS_FLAGS" -DCMAKE_SHARED_LINKER_FLAGS="$RELOCS_FLAGS" \
+    -DCMAKE_EXE_LINKER_FLAGS="$LINKER_FLAGS" -DCMAKE_SHARED_LINKER_FLAGS="$LINKER_FLAGS" \
+    -DCMAKE_AR=/work/stage0-install/bin/llvm-ar \
+    -DCMAKE_RANLIB=/work/stage0-install/bin/llvm-ranlib \
     -DLLVM_EXTERNAL_LIT="$LIT_BIN" \
     -DCMAKE_INSTALL_PREFIX=/work/stage1-install
 
@@ -193,14 +203,17 @@ fi
 # Stage2: final PGO+ThinLTO build (use BOLT tools from stage0, do not install them)
 if (( STAGE_FROM <= 2 && 2 <= STAGE_TO )); then
   USE_FLAGS="-fprofile-use=$PROFDATA -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date ${CPU_FLAGS}"
-  RELOCS_FLAGS="-Wl,--emit-relocs"
+  LINKER_FLAGS="-Wl,--emit-relocs -fuse-ld=lld"
   cmake -S llvm-project/llvm -B build_stage2 \
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_INCLUDE_TESTS=ON -DLLVM_BUILD_TESTS=ON \
     -DLLVM_ENABLE_PROJECTS="mlir" \
+    -DLLVM_ENABLE_LTO=Thin \
     -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_ASM_COMPILER=${CC} \
     -DCMAKE_C_FLAGS="$USE_FLAGS" -DCMAKE_CXX_FLAGS="$USE_FLAGS" \
-    -DCMAKE_EXE_LINKER_FLAGS="$RELOCS_FLAGS" -DCMAKE_SHARED_LINKER_FLAGS="$RELOCS_FLAGS" \
+    -DCMAKE_EXE_LINKER_FLAGS="$LINKER_FLAGS" -DCMAKE_SHARED_LINKER_FLAGS="$LINKER_FLAGS" \
+    -DCMAKE_AR=/work/stage0-install/bin/llvm-ar \
+    -DCMAKE_RANLIB=/work/stage0-install/bin/llvm-ranlib \
     -DLLVM_EXTERNAL_LIT="$LIT_BIN" \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}"
 
