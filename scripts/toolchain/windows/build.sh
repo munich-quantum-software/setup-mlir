@@ -28,6 +28,8 @@
 #   - Creates llvm-mlir_<ref>_windows_<arch>_<targets>_opt.tar.zst in the current working directory
 #
 set -euo pipefail
+# Disable MSYS/Git Bash automatic path conversion which can rewrite MSVC flags like /O2 into C:/Program Files/Git/O2
+export MSYS2_ARG_CONV_EXCL="*"
 
 REF=${1:?ref}
 PREFIX=${2:?install_prefix}
@@ -56,12 +58,8 @@ esac
 if [[ -n "${TARGETS_ARG}" ]]; then TARGETS="${TARGETS_ARG}"; else TARGETS="${HOST_TARGET}"; fi
 HOST_TRIPLE=${TOOLCHAIN_HOST_TRIPLE:-$HOST_TRIPLE_COMPUTED}
 
-# CPU tuning
-if [[ "$UNAME_ARCH" == "x86_64" || "$UNAME_ARCH" == "amd64" ]]; then
-  CPU_FLAGS_DEFAULT="-march=haswell -mtune=haswell"
-else
-  CPU_FLAGS_DEFAULT=""
-fi
+# CPU tuning: default to portable flags on Windows (no GCC-style -march/-mtune)
+CPU_FLAGS_DEFAULT=""
 CPU_FLAGS=${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-$CPU_FLAGS_DEFAULT}}
 
 # Clone or update llvm-project
