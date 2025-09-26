@@ -1,9 +1,8 @@
-# manylinux_2_28 builder image for optimized LLVM/MLIR (PGO + ThinLTO + BOLT)
+# manylinux_2_28 builder image for optimized LLVM/MLIR (PGO + LTO)
 #
 # Purpose:
 #   Minimal image to build LLVM/MLIR inside a manylinux_2_28 environment. Used by
-#   scripts/toolchain/linux/build.sh to produce portable Linux binaries with PGO,
-#   ThinLTO, and BOLT post-link optimization (when perf is available on host).
+#   scripts/toolchain/linux/build.sh to produce portable Linux binaries with PGO and LTO.
 #
 # Inputs:
 #   ARG BASE_IMAGE  Base manylinux_2_28 image (arch-specific), provided by wrapper.

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 #
-# macOS LLVM/MLIR optimized toolchain builder (PGO + ThinLTO)
+# macOS LLVM/MLIR optimized toolchain builder (PGO + LTO)
 #
 # Description:
-#   Builds a multi-stage optimized LLVM/MLIR toolchain on macOS using:
-#   - Stage0: clang + compiler-rt (profile runtime)
+#   Builds a two-stage optimized LLVM/MLIR toolchain on macOS using:
 #   - Stage1: instrumented build + tests to gather profiles
 #   - Stage2: PGO + ThinLTO final toolchain
 #   Uses ccache as the compiler launcher, installs FileCheck (LLVM_INSTALL_UTILS),
@@ -49,7 +48,7 @@ WORKDIR=$(pwd)
 
 # Incremental controls (set TOOLCHAIN_CLEAN=1 to wipe; set TOOLCHAIN_STAGE_FROM/TO to restrict stages)
 CLEAN=${TOOLCHAIN_CLEAN:-0}
-STAGE_FROM=${TOOLCHAIN_STAGE_FROM:-0}
+STAGE_FROM=${TOOLCHAIN_STAGE_FROM:-1}
 STAGE_TO=${TOOLCHAIN_STAGE_TO:-2}
 
 if [[ "$CLEAN" == "1" ]]; then
@@ -150,7 +149,6 @@ COMMON_LLVM_ARGS=(
   -DLLVM_INCLUDE_EXAMPLES=OFF
   -DLLVM_ENABLE_ASSERTIONS=OFF
   -DLLVM_TARGETS_TO_BUILD="${TARGETS}"
-  -DLLVM_ENABLE_LTO=Thin
   -DLLVM_ENABLE_ZSTD=ON
   -DLLVM_INSTALL_UTILS=ON
   -DLLVM_ENABLE_BINDINGS=OFF
@@ -169,78 +167,64 @@ if (( CCACHE_ON == 1 )); then
   COMMON_LLVM_ARGS+=( -DLLVM_CCACHE_BUILD=ON )
 fi
 
-# Stage0: build clang + compiler-rt(profile) to drive subsequent builds
-if (( STAGE_FROM <= 0 && 0 <= STAGE_TO )); then
-  cmake -S llvm-project/llvm -B build_stage0 \
-    "${COMMON_LLVM_ARGS[@]}" \
-    -DLLVM_INCLUDE_TESTS=OFF -DLLVM_BUILD_TESTS=OFF \
-    -DLLVM_ENABLE_PROJECTS="clang" \
-    -DLLVM_ENABLE_RUNTIMES="compiler-rt" \
-    -DCOMPILER_RT_BUILD_PROFILE=ON \
-    -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
-    -DCOMPILER_RT_BUILD_XRAY=OFF \
-    -DCOMPILER_RT_BUILD_MEMPROF=OFF \
-    -DCMAKE_INSTALL_PREFIX="$WORKDIR/stage0-install"
-  cmake --build build_stage0 --target install --config Release
-fi
 
-# Prefer stage0 clang if present; otherwise fall back to system clang
-if [[ -x "$WORKDIR/stage0-install/bin/clang" && -x "$WORKDIR/stage0-install/bin/clang++" ]]; then
-  export CC="$WORKDIR/stage0-install/bin/clang"
-  export CXX="$WORKDIR/stage0-install/bin/clang++"
+# Use system Apple Clang
+if command -v xcrun >/dev/null 2>&1; then
+  export CC=${CC:-$(xcrun -f clang)}
+  export CXX=${CXX:-$(xcrun -f clang++)}
 else
-  echo "stage0-install clang not found. Run Stage0 first or provide stage0-install." >&2
-  exit 1
+  export CC=${CC:-clang}
+  export CXX=${CXX:-clang++}
 fi
 
-# Prefer LLVM archivers if available (avoids Apple libtool vs. bitcode issues)
-EXTRA_ARCHIVER_ARGS=()
-if [[ -x "$WORKDIR/stage0-install/bin/llvm-ar" && -x "$WORKDIR/stage0-install/bin/llvm-ranlib" ]]; then
-  EXTRA_ARCHIVER_ARGS+=( -DCMAKE_AR="$WORKDIR/stage0-install/bin/llvm-ar" )
-  EXTRA_ARCHIVER_ARGS+=( -DCMAKE_RANLIB="$WORKDIR/stage0-install/bin/llvm-ranlib" )
-fi
-if [[ -x "$WORKDIR/stage0-install/bin/llvm-libtool-darwin" ]]; then
-  EXTRA_ARCHIVER_ARGS+=( -DCMAKE_LIBTOOL="$WORKDIR/stage0-install/bin/llvm-libtool-darwin" )
-fi
 
 # Stage1: instrumented build to generate profiles during build/tests
 if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then
   export LLVM_PROFILE_FILE="$WORKDIR/pgoprof/raw/%p-%m.profraw"
+  PROFDATA="$WORKDIR/pgoprof/merged.profdata"
   INSTR_FLAGS="-fprofile-instr-generate ${CPU_FLAGS}"
   cmake -S llvm-project/llvm -B build_stage1 \
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_INCLUDE_TESTS=ON -DLLVM_BUILD_TESTS=ON \
     -DLLVM_ENABLE_PROJECTS="mlir" \
+    -DLLVM_ENABLE_LTO=OFF \
     -DCMAKE_C_FLAGS="${INSTR_FLAGS}" -DCMAKE_CXX_FLAGS="${INSTR_FLAGS}" \
     -DLLVM_EXTERNAL_LIT="${LIT_BIN}" \
-    "${EXTRA_ARCHIVER_ARGS[@]}" \
     -DCMAKE_INSTALL_PREFIX="$WORKDIR/stage1-install"
   cmake --build build_stage1 --target install --config Release
   # Run tests to produce .profraw
   cmake --build build_stage1 --config Release --target check-mlir || true
 fi
 
+# Free disk space before stage2
+rm -rf build_stage1 2>/dev/null || true
+rm -rf "$WORKDIR/stage1-install" 2>/dev/null || true
+
 # Merge profiles
 RAW_DIR="$WORKDIR/pgoprof/raw"
 PROFDATA="$WORKDIR/pgoprof/merged.profdata"
 if compgen -G "$RAW_DIR/*.profraw" >/dev/null; then
-  "$WORKDIR/stage0-install/bin/llvm-profdata" merge -output="$PROFDATA" "$RAW_DIR"/*.profraw || true
+  if command -v xcrun >/dev/null 2>&1; then
+    xcrun llvm-profdata merge -output="$PROFDATA" "$RAW_DIR"/*.profraw || true
+  else
+    llvm-profdata merge -output="$PROFDATA" "$RAW_DIR"/*.profraw || true
+  fi
 else
   echo "Warning: no .profraw collected; proceeding with empty profile" >&2
   : > "$PROFDATA"
 fi
 
-# Stage2: final PGO+ThinLTO build
+# Stage2: final PGO + ThinLTO build
 if (( STAGE_FROM <= 2 && 2 <= STAGE_TO )); then
   USE_FLAGS="-fprofile-use=$PROFDATA -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date ${CPU_FLAGS}"
   LD_FLAGS="-Wl,-no_warn_duplicate_libraries"
   cmake -S llvm-project/llvm -B build_stage2 \
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_ENABLE_PROJECTS="mlir" \
+    -DLLVM_ENABLE_LTO=Thin \
     -DCMAKE_C_FLAGS="${USE_FLAGS}" -DCMAKE_CXX_FLAGS="${USE_FLAGS}" \
     -DCMAKE_EXE_LINKER_FLAGS="${LD_FLAGS}" -DCMAKE_SHARED_LINKER_FLAGS="${LD_FLAGS}" \
     -DLLVM_EXTERNAL_LIT="${LIT_BIN}" \
-    "${EXTRA_ARCHIVER_ARGS[@]}" \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}"
   cmake --build build_stage2 --target install --config Release
 fi
@@ -271,5 +255,5 @@ else
 fi
 
 # Report
-echo "macOS build completed at $PREFIX (incremental, PGO+ThinLTO, Zstd, $([[ $CCACHE_ON -eq 1 ]] && echo ccache || echo no-ccache), HOST_TRIPLE=${HOST_TRIPLE}, TARGETS=${TARGETS})"
+echo "macOS build completed at $PREFIX (incremental, PGO, Zstd, $([[ $CCACHE_ON -eq 1 ]] && echo ccache || echo no-ccache), HOST_TRIPLE=${HOST_TRIPLE}, TARGETS=${TARGETS})"
 echo "Archive: ${ART_DIR}/${ARCHIVE_NAME}"

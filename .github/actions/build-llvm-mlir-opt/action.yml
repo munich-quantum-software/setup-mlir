@@ -1,4 +1,4 @@
-name: "Build LLVM+MLIR Optimized (PGO+LTO+BOLT)"
+name: "Build LLVM+MLIR Optimized (PGO+LTO)"
 description: "Provide optimized LLVM/MLIR toolchain via prebuilt download or build (Linux in Docker manylinux_2_28, macOS/Windows host)."
 author: "mqt-core maintainers"
 

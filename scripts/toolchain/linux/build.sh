@@ -4,7 +4,7 @@
 #
 # Description:
 #   Builds a manylinux_2_28 container image (arch-aware), mounts the repo and output directories,
-#   then runs the in-container build script to produce a PGO + ThinLTO optimized LLVM/MLIR toolchain.
+#   then runs the in-container build script to produce a PGO + LTO optimized LLVM/MLIR toolchain.
 #   Uses ccache (mounted from the workspace) and emits a .tar.zst archive in the output directory.
 #
 # Usage:
@@ -65,7 +65,8 @@ ENV_ARGS=( -e HOME=/work -e REF="$REF" -e PREFIX="/out" \
   -e TOOLCHAIN_STAGE_FROM="${TOOLCHAIN_STAGE_FROM:-0}" \
   -e TOOLCHAIN_STAGE_TO="${TOOLCHAIN_STAGE_TO:-2}" \
   -e TOOLCHAIN_HOST_TRIPLE="${TOOLCHAIN_HOST_TRIPLE:-}" \
-  -e CCACHE_DIR="/work/.ccache" )
+  -e CCACHE_DIR="/work/.ccache" \
+  -e CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-4}" )
 if [[ -n "${TARGETS_ARG:-}" ]]; then ENV_ARGS+=( -e TARGETS="$TARGETS_ARG" ); fi
 if [[ -n "${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-}}" ]]; then ENV_ARGS+=( -e TOOLCHAIN_CPU_FLAGS="${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-}}" ); fi
 

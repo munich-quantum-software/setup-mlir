@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 #
-# Windows LLVM/MLIR optimized toolchain builder (PGO + ThinLTO)
+# Windows LLVM/MLIR optimized toolchain builder (PGO + LTO)
 #
 # Description:
-#   Builds a multi-stage optimized LLVM/MLIR toolchain on Windows using GitHub Actions' bash
-#   (Git Bash) environment. Mirrors the PowerShell implementation but requires no pwsh.
+#   Builds a two-stage optimized LLVM/MLIR toolchain on Windows using GitHub Actions' bash
+#   (Git Bash) environment.
 #   Stages:
-#     - Stage0: clang + compiler-rt (profile runtime)
 #     - Stage1: instrumented build + lit tests to collect profiles
-#     - Stage2: final PGO + ThinLTO toolchain
+#     - Stage2: final PGO + LTO toolchain
 #   Uses ccache when available and emits a .tar.zst archive via tar | zstd.
 #
 # Usage:
@@ -39,7 +38,7 @@ if [[ "${TARGETS_ARG:-}" == "auto" ]]; then TARGETS_ARG=""; fi
 
 WORKDIR=$(pwd)
 CLEAN=${TOOLCHAIN_CLEAN:-0}
-STAGE_FROM=${TOOLCHAIN_STAGE_FROM:-0}
+STAGE_FROM=${TOOLCHAIN_STAGE_FROM:-1}
 STAGE_TO=${TOOLCHAIN_STAGE_TO:-2}
 
 if [[ "$CLEAN" == "1" ]]; then
@@ -137,72 +136,43 @@ COMMON_LLVM_ARGS=(
   "${LAUNCHER_ARGS[@]}"
 )
 
-# Stage0: clang + compiler-rt (profile)
-if (( STAGE_FROM <= 0 && 0 <= STAGE_TO )); then
-  cmake_gen llvm-project/llvm build_stage0 \
-    "${GEN_STAGE0[@]}" \
-    -T ClangCL \
-    "${COMMON_LLVM_ARGS[@]}" \
-    -DLLVM_ENABLE_PROJECTS="clang;lld" \
-    -DLLVM_ENABLE_RUNTIMES=compiler-rt \
-    -DCOMPILER_RT_BUILD_PROFILE=ON \
-    -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
-    -DCOMPILER_RT_BUILD_XRAY=OFF \
-    -DCOMPILER_RT_BUILD_MEMPROF=OFF \
-    -DCMAKE_INSTALL_PREFIX="$WORKDIR/stage0-install"
-  cmake_build build_stage0 install
-fi
 
-# Prefer stage0 clang if present; otherwise system clang
-if [[ -x "$WORKDIR/stage0-install/bin/clang.exe" && -x "$WORKDIR/stage0-install/bin/clang++.exe" ]]; then
-  export PATH="$WORKDIR/stage0-install/bin:$PATH"
-  export CC="$WORKDIR/stage0-install/bin/clang.exe"
-  export CXX="$WORKDIR/stage0-install/bin/clang++.exe"
-else
-  echo "stage0-install clang(.exe) not found. Run Stage0 first or provide stage0-install." >&2
-  exit 1
-fi
 
-# Stage1: instrumented build + tests to collect .profraw
-RAW_DIR="$WORKDIR/pgoprof/raw"
+# Stage1: instrumented build + tests to collect profiles (MSVC PGO)
+PGDIR="$WORKDIR/pgoprof"
+PGD="$PGDIR/mlir.pgd"
+mkdir -p "$PGDIR"
 if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then
-  export LLVM_PROFILE_FILE="$RAW_DIR/%p-%m.profraw"
-  INSTR_FLAGS="-fprofile-instr-generate ${CPU_FLAGS}"
+  CFLAGS="/O2 /GL ${CPU_FLAGS}"
+  LDFLAGS="/LTCG:PGINSTRUMENT /GENPROFILE:PATH=\"$PGDIR\" /PGD:\"$PGD\""
   cmake_gen llvm-project/llvm build_stage1 \
-    "${GEN_NINJA[@]}" \
+    "${GEN_STAGE0[@]}" \
     "${COMMON_LLVM_ARGS[@]}" \
-    -DLLVM_ENABLE_LTO=Thin \
-    -DCMAKE_LINKER="$WORKDIR/stage0-install/bin/lld-link.exe" \
     -DLLVM_INCLUDE_TESTS=ON -DLLVM_BUILD_TESTS=ON \
     -DLLVM_ENABLE_PROJECTS=mlir \
-    -DCMAKE_C_FLAGS="${INSTR_FLAGS}" -DCMAKE_CXX_FLAGS="${INSTR_FLAGS}" \
+    -DCMAKE_C_FLAGS="${CFLAGS}" -DCMAKE_CXX_FLAGS="${CFLAGS}" \
+    -DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS}" -DCMAKE_SHARED_LINKER_FLAGS="${LDFLAGS}" \
     -DLLVM_EXTERNAL_LIT="${LIT_BIN}" \
     -DCMAKE_INSTALL_PREFIX="$WORKDIR/stage1-install"
   cmake_build build_stage1 install
   cmake_build build_stage1 check-mlir || true
 fi
 
-# Merge profiles to .profdata
-PROFDATA="$WORKDIR/pgoprof/merged.profdata"
-shopt -s nullglob
-PROFRAW_FILES=("$RAW_DIR"/*.profraw)
-if (( ${#PROFRAW_FILES[@]} == 0 )); then
-  echo "Warning: no .profraw collected; proceeding with empty profile" >&2
-  : > "$PROFDATA"
-else
-  "$WORKDIR/stage0-install/bin/llvm-profdata.exe" merge -output="$PROFDATA" "$RAW_DIR"/*.profraw || true
-fi
+# Free disk space before Stage2
+rm -rf build_stage1 2>/dev/null || true
+rm -rf "$WORKDIR/stage1-install" 2>/dev/null || true
 
-# Stage2: final PGO+ThinLTO build
+
+# Stage2: final MSVC PGO build with LTCG optimization
 if (( STAGE_FROM <= 2 && 2 <= STAGE_TO )); then
-  USE_FLAGS="-fprofile-use=$PROFDATA -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date ${CPU_FLAGS}"
+  CFLAGS="/O2 /GL ${CPU_FLAGS}"
+  LDFLAGS2="/LTCG:PGOPTIMIZE /USEPROFILE:PATH=\"$PGDIR\" /PGD:\"$PGD\""
   cmake_gen llvm-project/llvm build_stage2 \
-    "${GEN_NINJA[@]}" \
+    "${GEN_STAGE0[@]}" \
     "${COMMON_LLVM_ARGS[@]}" \
-    -DLLVM_ENABLE_LTO=Thin \
-    -DCMAKE_LINKER="$WORKDIR/stage0-install/bin/lld-link.exe" \
     -DLLVM_ENABLE_PROJECTS=mlir \
-    -DCMAKE_C_FLAGS="${USE_FLAGS}" -DCMAKE_CXX_FLAGS="${USE_FLAGS}" \
+    -DCMAKE_C_FLAGS="${CFLAGS}" -DCMAKE_CXX_FLAGS="${CFLAGS}" \
+    -DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS2}" -DCMAKE_SHARED_LINKER_FLAGS="${LDFLAGS2}" \
     -DLLVM_EXTERNAL_LIT="${LIT_BIN}" \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}"
   cmake_build build_stage2 install
@@ -235,5 +205,5 @@ else
   echo "Neither 'tar --zstd' nor 'zstd' found; skipping archive creation" >&2
 fi
 
-echo "Windows build completed at ${PREFIX} (incremental, PGO+ThinLTO, Zstd, $( [[ $CCACHE_ON -eq 1 ]] && echo ccache || echo no-ccache ), HOST_TRIPLE=${HOST_TRIPLE}, TARGETS=${TARGETS})"
+echo "Windows build completed at ${PREFIX} (incremental, PGO+LTO, Zstd, $( [[ $CCACHE_ON -eq 1 ]] && echo ccache || echo no-ccache ), HOST_TRIPLE=${HOST_TRIPLE}, TARGETS=${TARGETS})"
 echo "Archive: ${WORKDIR}/${ARCHIVE_NAME}"

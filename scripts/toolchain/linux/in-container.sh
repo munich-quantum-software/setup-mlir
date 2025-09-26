@@ -7,13 +7,12 @@
 # Licensed under the MIT License
 
 #
-# Linux (manylinux_2_28) LLVM/MLIR optimized toolchain builder (PGO + ThinLTO + BOLT)
+# Linux (manylinux_2_28) LLVM/MLIR optimized toolchain builder (PGO + LTO)
 #
 # Description:
-#   Runs inside a manylinux_2_28 container to build a multi-stage optimized LLVM/MLIR toolchain:
-#   - Stage0: clang + compiler-rt (profile runtime)
+#   Runs inside a manylinux_2_28 container to build a two-stage optimized LLVM/MLIR toolchain:
 #   - Stage1: instrumented build + tests to gather profiles
-#   - Stage2: PGO + ThinLTO final toolchain; runs BOLT post-link optimization on hot executables
+#   - Stage2: PGO + LTO final toolchain
 #   Uses ccache, installs FileCheck (LLVM_INSTALL_UTILS), and emits a .tar.zst archive in /out.
 #
 # Usage (inside container; invoked by scripts/toolchain/linux/build.sh):
@@ -58,7 +57,7 @@ fi
 
 cd /work
 CLEAN=${TOOLCHAIN_CLEAN:-0}
-STAGE_FROM=${TOOLCHAIN_STAGE_FROM:-0}
+STAGE_FROM=${TOOLCHAIN_STAGE_FROM:-1}
 STAGE_TO=${TOOLCHAIN_STAGE_TO:-2}
 if [[ "$CLEAN" == "1" ]]; then
   rm -rf llvm-project build_stage0 build_stage1 build_stage2 /tmp/pgoprof stage0-install stage1-install
@@ -139,115 +138,52 @@ COMMON_LLVM_ARGS=(
   -DLLVM_HOST_TRIPLE=${HOST_TRIPLE}
 )
 
-# Stage0: clang toolchain (+compiler-rt profile) for subsequent builds
-if (( STAGE_FROM <= 0 && 0 <= STAGE_TO )); then
-  cmake -S llvm-project/llvm -B build_stage0 \
-    "${COMMON_LLVM_ARGS[@]}" \
-    -DLLVM_ENABLE_PROJECTS="clang;bolt;lld" \
-    -DLLVM_ENABLE_RUNTIMES="compiler-rt" \
-    -DCOMPILER_RT_BUILD_PROFILE=ON \
-    -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
-    -DCOMPILER_RT_BUILD_XRAY=OFF \
-    -DCOMPILER_RT_BUILD_MEMPROF=OFF \
-    -DLLVM_ENABLE_LTO=OFF \
-    -DCMAKE_INSTALL_PREFIX=/work/stage0-install
-  cmake --build build_stage0 --target install --config Release
-fi
-# Restore execute bits for stage0-install if artifact download stripped them
-if [[ -d /work/stage0-install/bin ]]; then
-  chmod +x /work/stage0-install/bin/* 2>/dev/null || true
-fi
-# Prefer stage0 clang if present; otherwise fall back to system clang
-if [[ -x /work/stage0-install/bin/clang && -x /work/stage0-install/bin/clang++ ]]; then
-  export CC=/work/stage0-install/bin/clang
-  export CXX=/work/stage0-install/bin/clang++
-else
-  echo "stage0-install clang not found. Run Stage0 first or provide /work/stage0-install." >&2
-  exit 1
-fi
+# Use system GCC (prefer gcc-toolset-14 if enabled above)
+export CC=${CC:-gcc}
+export CXX=${CXX:-g++}
 
 # Stage1: instrumented build with tests, collect .profraw via check-mlir
 PGO_DIR=/work/pgoprof
 RAW_DIR=$PGO_DIR/raw
 mkdir -p "$RAW_DIR"
 if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then
-  export LLVM_PROFILE_FILE="$RAW_DIR/%p-%m.profraw"
-  INSTR_FLAGS="-fprofile-instr-generate ${CPU_FLAGS}"
-  LINKER_FLAGS="-Wl,--emit-relocs -fuse-ld=lld"
+  INSTR_FLAGS="-fprofile-generate -fprofile-dir=$RAW_DIR ${CPU_FLAGS}"
 
   cmake -S llvm-project/llvm -B build_stage1 \
     "${COMMON_LLVM_ARGS[@]}" \
     -DLLVM_INCLUDE_TESTS=ON -DLLVM_BUILD_TESTS=ON \
     -DLLVM_ENABLE_PROJECTS="mlir" \
-    -DLLVM_ENABLE_LTO=Thin \
+    -DLLVM_ENABLE_LTO=OFF \
     -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_ASM_COMPILER=${CC} \
     -DCMAKE_C_FLAGS="$INSTR_FLAGS" -DCMAKE_CXX_FLAGS="$INSTR_FLAGS" \
-    -DCMAKE_EXE_LINKER_FLAGS="$LINKER_FLAGS" -DCMAKE_SHARED_LINKER_FLAGS="$LINKER_FLAGS" \
-    -DCMAKE_AR=/work/stage0-install/bin/llvm-ar \
-    -DCMAKE_RANLIB=/work/stage0-install/bin/llvm-ranlib \
     -DLLVM_EXTERNAL_LIT="$LIT_BIN" \
     -DCMAKE_INSTALL_PREFIX=/work/stage1-install
 
   cmake --build build_stage1 --config Release --target install
-  # Run MLIR tests to generate .profraw
+  # Run MLIR tests to generate .gcda
   cmake --build build_stage1 --config Release --target check-mlir || true
 fi
 
-# Merge to .profdata
-PROFDATA=$PGO_DIR/merged.profdata
-RAW_GLOB=$(shopt -s nullglob; echo $RAW_DIR/*.profraw)
-if [[ -z "${RAW_GLOB// }" ]]; then
-  echo "Warning: no .profraw collected; creating empty profdata" >&2
-  : > "$PROFDATA"
-else
-  /work/stage0-install/bin/llvm-profdata merge -output="$PROFDATA" $RAW_DIR/*.profraw || true
-fi
+# Free disk space before stage2
+rm -rf build_stage1 2>/dev/null || true
+rm -rf /work/stage1-install 2>/dev/null || true
 
-# Stage2: final PGO+ThinLTO build (use BOLT tools from stage0, do not install them)
+
+# Stage2: final GCC PGO + LTO build
 if (( STAGE_FROM <= 2 && 2 <= STAGE_TO )); then
-  USE_FLAGS="-fprofile-use=$PROFDATA -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date ${CPU_FLAGS}"
-  LINKER_FLAGS="-Wl,--emit-relocs -fuse-ld=lld"
+  USE_FLAGS="-fprofile-use -fprofile-dir=$RAW_DIR -fprofile-correction ${CPU_FLAGS} -flto"
   cmake -S llvm-project/llvm -B build_stage2 \
     "${COMMON_LLVM_ARGS[@]}" \
-    -DLLVM_INCLUDE_TESTS=ON -DLLVM_BUILD_TESTS=ON \
+    -DLLVM_INCLUDE_TESTS=OFF -DLLVM_BUILD_TESTS=OFF \
     -DLLVM_ENABLE_PROJECTS="mlir" \
-    -DLLVM_ENABLE_LTO=Thin \
+    -DLLVM_ENABLE_LTO=ON \
     -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_ASM_COMPILER=${CC} \
+    -DCMAKE_AR=gcc-ar -DCMAKE_RANLIB=gcc-ranlib -DCMAKE_NM=gcc-nm \
     -DCMAKE_C_FLAGS="$USE_FLAGS" -DCMAKE_CXX_FLAGS="$USE_FLAGS" \
-    -DCMAKE_EXE_LINKER_FLAGS="$LINKER_FLAGS" -DCMAKE_SHARED_LINKER_FLAGS="$LINKER_FLAGS" \
-    -DCMAKE_AR=/work/stage0-install/bin/llvm-ar \
-    -DCMAKE_RANLIB=/work/stage0-install/bin/llvm-ranlib \
     -DLLVM_EXTERNAL_LIT="$LIT_BIN" \
+    -DLLVM_PARALLEL_LINK_JOBS=1 \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}"
 
-  cmake --build build_stage2 --config Release
-
-  # Perf-based BOLT profiles from stage2 tests
-  PERF_DATA=/tmp/perf.data
-  if command -v perf >/dev/null 2>&1; then
-    perf record -e cycles:u -g -- \
-      cmake --build build_stage2 --config Release --target check-mlir || true
-  fi
-
-  BIN_DIR=/work/build_stage2/bin
-  PERF2BOLT="/work/stage0-install/bin/perf2bolt"
-  LLVMBOLT="/work/stage0-install/bin/llvm-bolt"
-  if [[ -x "$PERF2BOLT" && -x "$LLVMBOLT" && -f "$PERF_DATA" ]]; then
-    for exe in "$BIN_DIR/mlir-opt" "$BIN_DIR/mlir-translate"; do
-      if [[ -x "$exe" ]]; then
-        FDATA="$exe.fdata"
-        "$PERF2BOLT" -p "$PERF_DATA" -o "$FDATA" "$exe" || true
-        if [[ -s "$FDATA" ]]; then
-          "$LLVMBOLT" "$exe" -o "$exe.bolt" -data "$FDATA" \
-            -reorder-blocks=cache -reorder-functions=hfsort \
-            -split-functions -split-all-cold -icf=1 -use-gnu-eh-frame || true
-          if [[ -s "$exe.bolt" ]]; then mv -f "$exe.bolt" "$exe"; fi
-        fi
-      fi
-    done
-  fi
-
-  # Final install after BOLT
   cmake --build build_stage2 --config Release --target install
 fi
 
@@ -270,5 +206,5 @@ SAFE_TARGETS=${TARGETS//;/_}
 ARCHIVE_NAME="llvm-mlir_${REF}_linux_${UNAME_ARCH}_${SAFE_TARGETS}_opt.tar.zst"
 ( cd "${PREFIX}" && tar -I 'zstd -T0 -19' -cf "/out/${ARCHIVE_NAME}" . ) || true
 
-echo "Install completed at ${PREFIX} (incremental, PGO+ThinLTO, $( [[ $CCACHE_ON -eq 1 ]] && echo cache=ccache || echo no-cache ), Zstd, HOST_TRIPLE=${HOST_TRIPLE}, TARGETS=${TARGETS})"
+echo "Install completed at ${PREFIX} (incremental, GCC PGO, $( [[ $CCACHE_ON -eq 1 ]] && echo cache=ccache || echo no-cache ), Zstd, HOST_TRIPLE=${HOST_TRIPLE}, TARGETS=${TARGETS})"
 echo "Archive: /out/${ARCHIVE_NAME}"
