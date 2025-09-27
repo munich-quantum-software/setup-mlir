@@ -42,9 +42,7 @@ jobs:
             ccache-linux-${{ env.REF }}-
             ccache-linux-
       - name: Build Stage1 (Linux x64)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 1
           TOOLCHAIN_STAGE_TO: 1
@@ -68,9 +66,7 @@ jobs:
             ccache-linux-arm-${{ env.REF }}-
             ccache-linux-arm-
       - name: Build Stage1 (Linux ARM64)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 1
           TOOLCHAIN_STAGE_TO: 1
@@ -100,9 +96,7 @@ jobs:
           name: linux-stage1-outputs
           path: .
       - name: Build Stage2 (Linux x64)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 2
           TOOLCHAIN_STAGE_TO: 2
@@ -132,9 +126,7 @@ jobs:
           name: linux-arm-stage1-outputs
           path: .
       - name: Build Stage2 (Linux ARM64)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 2
           TOOLCHAIN_STAGE_TO: 2
@@ -158,9 +150,7 @@ jobs:
             ccache-macos-${{ env.REF }}-
             ccache-macos-
       - name: Build Stage1 (macOS arm64)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 1
           TOOLCHAIN_STAGE_TO: 1
@@ -184,9 +174,7 @@ jobs:
             ccache-macos-intel-${{ env.REF }}-
             ccache-macos-intel-
       - name: Build Stage1 (macOS Intel)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 1
           TOOLCHAIN_STAGE_TO: 1
@@ -216,9 +204,7 @@ jobs:
           name: macos-stage1-outputs
           path: .
       - name: Build Stage2 (macOS arm64)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 2
           TOOLCHAIN_STAGE_TO: 2
@@ -248,9 +234,7 @@ jobs:
           name: macos-intel-stage1-outputs
           path: .
       - name: Build Stage2 (macOS Intel)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 2
           TOOLCHAIN_STAGE_TO: 2
@@ -268,9 +252,7 @@ jobs:
       - name: Install zstd
         run: choco install -y zstandard
       - name: Build Stage1 (Windows x64)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 1
           TOOLCHAIN_STAGE_TO: 1
@@ -288,9 +270,7 @@ jobs:
       - name: Install zstd
         run: choco install -y zstandard
       - name: Build Stage1 (Windows ARM64)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 1
           TOOLCHAIN_STAGE_TO: 1
@@ -314,9 +294,7 @@ jobs:
           name: windows-stage1-outputs
           path: .
       - name: Build Stage2 (Windows x64)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 2
           TOOLCHAIN_STAGE_TO: 2
@@ -340,9 +318,7 @@ jobs:
           name: windows-arm-stage1-outputs
           path: .
       - name: Build Stage2 (Windows ARM64)
-        run: |
-          set -euo pipefail
-          bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
         env:
           TOOLCHAIN_STAGE_FROM: 2
           TOOLCHAIN_STAGE_TO: 2
