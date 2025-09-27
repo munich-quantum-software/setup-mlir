@@ -242,11 +242,6 @@ jobs:
           restore-keys: |
             ccache-macos-intel-${{ env.REF }}-
             ccache-macos-intel-
-      - name: Download stage0-install
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-intel-stage0-install
-          path: stage0-install
       - name: Download stage1 outputs
         uses: actions/download-artifact@v4
         with:
@@ -339,11 +334,6 @@ jobs:
       - uses: actions/checkout@v5.0.0
       - name: Install zstd
         run: choco install -y zstandard
-      - name: Download stage0-install
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-arm-stage0-install
-          path: stage0-install
       - name: Download stage1 outputs
         uses: actions/download-artifact@v4
         with:

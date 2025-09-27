@@ -157,6 +157,7 @@ if (( STAGE_FROM <= 1 && 1 <= STAGE_TO )); then
     -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_ASM_COMPILER=${CC} \
     -DCMAKE_C_FLAGS="$INSTR_FLAGS" -DCMAKE_CXX_FLAGS="$INSTR_FLAGS" \
     -DLLVM_EXTERNAL_LIT="$LIT_BIN" \
+    -DLLVM_PARALLEL_LINK_JOBS=1 \
     -DCMAKE_INSTALL_PREFIX=/work/stage1-install
 
   cmake --build build_stage1 --config Release --target install
