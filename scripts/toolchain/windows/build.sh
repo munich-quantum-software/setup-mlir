@@ -28,8 +28,6 @@
 #   - Creates llvm-mlir_<ref>_windows_<arch>_<targets>_opt.tar.zst in the current working directory
 #
 set -euo pipefail
-# Disable MSYS/Git Bash automatic path conversion which can rewrite MSVC flags like /O2 into C:/Program Files/Git/O2
-export MSYS2_ARG_CONV_EXCL="*"
 
 REF=${1:?ref}
 PREFIX=${2:?install_prefix}
