@@ -1,0 +1,38 @@
+name: Build Portable MLIR Toolchain
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  REF: llvmorg-21.1.5
+  TAG: 21.1.5
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5.0.0
+      - name: Restore ccache
+        uses: actions/cache@v4.3.0
+        with:
+          path: ~/.ccache
+          key: ccache-macos-${{ env.REF }}-${{ github.ref_name }}
+          restore-keys: |
+            ccache-macos-${{ env.REF }}-
+            ccache-macos-
+      - name: Build
+        run: bash scripts/toolchain/macos/simple-build.sh -t "$TAG"
+      - name: Upload archive
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: macos-15-archive
+          path: llvm-mlir_*.tar.zst
+          if-no-files-found: error
