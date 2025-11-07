@@ -12,6 +12,7 @@ defaults:
     shell: bash
 
 env:
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
   REF: llvmorg-21.1.5
   TAG: 21.1.5
 
