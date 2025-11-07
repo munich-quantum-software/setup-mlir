@@ -31,6 +31,16 @@ build_llvm() {
   local tag=$1
   local prefix=$2
 
+  local llvm_dir="$prefix/lib/cmake/llvm"
+  local mlir_dir="$prefix/lib/cmake/mlir"
+
+  # Check if LLVM is already installed
+  if [ -d "$llvm_dir" ] && [ -d "$mlir_dir" ]; then
+    echo "Found existing LLVM/MLIR install at $prefix. Skipping build."
+    append_dirs_to_env "$prefix"
+    return
+  fi
+
   echo "Building LLVM/MLIR $tag into $prefix..."
 
   # Clone LLVM project
