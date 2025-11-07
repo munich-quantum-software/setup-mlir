@@ -15,7 +15,7 @@ on:
         description: "Extra CPU flags (optional)"
         required: false
         default: ""
-  pull_request:
+  # pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
