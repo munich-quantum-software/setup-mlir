@@ -7,13 +7,13 @@ set -e
 INSTALL_PREFIX="${GITHUB_WORKSPACE}/llvm-install"
 
 # Parse arguments
-while getopts "t:p:" opt; do
+while getopts "t:p:*" opt; do
   case $opt in
     t) TAG="$OPTARG"
     ;;
     p) INSTALL_PREFIX="$OPTARG"
     ;;
-    \?) echo "Invalid option -$OPTARG" >&2
+    *) echo "Invalid option -$OPTARG" >&2
     exit 1
     ;;
   esac

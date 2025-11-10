@@ -1,4 +1,4 @@
-name: Build Portable MLIR Toolchain
+name: 🍎 Build Portable MLIR Toolchain
 
 on:
   pull_request:
@@ -13,27 +13,30 @@ defaults:
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  REF: llvmorg-21.1.5
   TAG: 21.1.5
 
 jobs:
   build:
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: [macos-15, macos-15-intel]
+    runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@v5.0.0
       - name: Restore ccache
         uses: actions/cache@v4.3.0
         with:
           path: ~/.ccache
-          key: ccache-macos-${{ env.REF }}-${{ github.ref_name }}
+          key: ccache-macos-llvmorg-${{ env.TAG }}-${{ github.ref_name }}
           restore-keys: |
-            ccache-macos-${{ env.REF }}-
+            ccache-macos-llvmorg-${{ env.TAG }}-
             ccache-macos-
       - name: Build
         run: bash scripts/toolchain/macos/simple-build.sh -t "$TAG"
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:
-          name: macos-15-archive
+          name: ${{ matrix.runs-on }}-archive
           path: llvm-mlir_*.tar.zst
           if-no-files-found: error
