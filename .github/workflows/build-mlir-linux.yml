@@ -33,7 +33,7 @@ jobs:
             ccache-linux-llvmorg-${{ env.TAG }}-
             ccache-linux-
       - name: Build
-        run: bash scripts/toolchain/linux/simple-build.sh -t "$TAG"
+        run: bash scripts/toolchain/linux/build.sh -t "$TAG"
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:
