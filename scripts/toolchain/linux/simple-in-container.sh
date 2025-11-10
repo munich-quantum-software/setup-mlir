@@ -17,7 +17,7 @@ cd /work
 
 # Main LLVM setup function
 build_llvm() {
-  local tag=$1
+  local ref=$1
   local prefix=$2
 
   local llvm_dir="$prefix/lib/cmake/llvm"
@@ -30,7 +30,7 @@ build_llvm() {
     return
   fi
 
-  echo "Building LLVM/MLIR $tag into $prefix..."
+  echo "Building LLVM/MLIR $ref into $prefix..."
 
   # Install dependencies if needed (for Ubuntu/Debian)
   if command -v apt-get >/dev/null 2>&1; then
@@ -41,7 +41,7 @@ build_llvm() {
   # Clone LLVM project
   rm -rf "$prefix"
   mkdir -p "$prefix"
-  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "llvmorg-$tag" "$prefix/llvm-project"
+  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$prefix/llvm-project"
 
   pushd "$prefix/llvm-project" > /dev/null
 
@@ -69,11 +69,10 @@ build_llvm() {
 }
 
 # Build LLVM
-build_llvm "$TAG" "$PREFIX"
+build_llvm "$REF" "$PREFIX"
 
 # Variables
 WORKDIR=$(pwd)
-REF="$TAG"
 UNAME_ARCH=$(uname -m)
 
 # Map architecture to LLVM target
