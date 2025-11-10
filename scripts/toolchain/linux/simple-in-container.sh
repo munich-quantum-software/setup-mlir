@@ -39,8 +39,6 @@ build_llvm() {
   fi
 
   # Clone LLVM project
-  rm -rf "$prefix"
-  mkdir -p "$prefix"
   git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$prefix/llvm-project"
 
   pushd "$prefix/llvm-project" > /dev/null
