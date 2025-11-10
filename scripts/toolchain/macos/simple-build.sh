@@ -31,13 +31,14 @@ build_llvm() {
   local tag=$1
   local prefix=$2
 
-  local llvm_dir="$prefix/lib/cmake/llvm"
-  local mlir_dir="$prefix/lib/cmake/mlir"
+  local build_dir="$prefix/llvm-project/build-llvm"
+
+  local llvm_dir="$build_dir/lib/cmake/llvm"
+  local mlir_dir="$build_dir/lib/cmake/mlir"
 
   # Check if LLVM is already installed
   if [ -d "$llvm_dir" ] && [ -d "$mlir_dir" ]; then
     echo "Found existing LLVM/MLIR install at $prefix. Skipping build."
-    append_dirs_to_env "$prefix"
     return
   fi
 
@@ -51,7 +52,6 @@ build_llvm() {
   pushd "$prefix/llvm-project" > /dev/null
 
   # Build LLVM
-  build_dir="build_llvm"
   cmake -S llvm -B "$build_dir" \
     -DLLVM_ENABLE_PROJECTS=mlir \
     -DLLVM_BUILD_EXAMPLES=OFF \
@@ -74,9 +74,10 @@ build_llvm() {
 build_llvm "$TAG" "$INSTALL_PREFIX"
 
 # Variables
-WORKDIR=$(pwd)
+BUILD_DIR="$INSTALL_PREFIX/llvm-project/build-llvm"
 REF="$TAG"
 UNAME_ARCH=$(uname -m)
+WORK_DIR=$(pwd)
 
 if [[ "$UNAME_ARCH" == "arm64" || "$UNAME_ARCH" == "aarch64" ]]; then
   HOST_TARGET="AArch64"
@@ -88,22 +89,22 @@ else
 fi
 
 # Prune non-essential tools
-if [[ -d "$INSTALL_PREFIX/bin" ]]; then
-  rm -f "$INSTALL_PREFIX/bin"/clang* "$INSTALL_PREFIX/bin"/clang-?* "$INSTALL_PREFIX/bin"/clang++* \
-        "$INSTALL_PREFIX/bin"/clangd "$INSTALL_PREFIX/bin"/clang-format* "$INSTALL_PREFIX/bin"/clang-tidy* \
-        "$INSTALL_PREFIX/bin"/lld* "$INSTALL_PREFIX/bin"/llvm-bolt "$INSTALL_PREFIX/bin"/perf2bolt 2>/dev/null || true
+if [[ -d "$BUILD_DIR/bin" ]]; then
+  rm -f "$BUILD_DIR/bin"/clang* "$BUILD_DIR/bin"/clang-?* "$BUILD_DIR/bin"/clang++* \
+        "$BUILD_DIR/bin"/clangd "$BUILD_DIR/bin"/clang-format* "$BUILD_DIR/bin"/clang-tidy* \
+        "$BUILD_DIR/bin"/lld* "$BUILD_DIR/bin"/llvm-bolt "$BUILD_DIR/bin"/perf2bolt 2>/dev/null || true
 fi
-rm -rf "$INSTALL_PREFIX/lib/clang" 2>/dev/null || true
+rm -rf "$BUILD_DIR/lib/clang" 2>/dev/null || true
 
 # Strip binaries
 if command -v strip >/dev/null 2>&1; then
-  find "$INSTALL_PREFIX/bin" -type f -perm -111 -exec strip -S {} + 2>/dev/null || true
-  find "$INSTALL_PREFIX/lib" -name "*.a" -exec strip -S {} + 2>/dev/null || true
+  find "$BUILD_DIR/bin" -type f -perm -111 -exec strip -S {} + 2>/dev/null || true
+  find "$BUILD_DIR/lib" -name "*.a" -exec strip -S {} + 2>/dev/null || true
 fi
 
 # Emit compressed archive (.tar.zst)
 if command -v gtar >/dev/null 2>&1; then TAR=gtar; else TAR=tar; fi
-ART_DIR="$WORKDIR"
+ART_DIR="$WORK_DIR"
 SAFE_TARGETS=${HOST_TARGET//;/_}
 ARCHIVE_NAME="llvm-mlir_${REF}_macos_${UNAME_ARCH}_${SAFE_TARGETS}_opt.tar.zst"
 if command -v zstd >/dev/null 2>&1; then
