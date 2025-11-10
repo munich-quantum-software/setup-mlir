@@ -1,0 +1,43 @@
+name: 🏁 Build Portable MLIR Toolchain
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
+  TAG: 21.1.5
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: [windows-2022, windows-11-arm]
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v5.0.0
+      - run: choco install -y zstandard
+      - name: Restore ccache
+        uses: actions/cache@v4.3.0
+        with:
+          path: ~/.ccache
+          key: ccache-windows-llvmorg-${{ env.TAG }}-${{ github.ref_name }}
+          restore-keys: |
+            ccache-windows-llvmorg-${{ env.TAG }}-
+            ccache-windows-
+      - name: Build
+        run: bash scripts/toolchain/windows/simple-build.sh -t "$TAG"
+      - name: Upload archive
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: ${{ matrix.runs-on }}-archive
+          path: llvm-mlir_*.tar.zst
+          if-no-files-found: error
