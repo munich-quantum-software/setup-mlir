@@ -56,7 +56,7 @@ build_llvm() {
     -DLLVM_ENABLE_ASSERTIONS=ON \
     -DLLVM_INSTALL_UTILS=ON \
     -DLLVM_ENABLE_RTTI=ON \
-    -DCMAKE_PREFIX="$prefix"
+    -DCMAKE_INSTALL_PREFIX="$prefix"
 
   # Build tablegen first to avoid header generation issues
   cmake --build "$build_dir" --target mlir-tblgen --config Release
