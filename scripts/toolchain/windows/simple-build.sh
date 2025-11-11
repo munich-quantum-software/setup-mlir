@@ -15,7 +15,7 @@ set -e
 INSTALL_PREFIX="${GITHUB_WORKSPACE}/llvm-install"
 
 # Parse arguments
-while getopts "r:p:*" opt; do
+while getopts "r:a:p:*" opt; do
   case $opt in
     r) REF="$OPTARG"
     ;;
