@@ -1,15 +1,23 @@
 #!/bin/bash
+# Copyright (c) 2025 Lukas Burgholzer
+# All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+#
+# Licensed under the MIT License
+
+#!/bin/bash
 set -e
 
-# Usage: ./scripts/toolchain/macos/simple-build.sh -t 21.1.0 [-p /path/to/llvm-install]
+# Usage: ./scripts/toolchain/macos/simple-build.sh -r llvmorg-21.1.0 [-p /path/to/llvm-install]
 
 # Default values
 INSTALL_PREFIX="${GITHUB_WORKSPACE}/llvm-install"
 
 # Parse arguments
-while getopts "t:p:*" opt; do
+while getopts "r:p:*" opt; do
   case $opt in
-    t) TAG="$OPTARG"
+    r) REF="$OPTARG"
     ;;
     p) INSTALL_PREFIX="$OPTARG"
     ;;
@@ -20,33 +28,36 @@ while getopts "t:p:*" opt; do
 done
 
 # Check for required tag argument
-if [ -z "$TAG" ]; then
-  echo "Error: Tag (-t) is required"
-  echo "Usage: $0 -t <tag> [-p /path/to/llvm-install]"
+if [ -z "$REF" ]; then
+  echo "Error: Ref (-r) is required"
+  echo "Usage: $0 -r <ref> [-p /path/to/llvm-install]"
+  exit 1
+fi
+
+# Determine architecture
+UNAME_ARCH=$(uname -m)
+
+# Determine target
+if [[ "$UNAME_ARCH" == "arm64" || "$UNAME_ARCH" == "aarch64" ]]; then
+  HOST_TARGET="AArch64"
+elif [[ "$UNAME_ARCH" == "x86_64" ]]; then
+  HOST_TARGET="X86"
+else
+  echo "Unsupported architecture on macOS: ${UNAME_ARCH}. Only x86_64 and arm64 are supported." >&2
   exit 1
 fi
 
 # Main LLVM setup function
 build_llvm() {
-  local tag=$1
+  local ref=$1
   local prefix=$2
 
-  local llvm_dir="$prefix/lib/cmake/llvm"
-  local mlir_dir="$prefix/lib/cmake/mlir"
-
-  # Check if LLVM is already installed
-  if [ -d "$llvm_dir" ] && [ -d "$mlir_dir" ]; then
-    echo "Found existing LLVM/MLIR install at $prefix. Skipping build."
-    append_dirs_to_env "$prefix"
-    return
-  fi
-
-  echo "Building LLVM/MLIR $tag into $prefix..."
+  echo "Building LLVM/MLIR $ref into $prefix..."
 
   # Clone LLVM project
   rm -rf "$prefix"
   mkdir -p "$prefix"
-  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "llvmorg-$tag" "$prefix/llvm-project"
+  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$prefix/llvm-project"
 
   pushd "$prefix/llvm-project" > /dev/null
 
@@ -55,7 +66,7 @@ build_llvm() {
   cmake -S llvm -B "$build_dir" \
     -DLLVM_ENABLE_PROJECTS=mlir \
     -DLLVM_BUILD_EXAMPLES=OFF \
-    -DLLVM_TARGETS_TO_BUILD=Native \
+    -DLLVM_TARGETS_TO_BUILD="$HOST_TARGET" \
     -DCMAKE_BUILD_TYPE=Release \
     -DLLVM_BUILD_TESTS=OFF \
     -DLLVM_INCLUDE_TESTS=OFF \
@@ -71,21 +82,7 @@ build_llvm() {
 }
 
 # Build LLVM
-build_llvm "$TAG" "$INSTALL_PREFIX"
-
-# Variables
-WORKDIR=$(pwd)
-REF="$TAG"
-UNAME_ARCH=$(uname -m)
-
-if [[ "$UNAME_ARCH" == "arm64" || "$UNAME_ARCH" == "aarch64" ]]; then
-  HOST_TARGET="AArch64"
-elif [[ "$UNAME_ARCH" == "x86_64" ]]; then
-  HOST_TARGET="X86"
-else
-  echo "Unsupported architecture on macOS: ${UNAME_ARCH}. Only x86_64 and arm64 are supported." >&2
-  exit 1
-fi
+build_llvm "$REF" "$INSTALL_PREFIX"
 
 # Prune non-essential tools
 if [[ -d "$INSTALL_PREFIX/bin" ]]; then
@@ -103,11 +100,17 @@ fi
 
 # Emit compressed archive (.tar.zst)
 if command -v gtar >/dev/null 2>&1; then TAR=gtar; else TAR=tar; fi
-ART_DIR="$WORKDIR"
+ART_DIR=$(pwd)
 SAFE_TARGETS=${HOST_TARGET//;/_}
-ARCHIVE_NAME="llvm-mlir_${REF}_macos_${UNAME_ARCH}_${SAFE_TARGETS}_opt.tar.zst"
+ARCHIVE_NAME="llvm-mlir_${REF}_macos_${UNAME_ARCH}_${SAFE_TARGETS}.tar.zst"
 if command -v zstd >/dev/null 2>&1; then
-  ( cd "${INSTALL_PREFIX}" && $TAR -cf - . | zstd -T0 -19 -o "${ART_DIR}/${ARCHIVE_NAME}" ) || true
+  ( cd "${INSTALL_PREFIX}" && $TAR -cf - . | zstd -T0 -19 -o "${ART_DIR}/${ARCHIVE_NAME}" )  || {
+    echo "Error: Failed to create archive" >&2
+    exit 1
+  }
 else
-  ( cd "${INSTALL_PREFIX}" && $TAR --zstd -cf "${ART_DIR}/${ARCHIVE_NAME}" . ) || true
+  ( cd "${INSTALL_PREFIX}" && $TAR --zstd -cf "${ART_DIR}/${ARCHIVE_NAME}" . ) || {
+    echo "Error: Failed to create archive" >&2
+    exit 1
+  }
 fi

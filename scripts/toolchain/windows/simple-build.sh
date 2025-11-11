@@ -1,15 +1,25 @@
 #!/bin/bash
+# Copyright (c) 2025 Lukas Burgholzer
+# All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+#
+# Licensed under the MIT License
+
+#!/bin/bash
 set -e
 
-# Usage: ./scripts/toolchain/windows/simple-build.sh -t 21.1.0 [-p /path/to/llvm-install]
+# Usage: ./scripts/toolchain/windows/simple-build.sh -r llvmorg-21.1.0 -a AMD64 [-p /path/to/llvm-install]
 
 # Default values
 INSTALL_PREFIX="${GITHUB_WORKSPACE}/llvm-install"
 
 # Parse arguments
-while getopts "t:p:*" opt; do
+while getopts "r:p:*" opt; do
   case $opt in
-    t) TAG="$OPTARG"
+    r) REF="$OPTARG"
+    ;;
+    a) ARCH="$OPTARG"
     ;;
     p) INSTALL_PREFIX="$OPTARG"
     ;;
@@ -19,87 +29,69 @@ while getopts "t:p:*" opt; do
   esac
 done
 
-# Check for required tag argument
-if [ -z "$TAG" ]; then
-  echo "Error: Tag (-t) is required"
-  echo "Usage: $0 -t <tag> [-p /path/to/llvm-install]"
+# Check for required ref argument
+if [ -z "$REF" ]; then
+  echo "Error: Ref (-r) is required"
+  echo "Usage: $0 -r <ref> [-p /path/to/llvm-install]"
   exit 1
 fi
 
+# Check for required architecture argument
+if [ -z "$ARCH" ]; then
+  echo "Error: Architecture (-a) is required"
+  echo "Usage: $0 -r <ref> -a <architecture> [-p /path/to/llvm-install]"
+  exit 1
+fi
+
+# Determine target
+case "$ARCH" in
+  AMD64)
+    HOST_TARGET="X86"
+    ;;
+  ARM64)
+    HOST_TARGET="AArch64"
+    ;;
+  *)
+    echo "Unsupported architecture on Windows: ${ARCH}. Only AMD64 and ARM64 are supported." >&2
+    exit 1
+    ;;
+esac
+
 # Main LLVM setup function
 build_llvm() {
-  local tag=$1
+  local ref=$1
   local prefix=$2
 
-  local llvm_dir="$prefix/lib/cmake/llvm"
-  local mlir_dir="$prefix/lib/cmake/mlir"
-
-  # Check if LLVM is already installed
-  if [ -d "$llvm_dir" ] && [ -d "$mlir_dir" ]; then
-    echo "Found existing LLVM/MLIR install at $prefix. Skipping build."
-    append_dirs_to_env "$prefix"
-    return
-  fi
-
-  echo "Building LLVM/MLIR $tag into $prefix..."
+  echo "Building LLVM/MLIR $ref into $prefix..."
 
   # Clone LLVM project
   rm -rf "$prefix"
   mkdir -p "$prefix"
-  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "llvmorg-$tag" "$prefix/llvm-project"
+  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$prefix/llvm-project"
 
   pushd "$prefix/llvm-project" > /dev/null
 
   # Build LLVM
   build_dir="build_llvm"
-
-  # Use Visual Studio generator and set Windows-specific options
-  cmake -S llvm -B "$build_dir" -G "Visual Studio 17 2022" \
+  cmake -S llvm -B "$build_dir" \
     -DLLVM_ENABLE_PROJECTS=mlir \
     -DLLVM_BUILD_EXAMPLES=OFF \
-    -DLLVM_TARGETS_TO_BUILD=Native \
+    -DLLVM_TARGETS_TO_BUILD="$HOST_TARGET" \
     -DCMAKE_BUILD_TYPE=Release \
     -DLLVM_BUILD_TESTS=OFF \
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_INCLUDE_EXAMPLES=OFF \
     -DLLVM_ENABLE_ASSERTIONS=ON \
     -DLLVM_INSTALL_UTILS=ON \
-    -DLLVM_ENABLE_RTTI=ON \
-    -DLLVM_ENABLE_ZLIB=OFF \
-    -DLLVM_ENABLE_TERMINFO=OFF \
     -DCMAKE_INSTALL_PREFIX="$prefix"
 
-  # Build tablegen first to avoid header generation issues
-  cmake --build "$build_dir" --target mlir-tblgen --config Release
-  # Then build everything else
   cmake --build "$build_dir" --target install --config Release
 
   popd > /dev/null
 }
 
 # Build LLVM
-build_llvm "$TAG" "$INSTALL_PREFIX"
-
-# Variables
-WORKDIR=$(pwd)
-REF="$TAG"
-PROCESSOR_ARCHITECTURE=${PROCESSOR_ARCHITECTURE:-AMD64}  # Windows env var
-
-# Map Windows architecture to LLVM target
-case "$PROCESSOR_ARCHITECTURE" in
-  AMD64)
-    HOST_TARGET="X86"
-    ARCH="x86_64"
-    ;;
-  ARM64)
-    HOST_TARGET="AArch64"
-    ARCH="arm64"
-    ;;
-  *)
-    echo "Unsupported architecture on Windows: ${PROCESSOR_ARCHITECTURE}. Only AMD64 and ARM64 are supported." >&2
-    exit 1
-    ;;
-esac
+build_llvm "$REF" "$INSTALL_PREFIX"
 
 # Prune non-essential tools - use Windows extensions
 if [[ -d "$INSTALL_PREFIX/bin" ]]; then
@@ -110,11 +102,9 @@ fi
 rm -rf "$INSTALL_PREFIX/lib/clang" 2>/dev/null || true
 
 # Emit compressed archive (.tar.zst)
-ART_DIR="$WORKDIR"
+ART_DIR=$(pwd)
 SAFE_TARGETS=${HOST_TARGET//;/_}
-ARCHIVE_NAME="llvm-mlir_${REF}_windows_${ARCH}_${SAFE_TARGETS}_opt.tar.zst"
-
-# Check for tar and zstd - both should be available in Git Bash
+ARCHIVE_NAME="llvm-mlir_${REF}_windows_${ARCH}_${SAFE_TARGETS}.tar.zst"
 if command -v zstd >/dev/null 2>&1; then
   ( cd "${INSTALL_PREFIX}" && tar -cf - . | zstd -T0 -19 -o "${ART_DIR}/${ARCHIVE_NAME}" ) || {
     echo "Error: Failed to create archive" >&2

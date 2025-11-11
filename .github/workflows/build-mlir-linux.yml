@@ -13,7 +13,7 @@ defaults:
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  TAG: 21.1.5
+  REF: llvmorg-21.1.5
 
 jobs:
   build:
@@ -28,12 +28,12 @@ jobs:
         uses: actions/cache@v4.3.0
         with:
           path: ~/.ccache
-          key: ccache-linux-llvmorg-${{ env.TAG }}-${{ github.ref_name }}
+          key: ccache-linux-${{ env.REF }}-${{ github.ref_name }}
           restore-keys: |
-            ccache-linux-llvmorg-${{ env.TAG }}-
+            ccache-linux-${{ env.REF }}-
             ccache-linux-
       - name: Build
-        run: bash scripts/toolchain/linux/build.sh "llvmorg-$TAG" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:

@@ -13,7 +13,7 @@ defaults:
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  TAG: 21.1.5
+  REF: llvmorg-21.1.5
 
 jobs:
   build:
@@ -28,12 +28,12 @@ jobs:
         uses: actions/cache@v4.3.0
         with:
           path: ~/.ccache
-          key: ccache-macos-llvmorg-${{ env.TAG }}-${{ github.ref_name }}
+          key: ccache-macos-${{ env.REF }}-${{ github.ref_name }}
           restore-keys: |
-            ccache-macos-llvmorg-${{ env.TAG }}-
+            ccache-macos-${{ env.REF }}-
             ccache-macos-
       - name: Build
-        run: bash scripts/toolchain/macos/simple-build.sh -t "$TAG"
+        run: bash scripts/toolchain/macos/simple-build.sh -r "$REF"
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:

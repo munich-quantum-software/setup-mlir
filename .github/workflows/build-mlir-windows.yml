@@ -13,7 +13,7 @@ defaults:
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  TAG: 21.1.5
+  REF: llvmorg-21.1.5
 
 jobs:
   build:
@@ -29,12 +29,12 @@ jobs:
         uses: actions/cache@v4.3.0
         with:
           path: ~/.ccache
-          key: ccache-windows-llvmorg-${{ env.TAG }}-${{ github.ref_name }}
+          key: ccache-windows-${{ env.REF }}-${{ github.ref_name }}
           restore-keys: |
-            ccache-windows-llvmorg-${{ env.TAG }}-
+            ccache-windows-${{ env.REF }}-
             ccache-windows-
       - name: Build
-        run: bash scripts/toolchain/windows/simple-build.sh -t "$TAG"
+        run: bash scripts/toolchain/windows/simple-build.sh -r "$REF"
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:
