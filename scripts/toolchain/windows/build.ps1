@@ -27,7 +27,7 @@ switch ($arch) {
 Write-Host "Building LLVM/MLIR $ref into $install_prefix..."
 
 # Clone LLVM project
-$repo_dir = Join-Path $PWD 'llvm-project'
+$repo_dir = Join-Path $PWD "llvm-project"
 if (Test-Path $repo_dir) { Remove-Item -Recurse -Force $repo_dir }
 git clone --depth 1 https://github.com/llvm/llvm-project.git --branch $ref $repo_dir
 
