@@ -1,39 +1,48 @@
 #!/usr/bin/env bash
 #
-# Linux wrapper: build and run manylinux_2_28 container to produce an optimized LLVM/MLIR toolchain
+# Linux wrapper: build and run manylinux_2_28 container to produce the LLVM/MLIR toolchain
 #
 # Description:
 #   Builds a manylinux_2_28 container image (arch-aware), mounts the repo and output directories,
-#   then runs the in-container build script to produce a PGO + LTO optimized LLVM/MLIR toolchain.
+#   then runs the in-container build script to produce the LLVM/MLIR toolchain.
 #   Uses ccache (mounted from the workspace) and emits a .tar.zst archive in the output directory.
 #
 # Usage:
-#   scripts/toolchain/linux/build.sh <ref> <install_prefix> [targets] [cpu_flags]
+#   scripts/toolchain/linux/build.sh -r <ref> -p <install_prefix>
 #     ref            Git ref or commit SHA (e.g., llvmorg-20.1.8 or 179d30f...)
 #     install_prefix Absolute path on the host for the final install (also where archive is written)
-#     targets        LLVM_TARGETS_TO_BUILD (default: "X86;AArch64")
-#     cpu_flags      Overrides TOOLCHAIN_CPU_FLAGS env var
-#
-# Environment (forwarded into container):
-#   TOOLCHAIN_CLEAN=1           Wipe previous builds inside the container workspace
-#   TOOLCHAIN_STAGE_FROM/TO     Limit stages (e.g., 2 and 2 for Stage2 only)
-#   TOOLCHAIN_HOST_TRIPLE       Override computed host triple
-#   TOOLCHAIN_CPU_FLAGS         Extra tuning flags (e.g., -march=haswell)
 #
 # Outputs:
 #   - Installs into <install_prefix>
-#   - Creates <install_prefix>/llvm-mlir_<ref>_linux_<arch>_<targets>_opt.tar.zst
-#
-# Example:
-#   scripts/toolchain/linux/build.sh llvmorg-20.1.8 "$PWD/llvm-install" X86
-#
+#   - Creates <install_prefix>/llvm-mlir_<ref>_linux_<arch>_<host_target>.tar.zst
+
 set -euo pipefail
 
-# Arguments: <ref-commit> <install_prefix> [targets] [cpu_flags]
-REF=${1:?ref}
-PREFIX=${2:?install_prefix}
-TARGETS_ARG=${3:-}
-CPU_FLAGS_ARG=${4:-}
+# Parse arguments
+while getopts "r:p:*" opt; do
+  case $opt in
+    r) REF="$OPTARG"
+    ;;
+    p) INSTALL_PREFIX="$OPTARG"
+    ;;
+    *) echo "Invalid option -$OPTARG" >&2
+    exit 1
+    ;;
+  esac
+done
+
+# Check arguments
+if [ -z "$REF" ]; then
+  echo "Error: Ref (-r) is required"
+  echo "Usage: $0 -r <ref> -p <installation directory>"
+  exit 1
+fi
+if [ -z "${INSTALL_PREFIX:-}" ]; then
+  echo "Error: Installation directory (-p) is required"
+  echo "Usage: $0 -r <ref> -p <installation directory>"
+  exit 1
+fi
+
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 ROOT_DIR=$(cd "$SCRIPT_DIR/../../.." && pwd)
 
@@ -50,7 +59,7 @@ DOCKERFILE="$SCRIPT_DIR/Dockerfile"
 sudo docker build --build-arg BASE_IMAGE="$BASE_IMAGE" -f "$DOCKERFILE" -t "$IMG_TAG" "$SCRIPT_DIR"
 
 # Ensure output dir exists and ccache dir
-mkdir -p "$PREFIX"
+mkdir -p "$INSTALL_PREFIX"
 CCACHE_HOST_DIR="$ROOT_DIR/.ccache"
 mkdir -p "$CCACHE_HOST_DIR"
 
@@ -60,24 +69,18 @@ REL_DIR="${SCRIPT_DIR#${ROOT_DIR}}"
 IN_CONTAINER_SCRIPT="/work${REL_DIR}/in-container.sh"
 
 # Build environment vars (only pass optional ones if provided)
-ENV_ARGS=( -e HOME=/work -e REF="$REF" -e PREFIX="/out" \
-  -e TOOLCHAIN_CLEAN="${TOOLCHAIN_CLEAN:-0}" \
-  -e TOOLCHAIN_STAGE_FROM="${TOOLCHAIN_STAGE_FROM:-0}" \
-  -e TOOLCHAIN_STAGE_TO="${TOOLCHAIN_STAGE_TO:-2}" \
-  -e TOOLCHAIN_HOST_TRIPLE="${TOOLCHAIN_HOST_TRIPLE:-}" \
+ENV_ARGS=(-e HOME=/work -e REF="$REF" -e INSTALL_PREFIX="/out" \
   -e CCACHE_DIR="/work/.ccache" \
   -e CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-4}" )
-if [[ -n "${TARGETS_ARG:-}" ]]; then ENV_ARGS+=( -e TARGETS="$TARGETS_ARG" ); fi
-if [[ -n "${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-}}" ]]; then ENV_ARGS+=( -e TOOLCHAIN_CPU_FLAGS="${CPU_FLAGS_ARG:-${TOOLCHAIN_CPU_FLAGS:-}}" ); fi
 
 # Run build inside container (privileged for perf)
 sudo docker run --rm --privileged \
   -u $(id -u):$(id -g) \
   -v "$ROOT_DIR":/work:rw \
-  -v "$PREFIX":/out:rw \
+  -v "$INSTALL_PREFIX":/out:rw \
   -v "$CCACHE_HOST_DIR":/work/.ccache:rw \
   "${ENV_ARGS[@]}" \
   "$IMG_TAG" \
   bash -eu -o pipefail "$IN_CONTAINER_SCRIPT"
 
-echo "Linux build completed at $PREFIX"
+echo "Linux build completed at $INSTALL_PREFIX"

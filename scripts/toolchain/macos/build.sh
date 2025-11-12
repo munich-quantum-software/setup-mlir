@@ -1,18 +1,8 @@
 #!/bin/bash
-# Copyright (c) 2025 Lukas Burgholzer
-# All rights reserved.
 #
-# SPDX-License-Identifier: MIT
-#
-# Licensed under the MIT License
-
-#!/bin/bash
-set -e
-
 # Usage: ./scripts/toolchain/macos/build.sh -r llvmorg-21.1.0 [-p /path/to/llvm-install]
 
-# Default values
-INSTALL_PREFIX="${GITHUB_WORKSPACE}/llvm-install"
+set -euo pipefail
 
 # Parse arguments
 while getopts "r:p:*" opt; do
@@ -27,10 +17,15 @@ while getopts "r:p:*" opt; do
   esac
 done
 
-# Check for required tag argument
+# Check arguments
 if [ -z "$REF" ]; then
   echo "Error: Ref (-r) is required"
-  echo "Usage: $0 -r <ref> [-p /path/to/llvm-install]"
+  echo "Usage: $0 -r <ref> -p <installation directory>"
+  exit 1
+fi
+if [ -z "${INSTALL_PREFIX:-}" ]; then
+  echo "Error: Installation directory (-p) is required"
+  echo "Usage: $0 -r <ref> -p <installation directory>"
   exit 1
 fi
 
@@ -81,7 +76,6 @@ build_llvm() {
   popd > /dev/null
 }
 
-# Build LLVM
 build_llvm "$REF" "$INSTALL_PREFIX"
 
 # Prune non-essential tools
@@ -99,10 +93,9 @@ if command -v strip >/dev/null 2>&1; then
 fi
 
 # Emit compressed archive (.tar.zst)
-if command -v gtar >/dev/null 2>&1; then TAR=gtar; else TAR=tar; fi
 ART_DIR=$(pwd)
-SAFE_TARGETS=${HOST_TARGET//;/_}
-ARCHIVE_NAME="llvm-mlir_${REF}_macos_${UNAME_ARCH}_${SAFE_TARGETS}.tar.zst"
+ARCHIVE_NAME="llvm-mlir_${REF}_macos_${UNAME_ARCH}_${HOST_TARGET}.tar.zst"
+if command -v gtar >/dev/null 2>&1; then TAR=gtar; else TAR=tar; fi
 if command -v zstd >/dev/null 2>&1; then
   ( cd "${INSTALL_PREFIX}" && $TAR -cf - . | zstd -T0 -19 -o "${ART_DIR}/${ARCHIVE_NAME}" )  || {
     echo "Error: Failed to create archive" >&2

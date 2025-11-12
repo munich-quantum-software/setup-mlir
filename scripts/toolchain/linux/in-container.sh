@@ -6,12 +6,13 @@
 #
 # Licensed under the MIT License
 
+#
 # Usage: ./scripts/toolchain/linux/build.sh -r llvmorg-21.1.0 [-p /path/to/llvm-install]
 
 set -euo pipefail
 
 : "${REF:?REF (commit) not set}"
-: "${PREFIX:?PREFIX not set}"
+: "${INSTALL_PREFIX:?INSTALL_PREFIX not set}"
 
 cd /work
 
@@ -31,14 +32,14 @@ fi
 # Main LLVM setup function
 build_llvm() {
   local ref=$1
-  local prefix=$2
+  local INSTALL_PREFIX=$2
 
-  echo "Building LLVM/MLIR $ref into $prefix..."
+  echo "Building LLVM/MLIR $ref into $INSTALL_PREFIX..."
 
   # Clone LLVM project
-  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$prefix/llvm-project"
+  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$INSTALL_PREFIX/llvm-project"
 
-  pushd "$prefix/llvm-project" > /dev/null
+  pushd "$INSTALL_PREFIX/llvm-project" > /dev/null
 
   # Build LLVM
   build_dir="build_llvm"
@@ -52,42 +53,39 @@ build_llvm() {
     -DLLVM_INCLUDE_EXAMPLES=OFF \
     -DLLVM_ENABLE_ASSERTIONS=ON \
     -DLLVM_INSTALL_UTILS=ON \
-    -DCMAKE_INSTALL_PREFIX="$prefix"
+    -DCMAKE_INSTALL_INSTALL_PREFIX="$INSTALL_PREFIX"
 
   cmake --build "$build_dir" --target install --config Release
 
   popd > /dev/null
 }
 
-# Build LLVM
-build_llvm "$REF" "$PREFIX"
+build_llvm "$REF" "$INSTALL_PREFIX"
 
 # Prune non-essential tools
-if [[ -d "$PREFIX/bin" ]]; then
-  rm -f "$PREFIX/bin"/clang* "$PREFIX/bin"/clang-?* "$PREFIX/bin"/clang++* \
-        "$PREFIX/bin"/clangd "$PREFIX/bin"/clang-format* "$PREFIX/bin"/clang-tidy* \
-        "$PREFIX/bin"/lld* "$PREFIX/bin"/llvm-bolt "$PREFIX/bin"/perf2bolt 2>/dev/null || true
+if [[ -d "$INSTALL_PREFIX/bin" ]]; then
+  rm -f "$INSTALL_PREFIX/bin"/clang* "$INSTALL_PREFIX/bin"/clang-?* "$INSTALL_PREFIX/bin"/clang++* \
+        "$INSTALL_PREFIX/bin"/clangd "$INSTALL_PREFIX/bin"/clang-format* "$INSTALL_PREFIX/bin"/clang-tidy* \
+        "$INSTALL_PREFIX/bin"/lld* "$INSTALL_PREFIX/bin"/llvm-bolt "$INSTALL_PREFIX/bin"/perf2bolt 2>/dev/null || true
 fi
-rm -rf "$PREFIX/lib/clang" 2>/dev/null || true
+rm -rf "$INSTALL_PREFIX/lib/clang" 2>/dev/null || true
 
-# Strip binaries (use appropriate flags for Linux)
+# Strip binaries
 if command -v strip >/dev/null 2>&1; then
-  find "$PREFIX/bin" -type f -executable -exec strip --strip-debug {} + 2>/dev/null || true
-  find "$PREFIX/lib" -name "*.a" -exec strip --strip-debug {} + 2>/dev/null || true
+  find "$INSTALL_PREFIX/bin" -type f -executable -exec strip --strip-debug {} + 2>/dev/null || true
+  find "$INSTALL_PREFIX/lib" -name "*.a" -exec strip --strip-debug {} + 2>/dev/null || true
 fi
 
 # Emit compressed archive (.tar.zst)
 ART_DIR=$(pwd)
-SAFE_TARGETS=${HOST_TARGET//;/_}
-ARCHIVE_NAME="llvm-mlir_${REF}_linux_${UNAME_ARCH}_${SAFE_TARGETS}.tar.zst"
-
+ARCHIVE_NAME="llvm-mlir_${REF}_linux_${UNAME_ARCH}_${HOST_TARGET}.tar.zst"
 if command -v zstd >/dev/null 2>&1; then
-  ( cd "${PREFIX}" && tar -cf - . | zstd -T0 -19 -o "${ART_DIR}/${ARCHIVE_NAME}" ) || {
+  ( cd "${INSTALL_PREFIX}" && tar -cf - . | zstd -T0 -19 -o "${ART_DIR}/${ARCHIVE_NAME}" ) || {
     echo "Error: Failed to create archive" >&2
     exit 1
   }
 else
-  ( cd "${PREFIX}" && tar --zstd -cf "${ART_DIR}/${ARCHIVE_NAME}" . ) || {
+  ( cd "${INSTALL_PREFIX}" && tar --zstd -cf "${ART_DIR}/${ARCHIVE_NAME}" . ) || {
     echo "Error: Failed to create archive" >&2
     exit 1
   }

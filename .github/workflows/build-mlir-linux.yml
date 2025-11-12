@@ -8,10 +8,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    shell: bash
-
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   REF: llvmorg-21.1.5
@@ -34,7 +30,7 @@ jobs:
             ccache-linux-${{ env.REF }}-
             ccache-linux-
       - name: Build
-        run: bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+        run: bash ${{ github.workspace }}/scripts/toolchain/linux/build.sh -r "$REF" -p ${{ github.workspace }}/llvm-install
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:
