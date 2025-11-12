@@ -13,24 +13,21 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-env:
-  REF: ${{ github.event.inputs.ref || 'llvmorg-21.1.5' }}
-
 jobs:
   linux:
     uses: ./.github/workflows/build-mlir-linux.yml
     with:
-      ref: ${{ github.env.REF }}
+      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
 
   macos:
     uses: ./.github/workflows/build-mlir-macos.yml
     with:
-      ref: ${{ github.env.REF }}
+      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
 
   windows:
     uses: ./.github/workflows/build-mlir-windows.yml
     with:
-      ref: ${{ github.env.REF }}
+      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
 
   release:
     needs: [linux, macos, windows]
