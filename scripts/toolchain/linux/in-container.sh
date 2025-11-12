@@ -53,7 +53,7 @@ build_llvm() {
     -DLLVM_INCLUDE_EXAMPLES=OFF \
     -DLLVM_ENABLE_ASSERTIONS=ON \
     -DLLVM_INSTALL_UTILS=ON \
-    -DCMAKE_INSTALL_INSTALL_PREFIX="$INSTALL_PREFIX"
+    -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX"
 
   cmake --build "$build_dir" --target install --config Release
 
