@@ -22,50 +22,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # linux:
-  #   uses: ./.github/workflows/build-mlir-linux.yml
-  #   with:
-  #     ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
-
-  # macos:
-  #   uses: ./.github/workflows/build-mlir-macos.yml
-  #   with:
-  #     ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
-
-  # windows:
-  #   uses: ./.github/workflows/build-mlir-windows.yml
-  #   with:
-  #     ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
-
   linux:
-    runs-on: ubuntu-24.04
-    steps:
-      - run: echo "Linux build step placeholder" > linux.txt
-      - name: Upload artifact
-        uses: actions/upload-artifact@v5.0.0
-        with:
-          name: linux
-          path: linux.txt
+    uses: ./.github/workflows/build-mlir-linux.yml
+    with:
+      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
 
   macos:
-    runs-on: ubuntu-24.04
-    steps:
-      - run: echo "macOS build step placeholder" > macos.txt
-      - name: Upload artifact
-        uses: actions/upload-artifact@v5.0.0
-        with:
-          name: macos
-          path: macos.txt
+    uses: ./.github/workflows/build-mlir-macos.yml
+    with:
+      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
 
   windows:
-    runs-on: ubuntu-24.04
-    steps:
-      - run: echo "Windows build step placeholder" > windows.txt
-      - name: Upload artifact
-        uses: actions/upload-artifact@v5.0.0
-        with:
-          name: windows
-          path: windows.txt
+    uses: ./.github/workflows/build-mlir-windows.yml
+    with:
+      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
 
   release:
     needs: [linux, macos, windows]
@@ -82,7 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ${{ inputs.tag || 'test-release-3'}} \
+          gh release create ${{ inputs.tag || 'test-release-4'}} \
                             artifacts/**/* \
                             --title "Test Release" \
                             --notes "This is a test release. It will be deleted."
