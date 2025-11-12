@@ -62,14 +62,23 @@ try {
 # Remove non-essential binaries from bin directory
 $install_bin = Join-Path $install_prefix "bin"
 if (Test-Path $install_bin) {
-    Write-Host "Cleaning up extraneous binaries..."
-    Get-ChildItem -Path $install_bin -Filter @('clang*.exe', 'clang-?*.exe', 'clang++*.exe', 'clangd.exe', 'clang-format*.exe', 'clang-tidy*.exe', 'lld*.exe', 'llvm-bolt.exe', 'perf2bolt.exe') -ErrorAction SilentlyContinue | Remove-Item -ErrorAction SilentlyContinue
+    $patterns = @(
+        'clang*.exe',
+        'clang-?*.exe',
+        'clang++*.exe',
+        'clangd.exe',
+        'clang-format*.exe',
+        'clang-tidy*.exe',
+        'lld*.exe',
+        'llvm-bolt.exe',
+        'perf2bolt.exe'
+    )
+    Get-ChildItem -Path $install_bin -Include $patterns -File | Remove-Item -ErrorAction SilentlyContinue
 }
 
 # Remove lib/clang directory
 $install_lib_clang = Join-Path $install_prefix "lib\clang"
 if (Test-Path $install_lib_clang) {
-    Write-Host "Removing $install_lib_clang directory..."
     Remove-Item -Path $install_lib_clang -Recurse -Force -ErrorAction SilentlyContinue
 }
 
