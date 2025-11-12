@@ -1,0 +1,23 @@
+name: Test Windows Architecture
+
+on:
+  pull_request:
+
+jobs:
+  windows-architecture-powershell:
+    runs-on: windows-11-arm
+    steps:
+      - name: Check architecture
+        shell: powershell
+        run: |
+          Write-Host "Processor architecture: $env:PROCESSOR_ARCHITECTURE"
+          [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+
+  windows-architecture-bash:
+    runs-on: windows-11-arm
+    steps:
+      - name: Check architecture
+        shell: bash
+        run: |
+          echo "Processor architecture: $PROCESSOR_ARCHITECTURE"
+          uname -m
