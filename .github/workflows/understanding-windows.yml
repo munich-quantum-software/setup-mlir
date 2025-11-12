@@ -21,3 +21,4 @@ jobs:
         run: |
           echo "Processor architecture: $PROCESSOR_ARCHITECTURE"
           uname -m
+          wmic OS get OSArchitecture /value | grep OSArchitecture | cut -d= -f2 | tr -d '\r\n[:space:]'
