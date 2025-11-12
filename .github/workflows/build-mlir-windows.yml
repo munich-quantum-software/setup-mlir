@@ -8,10 +8,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    shell: bash
-
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   REF: llvmorg-21.1.5
@@ -35,7 +31,9 @@ jobs:
             ccache-windows-${{ env.REF }}-
             ccache-windows-
       - name: Build
-        run: bash scripts/toolchain/windows/build.sh -r "$REF" -a "${{ matrix.runs-on == 'windows-2022' && 'AMD64' || 'ARM64' }}"
+        run: |
+          choco install -y zstandard
+          & ${{ github.workspace }}\scripts\install-mlir.ps1 -tag test-release -install_prefix ${{ github.workspace }}\llvm-install
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:
