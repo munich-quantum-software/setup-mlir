@@ -22,20 +22,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # linux:
+  #   uses: ./.github/workflows/build-mlir-linux.yml
+  #   with:
+  #     ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
+
+  # macos:
+  #   uses: ./.github/workflows/build-mlir-macos.yml
+  #   with:
+  #     ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
+
+  # windows:
+  #   uses: ./.github/workflows/build-mlir-windows.yml
+  #   with:
+  #     ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
+
   linux:
-    uses: ./.github/workflows/build-mlir-linux.yml
-    with:
-      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "Linux build step placeholder" > linux.txt
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: linux
+          path: linux.txt
 
   macos:
-    uses: ./.github/workflows/build-mlir-macos.yml
-    with:
-      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "macOS build step placeholder" > macos.txt
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: macos
+          path: macos.txt
 
   windows:
-    uses: ./.github/workflows/build-mlir-windows.yml
-    with:
-      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "Windows build step placeholder" > windows.txt
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: windows
+          path: windows.txt
 
   release:
     needs: [linux, macos, windows]
@@ -46,7 +76,13 @@ jobs:
         uses: actions/checkout@v5.0.0
       - name: Download artifacts
         uses: actions/download-artifact@v5.0.0
+        with:
+          path: artifacts
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create ${{ inputs.tag || 'test-release-3'}} ubuntu-24.04-archive ubuntu-24.04-arm-archive macos-15-archive macos-15-intel-archive windows-2022-archive windows-11-arm-archive --title "Test Release 2" --notes "This is a test release. It will be deleted."
+        run: |
+          gh release create ${{ inputs.tag || 'test-release-3'}} \
+                            artifacts/**/* \
+                            --title "Test Release" \
+                            --notes "This is a test release. It will be deleted."
