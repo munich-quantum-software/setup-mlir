@@ -6,7 +6,7 @@
 #
 # Licensed under the MIT License
 
-# Usage: ./scripts/toolchain/linux/simple-build.sh -r llvmorg-21.1.0 [-p /path/to/llvm-install]
+# Usage: ./scripts/toolchain/linux/build.sh -r llvmorg-21.1.0 [-p /path/to/llvm-install]
 
 set -euo pipefail
 

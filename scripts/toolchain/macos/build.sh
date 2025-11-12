@@ -9,7 +9,7 @@
 #!/bin/bash
 set -e
 
-# Usage: ./scripts/toolchain/macos/simple-build.sh -r llvmorg-21.1.0 [-p /path/to/llvm-install]
+# Usage: ./scripts/toolchain/macos/build.sh -r llvmorg-21.1.0 [-p /path/to/llvm-install]
 
 # Default values
 INSTALL_PREFIX="${GITHUB_WORKSPACE}/llvm-install"

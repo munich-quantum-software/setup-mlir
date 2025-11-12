@@ -9,7 +9,7 @@
 #!/bin/bash
 set -e
 
-# Usage: ./scripts/toolchain/windows/simple-build.sh -r llvmorg-21.1.0 -a AMD64 [-p /path/to/llvm-install]
+# Usage: ./scripts/toolchain/windows/build.sh -r llvmorg-21.1.0 -a AMD64 [-p /path/to/llvm-install]
 
 # Default values
 INSTALL_PREFIX="${GITHUB_WORKSPACE}/llvm-install"

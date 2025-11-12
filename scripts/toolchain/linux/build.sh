@@ -57,7 +57,7 @@ mkdir -p "$CCACHE_HOST_DIR"
 # Determine path to in-container script once mounted at /work
 # If ROOT_DIR is mounted at /work, then SCRIPT_DIR becomes /work${REL_DIR}
 REL_DIR="${SCRIPT_DIR#${ROOT_DIR}}"
-IN_CONTAINER_SCRIPT="/work${REL_DIR}/simple-in-container.sh"
+IN_CONTAINER_SCRIPT="/work${REL_DIR}/in-container.sh"
 
 # Build environment vars (only pass optional ones if provided)
 ENV_ARGS=( -e HOME=/work -e REF="$REF" -e PREFIX="/out" \

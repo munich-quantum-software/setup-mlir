@@ -34,7 +34,7 @@ jobs:
             ccache-macos-${{ env.REF }}-
             ccache-macos-
       - name: Build
-        run: bash scripts/toolchain/macos/simple-build.sh -r "$REF"
+        run: bash scripts/toolchain/macos/build.sh -r "$REF"
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:

@@ -35,7 +35,7 @@ jobs:
             ccache-windows-${{ env.REF }}-
             ccache-windows-
       - name: Build
-        run: bash scripts/toolchain/windows/simple-build.sh -r "$REF" -a "${{ matrix.runs-on == 'windows-2022' && 'AMD64' || 'ARM64' }}"
+        run: bash scripts/toolchain/windows/build.sh -r "$REF" -a "${{ matrix.runs-on == 'windows-2022' && 'AMD64' || 'ARM64' }}"
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:
