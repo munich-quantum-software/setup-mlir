@@ -10,7 +10,7 @@ on:
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  REF: ${{ github.event.inputs.ref }}
+  REF: ${{ inputs.ref }}
 
 jobs:
   build:

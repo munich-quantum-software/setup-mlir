@@ -10,7 +10,7 @@ on:
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  REF: ${{ github.event.inputs.ref }}
+  REF: ${{ inputs.ref }}
 
 jobs:
   build:
@@ -33,7 +33,7 @@ jobs:
       - name: Build
         run: |
           choco install -y zstandard
-          & ${{ github.workspace }}\scripts\install-mlir.ps1 -ref ${{ env.REF }} -install_prefix ${{ github.workspace }}\llvm-install
+          & ${{ github.workspace }}\scripts\toolchain\windows\build.ps1 -ref ${{ env.REF }} -install_prefix ${{ github.workspace }}\llvm-install
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:
