@@ -1,8 +1,12 @@
 name: 🏁 Build Portable MLIR Toolchain
 
 on:
-  workflow_dispatch:
-  # pull_request:
+  workflow_call:
+    inputs:
+      ref:
+        description: "llvm-project ref or tag (e.g., llvmorg-21.1.0)"
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -10,7 +14,7 @@ concurrency:
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  REF: llvmorg-21.1.5
+  REF: ${{ github.event.inputs.ref }}
 
 jobs:
   build:
@@ -33,7 +37,7 @@ jobs:
       - name: Build
         run: |
           choco install -y zstandard
-          & ${{ github.workspace }}\scripts\install-mlir.ps1 -tag test-release -install_prefix ${{ github.workspace }}\llvm-install
+          & ${{ github.workspace }}\scripts\install-mlir.ps1 -ref ${{ env.REF }} -install_prefix ${{ github.workspace }}\llvm-install
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:

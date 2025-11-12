@@ -7,324 +7,40 @@ on:
         description: "llvm-project ref or tag (e.g., llvmorg-21.1.0)"
         required: true
         default: "llvmorg-21.1.0"
-      targets:
-        description: "LLVM_TARGETS_TO_BUILD (e.g., X86;AArch64 or auto)"
-        required: false
-        default: "auto"
-      cpu_flags:
-        description: "Extra CPU flags (optional)"
-        required: false
-        default: ""
-  # pull_request:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    shell: bash
-
 env:
-  REF: ${{ github.event.inputs.ref || 'llvmorg-21.1.0' }}
+  REF: ${{ github.event.inputs.ref || 'llvmorg-21.1.5' }}
 
 jobs:
-  linux-stage1:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Restore ccache
-        uses: actions/cache@v4.3.0
-        with:
-          path: .ccache
-          key: ccache-linux-${{ env.REF }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-linux-${{ env.REF }}-
-            ccache-linux-
-      - name: Build Stage1 (Linux x64)
-        run: bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 1
-          TOOLCHAIN_STAGE_TO: 1
-      - name: Upload pgoprof
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-stage1-outputs
-          path: pgoprof
-          if-no-files-found: error
+  linux:
+    uses: ./.github/workflows/build-mlir-linux.yml
+    with:
+      ref: ${{ github.env.REF }}
 
-  linux-arm-stage1:
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Restore ccache
-        uses: actions/cache@v4.3.0
-        with:
-          path: .ccache
-          key: ccache-linux-arm-${{ env.REF }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-linux-arm-${{ env.REF }}-
-            ccache-linux-arm-
-      - name: Build Stage1 (Linux ARM64)
-        run: bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 1
-          TOOLCHAIN_STAGE_TO: 1
-      - name: Upload pgoprof
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-arm-stage1-outputs
-          path: pgoprof
-          if-no-files-found: error
+  macos:
+    uses: ./.github/workflows/build-mlir-macos.yml
+    with:
+      ref: ${{ github.env.REF }}
 
-  linux-stage2:
-    needs: linux-stage1
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Restore ccache
-        uses: actions/cache@v4.3.0
-        with:
-          path: .ccache
-          key: ccache-linux-${{ env.REF }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-linux-${{ env.REF }}-
-            ccache-linux-
-      - name: Download stage1 outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-stage1-outputs
-          path: .
-      - name: Build Stage2 (Linux x64)
-        run: bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 2
-          TOOLCHAIN_STAGE_TO: 2
-      - name: Upload Linux final artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-final-archive
-          path: llvm-install/*.tar.zst
-          if-no-files-found: error
+  windows:
+    uses: ./.github/workflows/build-mlir-windows.yml
+    with:
+      ref: ${{ github.env.REF }}
 
-  linux-arm-stage2:
-    needs: linux-arm-stage1
-    runs-on: ubuntu-24.04-arm
+  release:
+    needs: [linux, macos, windows]
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Restore ccache
-        uses: actions/cache@v4.3.0
-        with:
-          path: .ccache
-          key: ccache-linux-arm-${{ env.REF }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-linux-arm-${{ env.REF }}-
-            ccache-linux-arm-
-      - name: Download stage1 outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-arm-stage1-outputs
-          path: .
-      - name: Build Stage2 (Linux ARM64)
-        run: bash scripts/toolchain/linux/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
+      - name: Checkout repository
+        uses: actions/checkout@v5.0.0
+      - name: Download artifacts
+        uses: actions/download-artifact@v5.0.0
+      - name: Create GitHub Release
         env:
-          TOOLCHAIN_STAGE_FROM: 2
-          TOOLCHAIN_STAGE_TO: 2
-      - name: Upload Linux final artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-arm-final-archive
-          path: llvm-install/*.tar.zst
-          if-no-files-found: error
-
-  macos-stage1:
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Restore ccache
-        uses: actions/cache@v4.3.0
-        with:
-          path: ~/.ccache
-          key: ccache-macos-${{ env.REF }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-macos-${{ env.REF }}-
-            ccache-macos-
-      - name: Build Stage1 (macOS arm64)
-        run: bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 1
-          TOOLCHAIN_STAGE_TO: 1
-      - name: Upload pgoprof
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-stage1-outputs
-          path: pgoprof
-          if-no-files-found: error
-
-  macos-intel-stage1:
-    runs-on: macos-15-intel
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Restore ccache
-        uses: actions/cache@v4.3.0
-        with:
-          path: ~/.ccache
-          key: ccache-macos-intel-${{ env.REF }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-macos-intel-${{ env.REF }}-
-            ccache-macos-intel-
-      - name: Build Stage1 (macOS Intel)
-        run: bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 1
-          TOOLCHAIN_STAGE_TO: 1
-      - name: Upload pgoprof
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-intel-stage1-outputs
-          path: pgoprof
-          if-no-files-found: error
-
-  macos-stage2:
-    needs: macos-stage1
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Restore ccache
-        uses: actions/cache@v4.3.0
-        with:
-          path: ~/.ccache
-          key: ccache-macos-${{ env.REF }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-macos-${{ env.REF }}-
-            ccache-macos-
-      - name: Download stage1 outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-stage1-outputs
-          path: .
-      - name: Build Stage2 (macOS arm64)
-        run: bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 2
-          TOOLCHAIN_STAGE_TO: 2
-      - name: Upload macOS final artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-final-archive
-          path: llvm-install/*.tar.zst
-          if-no-files-found: error
-
-  macos-intel-stage2:
-    needs: macos-intel-stage1
-    runs-on: macos-15-intel
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Restore ccache
-        uses: actions/cache@v4.3.0
-        with:
-          path: ~/.ccache
-          key: ccache-macos-intel-${{ env.REF }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-macos-intel-${{ env.REF }}-
-            ccache-macos-intel-
-      - name: Download stage1 outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-intel-stage1-outputs
-          path: .
-      - name: Build Stage2 (macOS Intel)
-        run: bash scripts/toolchain/macos/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 2
-          TOOLCHAIN_STAGE_TO: 2
-      - name: Upload macOS final artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-intel-final-archive
-          path: llvm-install/*.tar.zst
-          if-no-files-found: error
-
-  windows-stage1:
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Install zstd
-        run: choco install -y zstandard
-      - name: Build Stage1 (Windows x64)
-        run: bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 1
-          TOOLCHAIN_STAGE_TO: 1
-      - name: Upload pgoprof
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-stage1-outputs
-          path: pgoprof
-          if-no-files-found: error
-
-  windows-arm-stage1:
-    runs-on: windows-11-arm
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Install zstd
-        run: choco install -y zstandard
-      - name: Build Stage1 (Windows ARM64)
-        run: bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 1
-          TOOLCHAIN_STAGE_TO: 1
-      - name: Upload pgoprof
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-arm-stage1-outputs
-          path: pgoprof
-          if-no-files-found: error
-
-  windows-stage2:
-    needs: windows-stage1
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Install zstd
-        run: choco install -y zstandard
-      - name: Download stage1 outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-stage1-outputs
-          path: .
-      - name: Build Stage2 (Windows x64)
-        run: bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 2
-          TOOLCHAIN_STAGE_TO: 2
-      - name: Upload Windows final artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-final-archive
-          path: llvm-install/*.tar.zst
-          if-no-files-found: error
-
-  windows-arm-stage2:
-    needs: windows-arm-stage1
-    runs-on: windows-11-arm
-    steps:
-      - uses: actions/checkout@v5.0.0
-      - name: Install zstd
-        run: choco install -y zstandard
-      - name: Download stage1 outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-arm-stage1-outputs
-          path: .
-      - name: Build Stage2 (Windows ARM64)
-        run: bash scripts/toolchain/windows/build.sh "$REF" "$GITHUB_WORKSPACE/llvm-install"
-        env:
-          TOOLCHAIN_STAGE_FROM: 2
-          TOOLCHAIN_STAGE_TO: 2
-      - name: Upload Windows final artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-arm-final-archive
-          path: llvm-install/*.tar.zst
-          if-no-files-found: error
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create test-release-2 ubuntu-24.04-archive ubuntu-24.04-arm-archive macos-15-archive macos-15-intel-archive windows-2022-archive windows-11-arm-archive --title "Test Release 2" --notes "This is a test release. It will be deleted."
