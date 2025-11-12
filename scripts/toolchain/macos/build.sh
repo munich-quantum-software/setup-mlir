@@ -69,7 +69,8 @@ build_llvm() {
     -DLLVM_ENABLE_ASSERTIONS=ON \
     -DLLVM_INSTALL_UTILS=ON \
     -DLLVM_ENABLE_RTTI=ON \
-    -DCMAKE_INSTALL_PREFIX="$prefix"
+    -DCMAKE_INSTALL_PREFIX="$prefix" \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-11.0}
 
   cmake --build "$build_dir" --target install --config Release
 
