@@ -26,4 +26,6 @@ jobs:
         with:
           name: release-artifact
       - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: gh release create test-release-2 artifact.txt --title "Test Release 2" --notes "This is a test release. It will be deleted."
