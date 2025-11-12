@@ -16,7 +16,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runs-on: [ubuntu-24.04, ubuntu-24.04-arm]
+        # runs-on: [ubuntu-24.04, ubuntu-24.04-arm]
+        runs-on: [ubuntu-24.04-arm]
     runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@v5.0.0
