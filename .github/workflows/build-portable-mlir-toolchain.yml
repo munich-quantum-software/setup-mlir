@@ -6,7 +6,15 @@ on:
       ref:
         description: "llvm-project ref or tag (e.g., llvmorg-21.1.0)"
         required: true
-        default: "llvmorg-21.1.0"
+        type: string
+      release:
+        description: "Whether to create a GitHub Release with the built artifacts"
+        required: true
+        type: boolean
+      tag:
+        description: "Tag for the GitHub Release"
+        required: false
+        type: string
   pull_request:
 
 concurrency:
@@ -31,6 +39,7 @@ jobs:
 
   release:
     needs: [linux, macos, windows]
+    if: ${{ inputs.release == true || true }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -40,4 +49,4 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create test-release-2 ubuntu-24.04-archive ubuntu-24.04-arm-archive macos-15-archive macos-15-intel-archive windows-2022-archive windows-11-arm-archive --title "Test Release 2" --notes "This is a test release. It will be deleted."
+        run: gh release create ${{ inputs.tag || 'test-release-3'}} ubuntu-24.04-archive ubuntu-24.04-arm-archive macos-15-archive macos-15-intel-archive windows-2022-archive windows-11-arm-archive --title "Test Release 2" --notes "This is a test release. It will be deleted."
