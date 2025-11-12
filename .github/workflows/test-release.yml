@@ -1,0 +1,29 @@
+name: Test Release
+
+on:
+  pull_request:
+
+jobs:
+  create-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5.0.0
+      - name: Create release artifact
+        run: echo "This is a test release artifact." > artifact.txt
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: release-artifact
+          path: artifact.txt
+
+  create-release:
+    needs: create-artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v5.0.0
+        with:
+          name: release-artifact
+      - name: Create GitHub Release
+        run: gh release create test-release-2 artifact.txt --title "Test Release 2" --notes "This is a test release. It will be deleted."
