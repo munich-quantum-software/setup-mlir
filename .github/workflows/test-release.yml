@@ -21,6 +21,8 @@ jobs:
     needs: create-artifact
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v5.0.0
       - name: Download release artifact
         uses: actions/download-artifact@v5.0.0
         with:
