@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Usage: ./scripts/toolchain/macos/build.sh -r llvmorg-21.1.0 [-p /path/to/llvm-install]
+# Usage: ./scripts/toolchain/macos/build.sh -r <ref> -p <installation directory>
 
 set -euo pipefail
 

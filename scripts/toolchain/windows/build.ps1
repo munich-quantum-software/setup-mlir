@@ -1,4 +1,4 @@
-# Usage: & ./scripts/toolchain/windows/build.ps1 -ref <ref> -install_prefix <installation directory>
+# Usage: scripts/toolchain/windows/build.ps1 -ref <ref> -install_prefix <installation directory>
 param(
     [Parameter(Mandatory=$true)]
     [string]$ref,

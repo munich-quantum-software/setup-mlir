@@ -20,14 +20,6 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@v5.0.0
-      - name: Restore ccache
-        uses: actions/cache@v4.3.0
-        with:
-          path: ~/.ccache
-          key: ccache-macos-${{ inputs.ref }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-macos-${{ inputs.ref }}-
-            ccache-macos-
       - name: Build
         run: bash ${{ github.workspace }}/scripts/toolchain/macos/build.sh -r ${{ inputs.ref }} -p ${{ github.workspace }}/llvm-install
       - name: Upload archive

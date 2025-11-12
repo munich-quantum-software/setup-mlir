@@ -21,18 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5.0.0
       - run: choco install -y zstandard
-      - name: Restore ccache
-        uses: actions/cache@v4.3.0
-        with:
-          path: ~/.ccache
-          key: ccache-windows-${{ inputs.ref }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-windows-${{ inputs.ref }}-
-            ccache-windows-
       - name: Build
-        run: |
-          choco install -y zstandard
-          & ${{ github.workspace }}\scripts\toolchain\windows\build.ps1 -ref ${{ inputs.ref }} -install_prefix ${{ github.workspace }}\llvm-install
+        run: pwsh ${{ github.workspace }}\scripts\toolchain\windows\build.ps1 -ref ${{ inputs.ref }} -install_prefix ${{ github.workspace }}\llvm-install
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:
