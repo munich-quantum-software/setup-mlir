@@ -10,7 +10,6 @@ on:
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  REF: ${{ inputs.ref }}
 
 jobs:
   build:
@@ -26,14 +25,14 @@ jobs:
         uses: actions/cache@v4.3.0
         with:
           path: ~/.ccache
-          key: ccache-windows-${{ env.REF }}-${{ github.ref_name }}
+          key: ccache-windows-${{ inputs.ref }}-${{ github.ref_name }}
           restore-keys: |
-            ccache-windows-${{ env.REF }}-
+            ccache-windows-${{ inputs.ref }}-
             ccache-windows-
       - name: Build
         run: |
           choco install -y zstandard
-          & ${{ github.workspace }}\scripts\toolchain\windows\build.ps1 -ref ${{ env.REF }} -install_prefix ${{ github.workspace }}\llvm-install
+          & ${{ github.workspace }}\scripts\toolchain\windows\build.ps1 -ref ${{ inputs.ref }} -install_prefix ${{ github.workspace }}\llvm-install
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:

@@ -10,7 +10,6 @@ on:
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  REF: ${{ inputs.ref }}
 
 jobs:
   build:
@@ -25,12 +24,12 @@ jobs:
         uses: actions/cache@v4.3.0
         with:
           path: ~/.ccache
-          key: ccache-macos-${{ env.REF }}-${{ github.ref_name }}
+          key: ccache-macos-${{ inputs.ref }}-${{ github.ref_name }}
           restore-keys: |
-            ccache-macos-${{ env.REF }}-
+            ccache-macos-${{ inputs.ref }}-
             ccache-macos-
       - name: Build
-        run: bash ${{ github.workspace }}/scripts/toolchain/macos/build.sh -r "$REF" -p ${{ github.workspace }}/llvm-install
+        run: bash ${{ github.workspace }}/scripts/toolchain/macos/build.sh -r ${{ inputs.ref }} -p ${{ github.workspace }}/llvm-install
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:
