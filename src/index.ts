@@ -1,9 +1,9 @@
-// Copyright (c) 2025 Lukas Burgholzer
-// All rights reserved.
-//
-// SPDX-License-Identifier: MIT
-//
-// Licensed under the MIT License
+/*
+ * Copyright (c) 2025 Lukas Burgholzer
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
 
 import * as core from "@actions/core"
 import * as tc from "@actions/tool-cache"

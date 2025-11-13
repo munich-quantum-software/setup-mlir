@@ -4,7 +4,7 @@
     "years": [2025]
   },
   "force_author": true,
-  "license": "MIT",
+  "custom_license": "SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception",
   "title": false,
   "include": ["**/*"],
   "style_override_for_suffix": {
@@ -15,7 +15,8 @@
     ".yaml": "POUND_STYLE",
     ".toml": "POUND_STYLE",
     ".proto": "SLASH_STYLE",
-    ".ts": "SLASH_STYLE"
+    ".ts": "C_STYLE",
+    ".ps1": "POUND_STYLE"
   },
   "exclude": [
     "^\\.[^/]+",
@@ -34,7 +35,6 @@
     ".*\\.tex",
     "uv\\.lock",
     "py\\.typed",
-    ".*build.*",
     "Dockerfile"
   ]
 }

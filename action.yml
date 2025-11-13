@@ -1,9 +1,7 @@
 # Copyright (c) 2025 Lukas Burgholzer
 # All rights reserved.
 #
-# SPDX-License-Identifier: MIT
-#
-# Licensed under the MIT License
+# Apache-2.0 WITH LLVM-exception
 
 name: "Set up LLVM/MLIR"
 description: "Set up a specific version of the LLVM/MLIR toolchain"

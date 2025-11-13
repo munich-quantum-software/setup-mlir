@@ -2,11 +2,8 @@
 # Copyright (c) 2025 Lukas Burgholzer
 # All rights reserved.
 #
-# SPDX-License-Identifier: MIT
-#
-# Licensed under the MIT License
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#
 # Usage: ./scripts/toolchain/linux/build.sh -r llvmorg-21.1.0 [-p /path/to/llvm-install]
 
 set -euo pipefail

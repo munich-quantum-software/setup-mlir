@@ -1,5 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/bash
+# Copyright (c) 2025 Lukas Burgholzer
+# All rights reserved.
 #
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 # Linux wrapper: build and run manylinux_2_28 container to produce the LLVM/MLIR toolchain
 #
 # Description:

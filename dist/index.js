@@ -31869,12 +31869,12 @@ class Octokit {
 
 
 ;// CONCATENATED MODULE: ./src/get-download-link.ts
-// Copyright (c) 2025 Lukas Burgholzer
-// All rights reserved.
-//
-// SPDX-License-Identifier: MIT
-//
-// Licensed under the MIT License
+/*
+ * Copyright (c) 2025 Lukas Burgholzer
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
 
 
 /**
@@ -31978,12 +31978,12 @@ function findAsset(assets, platform, architecture) {
 const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
 ;// CONCATENATED MODULE: ./src/index.ts
-// Copyright (c) 2025 Lukas Burgholzer
-// All rights reserved.
-//
-// SPDX-License-Identifier: MIT
-//
-// Licensed under the MIT License
+/*
+ * Copyright (c) 2025 Lukas Burgholzer
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
 
 
 

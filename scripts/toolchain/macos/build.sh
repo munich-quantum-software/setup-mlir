@@ -1,5 +1,9 @@
 #!/bin/bash
+# Copyright (c) 2025 Lukas Burgholzer
+# All rights reserved.
 #
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 # Usage: ./scripts/toolchain/macos/build.sh -r <ref> -p <installation directory>
 
 set -euo pipefail

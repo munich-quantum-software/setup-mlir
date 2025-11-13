@@ -1,4 +1,10 @@
-# Usage: scripts/toolchain/windows/build.ps1 -ref <ref> -install_prefix <installation directory>
+# Copyright (c) 2025 Lukas Burgholzer
+# All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+# Usage: pwsh scripts/toolchain/windows/build.ps1 -ref <ref> -install_prefix <installation directory>
+
 param(
     [Parameter(Mandatory=$true)]
     [string]$ref,

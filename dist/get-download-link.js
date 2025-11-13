@@ -1,10 +1,5 @@
 "use strict";
-// Copyright (c) 2025 Lukas Burgholzer
-// All rights reserved.
-//
-// SPDX-License-Identifier: MIT
-//
-// Licensed under the MIT License
+
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
