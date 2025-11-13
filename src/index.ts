@@ -12,7 +12,7 @@ import getDownloadLink from "./get-download-link.js"
 import path from "node:path"
 
 /**
- * Setup LLVM/MLIR toolchain
+ * Setup MLIR toolchain
  * @returns {Promise<void>}
  */
 async function run(): Promise<void> {
@@ -27,10 +27,10 @@ async function run(): Promise<void> {
   const file = await tc.downloadTool(asset.url)
   core.debug("==> Extracting asset")
   const dir = await tc.extractTar(path.resolve(file), undefined, ["--zstd", "-xv"])
-  core.debug("==> Adding LLVM/MLIR toolchain to tool cache")
+  core.debug("==> Adding MLIR toolchain to tool cache")
   const cachedPath = await tc.cacheDir(dir, "llvm-mlir-toolchain", tag)
 
-  core.debug("==> Adding LLVM/MLIR toolchain to PATH")
+  core.debug("==> Adding MLIR toolchain to PATH")
   core.addPath(path.join(cachedPath, "bin"))
   core.debug("==> Exporting LLVM_DIR")
   core.exportVariable("LLVM_DIR", path.join(cachedPath, "lib", "cmake", "llvm"))
@@ -39,9 +39,9 @@ async function run(): Promise<void> {
 }
 
 try {
-  core.debug("==> Starting LLVM/MLIR toolchain setup")
+  core.debug("==> Starting MLIR toolchain setup")
   run()
-  core.debug("==> Finished LLVM/MLIR toolchain setup")
+  core.debug("==> Finished MLIR toolchain setup")
 } catch (error) {
   if (typeof error === "string") {
     core.setFailed(error)

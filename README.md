@@ -2,7 +2,7 @@ Portable LLVM/MLIR Optimized Toolchain (PGO + ThinLTO [+ BOLT on Linux])
 
 Overview
 
-- This directory is a self-contained, copy-ready bundle of scripts and CI to build optimized, portable LLVM/MLIR toolchains for Linux, macOS, and Windows.
+- This directory is a self-contained, copy-ready bundle of scripts and CI to build optimized, portable MLIR toolchains for Linux, macOS, and Windows.
 - It is designed so you can copy the CONTENTS of this directory into a new repository and start experimenting immediately.
 
 What's included

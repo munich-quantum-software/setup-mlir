@@ -31989,7 +31989,7 @@ var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_nod
 
 
 /**
- * Setup LLVM/MLIR toolchain
+ * Setup MLIR toolchain
  * @returns {Promise<void>}
  */
 async function run() {
@@ -32003,9 +32003,9 @@ async function run() {
     const file = await tool_cache.downloadTool(asset.url);
     core.debug("==> Extracting asset");
     const dir = await tool_cache.extractTar(external_node_path_default().resolve(file), undefined, ["--zstd", "-xv"]);
-    core.debug("==> Adding LLVM/MLIR toolchain to tool cache");
+    core.debug("==> Adding MLIR toolchain to tool cache");
     const cachedPath = await tool_cache.cacheDir(dir, "llvm-mlir-toolchain", tag);
-    core.debug("==> Adding LLVM/MLIR toolchain to PATH");
+    core.debug("==> Adding MLIR toolchain to PATH");
     core.addPath(external_node_path_default().join(cachedPath, "bin"));
     core.debug("==> Exporting LLVM_DIR");
     core.exportVariable("LLVM_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "llvm"));
@@ -32013,9 +32013,9 @@ async function run() {
     core.exportVariable("MLIR_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "mlir"));
 }
 try {
-    core.debug("==> Starting LLVM/MLIR toolchain setup");
+    core.debug("==> Starting MLIR toolchain setup");
     run();
-    core.debug("==> Finished LLVM/MLIR toolchain setup");
+    core.debug("==> Finished MLIR toolchain setup");
 }
 catch (error) {
     if (typeof error === "string") {

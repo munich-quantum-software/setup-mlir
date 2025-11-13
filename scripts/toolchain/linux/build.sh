@@ -4,11 +4,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Linux wrapper: build and run manylinux_2_28 container to produce the LLVM/MLIR toolchain
+# Linux wrapper: build and run manylinux_2_28 container to produce the MLIR toolchain
 #
 # Description:
 #   Builds a manylinux_2_28 container image (arch-aware), mounts the repo and output directories,
-#   then runs the in-container build script to produce the LLVM/MLIR toolchain.
+#   then runs the in-container build script to produce the MLIR toolchain.
 #   Uses ccache (mounted from the workspace) and emits a .tar.zst archive in the output directory.
 #
 # Usage:

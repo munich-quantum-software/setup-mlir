@@ -1,7 +1,7 @@
 {
-  "name": "portable-mlir-toolchain",
+  "name": "setup-mlir",
   "version": "1.0.0",
-  "description": "Portable LLVM/MLIR Toolchain",
+  "description": "Portable MLIR toolchain",
   "main": "./dist/index.js",
   "scripts": {
     "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt",
