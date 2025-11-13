@@ -25,9 +25,6 @@ inputs:
     description: "The token that the action will use to query the GitHub API. Defaults to the repository's GitHub token."
     required: false
     default: ${{ github.token }}
-outputs:
-  llvm-mlir-root:
-    description: "The root directory of the installed LLVM/MLIR toolchain."
 runs:
   using: "node24"
   main: "dist/index.js"

@@ -30185,8 +30185,6 @@ var __webpack_exports__ = {};
 var core = __nccwpck_require__(7484);
 // EXTERNAL MODULE: ./node_modules/@actions/tool-cache/lib/tool-cache.js
 var tool_cache = __nccwpck_require__(3472);
-// EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
-var exec = __nccwpck_require__(5236);
 ;// CONCATENATED MODULE: external "node:process"
 const external_node_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:process");
 var external_node_process_default = /*#__PURE__*/__nccwpck_require__.n(external_node_process_namespaceObject);
@@ -31990,7 +31988,6 @@ var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_nod
 
 
 
-
 /**
  * Setup LLVM/MLIR toolchain
  * @returns {Promise<void>}
@@ -32008,17 +32005,12 @@ async function run() {
     const dir = await tool_cache.extractTar(external_node_path_default().resolve(file), undefined, ["--zstd", "-xv"]);
     core.debug("==> Adding LLVM/MLIR toolchain to tool cache");
     const cachedPath = await tool_cache.cacheDir(dir, "llvm-mlir-toolchain", tag);
-    core.info(`==> LLVM/MLIR toolchain cached to ${cachedPath}`);
-    core.info(`==> LLVM/MLIR dir: ${dir}`);
-    const prova = await exec.exec(`ls -la ${dir}`);
-    const llvmMlirRoot = external_node_path_default().join(cachedPath, asset.name.replace(/\.tar\.zst$/, ""));
-    core.setOutput("llvm-mlir-root", llvmMlirRoot);
     core.debug("==> Adding LLVM/MLIR toolchain to PATH");
-    core.addPath(external_node_path_default().join(llvmMlirRoot, "bin"));
+    core.addPath(external_node_path_default().join(cachedPath, "bin"));
     core.debug("==> Exporting LLVM_DIR");
-    core.exportVariable("LLVM_DIR", external_node_path_default().join(llvmMlirRoot, "lib", "cmake", "llvm"));
+    core.exportVariable("LLVM_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "llvm"));
     core.debug("==> Exporting MLIR_DIR");
-    core.exportVariable("MLIR_DIR", external_node_path_default().join(llvmMlirRoot, "lib", "cmake", "mlir"));
+    core.exportVariable("MLIR_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "mlir"));
 }
 try {
     core.debug("==> Starting LLVM/MLIR toolchain setup");

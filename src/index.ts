@@ -30,20 +30,12 @@ async function run(): Promise<void> {
   core.debug("==> Adding LLVM/MLIR toolchain to tool cache")
   const cachedPath = await tc.cacheDir(dir, "llvm-mlir-toolchain", tag)
 
-  core.info(`==> LLVM/MLIR toolchain cached to ${cachedPath}`)
-  core.info(`==> LLVM/MLIR dir: ${dir}`)
-  const prova = await exec.exec(`ls -la ${dir}`)
-  core.info(`==> LS output: ${prova}`)
-
-  const llvmMlirRoot = path.join(cachedPath, asset.name.replace(/\.tar\.zst$/, ""))
-  core.setOutput("llvm-mlir-root", llvmMlirRoot)
-
   core.debug("==> Adding LLVM/MLIR toolchain to PATH")
-  core.addPath(path.join(llvmMlirRoot, "bin"))
+  core.addPath(path.join(cachedPath, "bin"))
   core.debug("==> Exporting LLVM_DIR")
-  core.exportVariable("LLVM_DIR", path.join(llvmMlirRoot, "lib", "cmake", "llvm"))
+  core.exportVariable("LLVM_DIR", path.join(cachedPath, "lib", "cmake", "llvm"))
   core.debug("==> Exporting MLIR_DIR")
-  core.exportVariable("MLIR_DIR", path.join(llvmMlirRoot, "lib", "cmake", "mlir"))
+  core.exportVariable("MLIR_DIR", path.join(cachedPath, "lib", "cmake", "mlir"))
 }
 
 try {
