@@ -40,6 +40,29 @@ git clone --depth 1 https://github.com/llvm/llvm-project.git --branch $ref $repo
 # Change to repo directory
 pushd $repo_dir > $null
 
+# Build LLD
+$install_prefix_lld = Join-Path $install_prefix "lld"
+try {
+    $build_dir_lld = 'build_lld'
+    $cmake_args_lld = @(
+        '-S', 'llvm',
+        '-B', $build_dir_lld,
+        '-G', 'Visual Studio 17 2022',
+        '-DCMAKE_BUILD_TYPE=Release',
+        "-DCMAKE_INSTALL_PREFIX=$install_prefix_lld",
+        '-DLLVM_ENABLE_PROJECTS=lld',
+        "-DLLVM_TARGETS_TO_BUILD=$host_target"
+    )
+    cmake @cmake_args_lld
+
+    cmake --build $build_dir_lld --target install --config Release
+} catch {
+    # Return to original directory
+    popd > $null
+}
+
+$lld_path = Join-Path $install_prefix_lld "bin\lld-link.exe"
+
 # Build LLVM
 try {
     $build_dir = 'build_llvm'
@@ -49,9 +72,11 @@ try {
         '-G', 'Visual Studio 17 2022',
         '-DCMAKE_BUILD_TYPE=Release',
         "-DCMAKE_INSTALL_PREFIX=$install_prefix",
+        "-DCMAKE_LINKER=$lld_path",
         '-DLLVM_BUILD_EXAMPLES=OFF',
         '-DLLVM_BUILD_TESTS=OFF',
         '-DLLVM_ENABLE_ASSERTIONS=ON',
+        '-DLLVM_ENABLE_LTO=FULL',
         '-DLLVM_ENABLE_PROJECTS=mlir',
         '-DLLVM_ENABLE_RTTI=ON',
         '-DLLVM_INCLUDE_EXAMPLES=OFF',
