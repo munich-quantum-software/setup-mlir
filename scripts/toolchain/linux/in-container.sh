@@ -44,6 +44,8 @@ build_llvm() {
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_C_COMPILER=gcc \
     -DCMAKE_CXX_COMPILER=g++ \
+    -DCMAKE_AR=$(which gcc-ar) \
+    -DCMAKE_RANLIB=$(which gcc-ranlib) \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
     -DLLVM_BUILD_EXAMPLES=OFF \
     -DLLVM_BUILD_TESTS=OFF \
