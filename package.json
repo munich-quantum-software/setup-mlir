@@ -2,9 +2,9 @@
   "name": "portable-mlir-toolchain",
   "version": "1.0.0",
   "description": "Portable LLVM/MLIR Toolchain",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -12,18 +12,22 @@
     "url": "git+https://github.com/burgholzer/portable-mlir-toolchain.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "burgholzer",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/burgholzer/portable-mlir-toolchain/issues"
   },
   "homepage": "https://github.com/burgholzer/portable-mlir-toolchain#readme",
   "dependencies": {
     "@actions/core": "^1.11.1",
-    "@actions/github": "^6.0.1",
     "@actions/tool-cache": "^2.0.2",
+    "@octokit/core": "^7.0.6",
+    "@octokit/openapi-types": "^27.0.0"
+  },
+  "devDependencies": {
     "@types/node": "^24.10.1",
+    "@vercel/ncc": "^0.38.4",
     "typescript": "^5.9.3"
   }
 }
