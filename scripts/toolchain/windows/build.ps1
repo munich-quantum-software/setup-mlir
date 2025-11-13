@@ -46,16 +46,18 @@ try {
     $cmake_args = @(
         '-S', 'llvm',
         '-B', $build_dir,
-        '-DLLVM_ENABLE_PROJECTS=mlir',
-        '-DLLVM_BUILD_EXAMPLES=OFF',
-        "-DLLVM_TARGETS_TO_BUILD=$host_target",
+        '-G', 'Visual Studio 17 2022',
         '-DCMAKE_BUILD_TYPE=Release',
+        "-DCMAKE_INSTALL_PREFIX=$install_prefix",
+        '-DLLVM_BUILD_EXAMPLES=OFF',
         '-DLLVM_BUILD_TESTS=OFF',
-        '-DLLVM_INCLUDE_TESTS=OFF',
-        '-DLLVM_INCLUDE_EXAMPLES=OFF',
         '-DLLVM_ENABLE_ASSERTIONS=ON',
+        '-DLLVM_ENABLE_PROJECTS=mlir',
+        '-DLLVM_ENABLE_RTTI=ON',
+        '-DLLVM_INCLUDE_EXAMPLES=OFF',
+        '-DLLVM_INCLUDE_TESTS=OFF',
         '-DLLVM_INSTALL_UTILS=ON',
-        "-DCMAKE_INSTALL_PREFIX=$install_prefix"
+        "-DLLVM_TARGETS_TO_BUILD=$host_target"
     )
     cmake @cmake_args
 
