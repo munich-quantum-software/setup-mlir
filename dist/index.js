@@ -32002,7 +32002,7 @@ async function run() {
     core.debug(`==> Downloading asset: ${asset.url}`);
     const file = await tool_cache.downloadTool(asset.url);
     core.debug("==> Extracting asset");
-    const dir = await tool_cache.extractTar(external_node_path_default().resolve(file), undefined, ["--zstd"]);
+    const dir = await tool_cache.extractTar(external_node_path_default().resolve(file), undefined, ["--zstd", "-xv"]);
     core.debug("==> Adding LLVM/MLIR toolchain to tool cache");
     const cachedPath = await tool_cache.cacheDir(dir, "llvm-mlir-toolchain", tag);
     const llvmMlirRoot = external_node_path_default().join(cachedPath, asset.name.replace(/\.tar\.zst$/, ""));

@@ -25,7 +25,7 @@ async function run(): Promise<void> {
   core.debug(`==> Downloading asset: ${asset.url}`)
   const file = await tc.downloadTool(asset.url)
   core.debug("==> Extracting asset")
-  const dir = await tc.extractTar(path.resolve(file), undefined, ["--zstd"])
+  const dir = await tc.extractTar(path.resolve(file), undefined, ["--zstd", "-xv"])
   core.debug("==> Adding LLVM/MLIR toolchain to tool cache")
   const cachedPath = await tc.cacheDir(dir, "llvm-mlir-toolchain", tag)
 
