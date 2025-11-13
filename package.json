@@ -1,0 +1,28 @@
+{
+  "name": "portable-mlir-toolchain",
+  "version": "1.0.0",
+  "description": "Portable LLVM/MLIR Toolchain",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/burgholzer/portable-mlir-toolchain.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/burgholzer/portable-mlir-toolchain/issues"
+  },
+  "homepage": "https://github.com/burgholzer/portable-mlir-toolchain#readme",
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.1",
+    "@actions/tool-cache": "^2.0.2",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
+  }
+}

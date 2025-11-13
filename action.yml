@@ -1,0 +1,36 @@
+# Copyright (c) 2025 Lukas Burgholzer
+# All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+#
+# Licensed under the MIT License
+
+name: "Set up LLVM/MLIR"
+description: "Set up a specific version of the LLVM/MLIR toolchain"
+author: "burgholzer"
+inputs:
+  tag:
+    description: "The tag of the LLVM/MLIR toolchain to install."
+    required: true
+    type: string
+  platform:
+    description: "The platform to install the LLVM/MLIR toolchain for (either linux, macOS, or windows). Defaults to host."
+    required: false
+    default: "host"
+  architecture:
+    description: "The architecture to install the LLVM/MLIR toolchain for (either X86 or AArch64). Defaults to host."
+    required: false
+    default: "host"
+  token:
+    description: "The token that the action will use to query the GitHub API. Defaults to the repository's GitHub token."
+    required: false
+    default: ${{ github.token }}
+outputs:
+  llvm-mlir-root:
+    description: "The root directory of the installed LLVM/MLIR toolchain."
+runs:
+  using: "node24"
+  main: "dist/index.js"
+branding:
+  icon: "package"
+  color: "blue"

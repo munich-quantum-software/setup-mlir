@@ -12,6 +12,11 @@ ci:
   autoupdate_schedule: quarterly
   autofix_commit_msg: "🎨 pre-commit fixes"
 
+exclude: >
+  (?x)^(
+      dist/.*|package.*\.json
+  )$
+
 repos:
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.8.19
