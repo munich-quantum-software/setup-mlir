@@ -7,6 +7,7 @@
 
 import * as core from "@actions/core"
 import * as tc from "@actions/tool-cache"
+import * as exec from "@actions/exec"
 import getDownloadLink from "./get-download-link.js"
 import path from "node:path"
 
@@ -28,6 +29,11 @@ async function run(): Promise<void> {
   const dir = await tc.extractTar(path.resolve(file), undefined, ["--zstd", "-xv"])
   core.debug("==> Adding LLVM/MLIR toolchain to tool cache")
   const cachedPath = await tc.cacheDir(dir, "llvm-mlir-toolchain", tag)
+
+  core.info(`==> LLVM/MLIR toolchain cached to ${cachedPath}`)
+  core.info(`==> LLVM/MLIR dir: ${dir}`)
+  const prova = await exec.exec(`ls -la ${dir}`)
+  core.info(`==> LS output: ${prova}`)
 
   const llvmMlirRoot = path.join(cachedPath, asset.name.replace(/\.tar\.zst$/, ""))
   core.setOutput("llvm-mlir-root", llvmMlirRoot)
