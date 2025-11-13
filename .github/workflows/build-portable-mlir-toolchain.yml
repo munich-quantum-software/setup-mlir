@@ -52,7 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ${{ inputs.tag || 'test-release-4'}} \
+          gh release create ${{ inputs.tag || 'test-release-5'}} \
                             artifacts/**/* \
                             --title "Test Release" \
                             --notes "This is a test release. It will be deleted."
