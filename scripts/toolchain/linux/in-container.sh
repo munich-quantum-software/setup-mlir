@@ -42,6 +42,8 @@ build_llvm() {
   build_dir="build_llvm"
   cmake -S llvm -B "$build_dir" \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_AR=$(which llvm-ar) \
+    -DCMAKE_RANLIB=$(which llvm-ranlib) \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
     -DLLVM_BUILD_EXAMPLES=OFF \
     -DLLVM_BUILD_TESTS=OFF \
