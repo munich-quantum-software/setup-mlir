@@ -16,7 +16,7 @@ FROM ${BASE_IMAGE}
 
 # Install build dependencies
 RUN yum -y update && \
-    yum -y install git curl zstd xz tar which && \
+    yum -y install git curl zstd xz tar which gcc-c++ && \
     yum clean all && rm -rf /var/cache/yum
 
 ENV PATH=/usr/bin:$PATH
