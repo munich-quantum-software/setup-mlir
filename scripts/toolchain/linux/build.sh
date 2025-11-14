@@ -62,10 +62,8 @@ DOCKERFILE="$SCRIPT_DIR/Dockerfile"
 # Build container image
 sudo docker build --build-arg BASE_IMAGE="$BASE_IMAGE" -f "$DOCKERFILE" -t "$IMG_TAG" "$SCRIPT_DIR"
 
-# Ensure output dir exists and ccache dir
+# Ensure output dir exists
 mkdir -p "$INSTALL_PREFIX"
-CCACHE_HOST_DIR="$ROOT_DIR/.ccache"
-mkdir -p "$CCACHE_HOST_DIR"
 
 # Determine path to in-container script once mounted at /work
 # If ROOT_DIR is mounted at /work, then SCRIPT_DIR becomes /work${REL_DIR}
@@ -74,7 +72,6 @@ IN_CONTAINER_SCRIPT="/work${REL_DIR}/in-container.sh"
 
 # Build environment vars (only pass optional ones if provided)
 ENV_ARGS=(-e HOME=/work -e REF="$REF" -e INSTALL_PREFIX="/out" \
-  -e CCACHE_DIR="/work/.ccache" \
   -e CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-4}" )
 
 # Run build inside container (privileged for perf)
@@ -82,9 +79,8 @@ sudo docker run --rm --privileged \
   -u $(id -u):$(id -g) \
   -v "$ROOT_DIR":/work:rw \
   -v "$INSTALL_PREFIX":/out:rw \
-  -v "$CCACHE_HOST_DIR":/work/.ccache:rw \
   "${ENV_ARGS[@]}" \
   "$IMG_TAG" \
-  bash -eu -o pipefail "$IN_CONTAINER_SCRIPT"
+  bash -euo pipefail "$IN_CONTAINER_SCRIPT"
 
 echo "Linux build completed at $INSTALL_PREFIX"

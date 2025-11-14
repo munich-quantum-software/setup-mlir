@@ -7,10 +7,6 @@
 # Inputs:
 #   ARG BASE_IMAGE  Base manylinux_2_28 image (arch-specific), provided by wrapper.
 #
-# Installs:
-#   - Build tools: git, cmake, ninja-build, gcc-c++, make, which, tar, xz, zstd
-#   - Runtime helpers: python3 + pip, curl, perf (for BOLT profiling), ccache
-#
 # Notes:
 #   - The container runs without an entrypoint; the wrapper script binds /work and /out,
 #     sets env, and invokes scripts/toolchain/linux/in-container.sh.
@@ -20,7 +16,7 @@ FROM ${BASE_IMAGE}
 
 # Install build dependencies
 RUN yum -y update && \
-    yum -y install git cmake ninja-build python3 python3-pip curl zstd xz tar which gcc-c++ make perf ccache && \
+    yum -y install git curl zstd xz tar which && \
     yum clean all && rm -rf /var/cache/yum
 
 ENV PATH=/usr/bin:$PATH
