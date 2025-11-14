@@ -20,6 +20,11 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@v5.0.0
+      - name: Free up some space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: Build
         run: bash ${{ github.workspace }}/scripts/toolchain/linux/build.sh -r ${{ inputs.ref }} -p ${{ github.workspace }}/llvm-install
       - name: Upload archive
