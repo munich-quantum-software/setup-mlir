@@ -88,9 +88,16 @@ build_llvm "$REF" "$INSTALL_PREFIX"
 
 # Prune non-essential tools
 if [[ -d "$INSTALL_PREFIX/bin" ]]; then
-  rm -f "$INSTALL_PREFIX/bin"/clang* "$INSTALL_PREFIX/bin"/clang-?* "$INSTALL_PREFIX/bin"/clang++* \
-        "$INSTALL_PREFIX/bin"/clangd "$INSTALL_PREFIX/bin"/clang-format* "$INSTALL_PREFIX/bin"/clang-tidy* \
-        "$INSTALL_PREFIX/bin"/lld* "$INSTALL_PREFIX/bin"/llvm-bolt "$INSTALL_PREFIX/bin"/perf2bolt 2>/dev/null || true
+  rm -f "$INSTALL_PREFIX/bin/clang*" \
+        "$INSTALL_PREFIX/bin/clang-?*" \
+        "$INSTALL_PREFIX/bin/clang++*" \
+        "$INSTALL_PREFIX/bin/clangd" \
+        "$INSTALL_PREFIX/bin/clang-format*" \
+        "$INSTALL_PREFIX/bin/clang-tidy*" \
+        "$INSTALL_PREFIX/bin/lld*" \
+        "$INSTALL_PREFIX/bin/llvm-bolt" \
+        "$INSTALL_PREFIX/bin/perf2bolt" \
+        2>/dev/null || true
 fi
 rm -rf "$INSTALL_PREFIX/lib/clang" 2>/dev/null || true
 
@@ -101,16 +108,16 @@ if command -v strip >/dev/null 2>&1; then
 fi
 
 # Emit compressed archive (.tar.zst)
-ART_DIR=$(pwd)
 ARCHIVE_NAME="llvm-mlir_${REF}_macos_${UNAME_ARCH}_${HOST_TARGET}.tar.zst"
+ARCHIVE_PATH="$(pwd)/${ARCHIVE_NAME}"
 if command -v gtar >/dev/null 2>&1; then TAR=gtar; else TAR=tar; fi
 if command -v zstd >/dev/null 2>&1; then
-  ( cd "${INSTALL_PREFIX}" && $TAR -cf - . | zstd -T0 -19 -o "${ART_DIR}/${ARCHIVE_NAME}" )  || {
+  ( cd "${INSTALL_PREFIX}" && $TAR -cf - . | zstd -T0 -19 -o "${ARCHIVE_PATH}" )  || {
     echo "Error: Failed to create archive" >&2
     exit 1
   }
 else
-  ( cd "${INSTALL_PREFIX}" && $TAR --zstd -cf "${ART_DIR}/${ARCHIVE_NAME}" . ) || {
+  ( cd "${INSTALL_PREFIX}" && $TAR --zstd -cf "${ARCHIVE_PATH}" . ) || {
     echo "Error: Failed to create archive" >&2
     exit 1
   }
