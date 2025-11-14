@@ -34,9 +34,11 @@ build_llvm() {
   echo "Building LLVM/MLIR $ref into $INSTALL_PREFIX..."
 
   # Clone LLVM project
-  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$INSTALL_PREFIX/llvm-project"
+  repo_dir="$PWD/llvm-project"
+  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$repo_dir"
 
-  pushd "$INSTALL_PREFIX/llvm-project" > /dev/null
+  # Change to repo directory
+  pushd "$repo_dir" > /dev/null
 
   # Build LLVM
   build_dir="build_llvm"
@@ -57,9 +59,9 @@ build_llvm() {
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_INSTALL_UTILS=ON \
     -DLLVM_TARGETS_TO_BUILD="$HOST_TARGET"
-
   cmake --build "$build_dir" --target install --config Release
 
+  # Return to original directory
   popd > /dev/null
 }
 
@@ -86,17 +88,25 @@ if command -v strip >/dev/null 2>&1; then
   find "$INSTALL_PREFIX/lib" -name "*.a" -exec strip --strip-debug {} + 2>/dev/null || true
 fi
 
-# Emit compressed archive (.tar.zst)
+# Define archive variables
 ARCHIVE_NAME="llvm-mlir_${REF}_linux_${UNAME_ARCH}_${HOST_TARGET}.tar.zst"
 ARCHIVE_PATH="$(pwd)/${ARCHIVE_NAME}"
+
+# Change to installation directory
+pushd $INSTALL_PREFIX > /dev/null
+
+# Emit compressed archive (.tar.zst)
 if command -v zstd >/dev/null 2>&1; then
-  ( cd "${INSTALL_PREFIX}" && tar -cf - . | zstd -T0 -19 -o "${ARCHIVE_PATH}" ) || {
+  ( tar -cf - . | zstd -T0 -19 -o "${ARCHIVE_PATH}" ) || {
     echo "Error: Failed to create archive" >&2
     exit 1
   }
 else
-  ( cd "${INSTALL_PREFIX}" && tar --zstd -cf "${ARCHIVE_PATH}" . ) || {
+  ( tar --zstd -cf "${ARCHIVE_PATH}" . ) || {
     echo "Error: Failed to create archive" >&2
     exit 1
   }
 fi
+
+# Return to original directory
+popd > /dev/null

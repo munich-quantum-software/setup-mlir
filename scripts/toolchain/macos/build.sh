@@ -49,16 +49,17 @@ fi
 # Main LLVM setup function
 build_llvm() {
   local ref=$1
-  local prefix=$2
+  local install_prefix=$2
 
-  echo "Building LLVM/MLIR $ref into $prefix..."
+  echo "Building LLVM/MLIR $ref into $install_prefix..."
 
   # Clone LLVM project
-  rm -rf "$prefix"
-  mkdir -p "$prefix"
-  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$prefix/llvm-project"
+  repo_dir="$PWD/llvm-project"
+  rm -rf "$repo_dir"
+  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$repo_dir"
 
-  pushd "$prefix/llvm-project" > /dev/null
+  # Change to repo directory
+  pushd "$repo_dir" > /dev/null
 
   # Build LLVM
   build_dir="build_llvm"
@@ -66,7 +67,7 @@ build_llvm() {
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_C_COMPILER=clang \
     -DCMAKE_CXX_COMPILER=clang++ \
-    -DCMAKE_INSTALL_PREFIX="$prefix" \
+    -DCMAKE_INSTALL_PREFIX="$install_prefix" \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-11.0} \
     -DLLVM_BUILD_EXAMPLES=OFF \
     -DLLVM_BUILD_TESTS=OFF \
@@ -78,9 +79,9 @@ build_llvm() {
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_INSTALL_UTILS=ON \
     -DLLVM_TARGETS_TO_BUILD="$HOST_TARGET"
-
   cmake --build "$build_dir" --target install --config Release
 
+  # Return to original directory
   popd > /dev/null
 }
 
@@ -107,18 +108,26 @@ if command -v strip >/dev/null 2>&1; then
   find "$INSTALL_PREFIX/lib" -name "*.a" -exec strip -S {} + 2>/dev/null || true
 fi
 
-# Emit compressed archive (.tar.zst)
+# Define archive variables
 ARCHIVE_NAME="llvm-mlir_${REF}_macos_${UNAME_ARCH}_${HOST_TARGET}.tar.zst"
 ARCHIVE_PATH="$(pwd)/${ARCHIVE_NAME}"
+
+# Change to installation directory
+pushd $INSTALL_PREFIX > /dev/null
+
+# Emit compressed archive (.tar.zst)
 if command -v gtar >/dev/null 2>&1; then TAR=gtar; else TAR=tar; fi
 if command -v zstd >/dev/null 2>&1; then
-  ( cd "${INSTALL_PREFIX}" && $TAR -cf - . | zstd -T0 -19 -o "${ARCHIVE_PATH}" )  || {
+  ( $TAR -cf - . | zstd -T0 -19 -o "${ARCHIVE_PATH}" )  || {
     echo "Error: Failed to create archive" >&2
     exit 1
   }
 else
-  ( cd "${INSTALL_PREFIX}" && $TAR --zstd -cf "${ARCHIVE_PATH}" . ) || {
+  ( $TAR --zstd -cf "${ARCHIVE_PATH}" . ) || {
     echo "Error: Failed to create archive" >&2
     exit 1
   }
 fi
+
+# Return to original directory
+popd > /dev/null
