@@ -50,7 +50,11 @@ try {
         '-G', 'Visual Studio 17 2022',
         '-DCMAKE_BUILD_TYPE=Release',
         "-DCMAKE_INSTALL_PREFIX=$install_prefix_lld",
+        '-DLLVM_BUILD_EXAMPLES=OFF',
+        '-DLLVM_BUILD_TESTS=OFF',
         '-DLLVM_ENABLE_PROJECTS=lld',
+        '-DLLVM_INCLUDE_EXAMPLES=OFF',
+        '-DLLVM_INCLUDE_TESTS=OFF',
         "-DLLVM_TARGETS_TO_BUILD=$host_target"
     )
     cmake @cmake_args_lld
