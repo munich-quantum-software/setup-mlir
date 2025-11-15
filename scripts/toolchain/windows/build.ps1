@@ -45,17 +45,9 @@ Write-Host "Building LLVM/MLIR $ref into $install_prefix..."
 # Fetch LLVM project source archive
 $repo_dir = Join-Path $PWD "llvm-project"
 if (Test-Path $repo_dir) { Remove-Item -Recurse -Force $repo_dir }
-
-$zipPath = Join-Path $env:TEMP "llvm-project-$ref.zip"
-$archiveUrl = "https://github.com/llvm/llvm-project/archive/$ref.zip"
-$tmpExtract = Join-Path $env:TEMP "llvm-project-$ref"
-
-Invoke-WebRequest -Uri $archiveUrl -OutFile $zipPath
-if (Test-Path $tmpExtract) { Remove-Item -Recurse -Force $tmpExtract }
-Expand-Archive -Path $zipPath -DestinationPath $tmpExtract -Force
-
-Move-Item -Path (Join-Path $tmpExtract "llvm-project-$ref") -Destination $repo_dir
-Remove-Item -Recurse -Force $tmpExtract, $zipPath
+New-Item -ItemType Directory -Path $repo_dir -Force | Out-Null
+$archiveUrl = "https://github.com/llvm/llvm-project/archive/$ref.tar.gz"
+Invoke-WebRequest -Uri $archiveUrl -OutFile - | tar -xz --strip-components=1 -C $repo_dir
 
 # Change to repo directory
 pushd $repo_dir > $null
@@ -99,8 +91,8 @@ try {
         "-DCMAKE_LINKER=$lld_path",
         '-DLLVM_BUILD_EXAMPLES=OFF',
         '-DLLVM_BUILD_TESTS=OFF',
-        '-DLLVM_ENABLE_LTO=THIN',
         '-DLLVM_ENABLE_ASSERTIONS=OFF',
+        '-DLLVM_ENABLE_LTO=ON',
         '-DLLVM_ENABLE_PROJECTS=mlir',
         '-DLLVM_ENABLE_RTTI=ON',
         '-DLLVM_INCLUDE_EXAMPLES=OFF',
