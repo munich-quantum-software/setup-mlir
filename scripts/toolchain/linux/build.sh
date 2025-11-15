@@ -65,12 +65,6 @@ if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
   BASE_IMAGE="quay.io/pypa/manylinux_2_28_aarch64"
 fi
 
-IMG_TAG="llvm-mlir-manylinux-2_28:${ARCH}"
-DOCKERFILE="$SCRIPT_DIR/Dockerfile"
-
-# Build container image
-sudo docker build --build-arg BASE_IMAGE="$BASE_IMAGE" -f "$DOCKERFILE" -t "$IMG_TAG" "$SCRIPT_DIR"
-
 # Ensure output dir exists
 mkdir -p "$INSTALL_PREFIX"
 
@@ -83,13 +77,13 @@ IN_CONTAINER_SCRIPT="/work${REL_DIR}/in-container.sh"
 ENV_ARGS=(-e HOME=/work -e REF="$REF" -e INSTALL_PREFIX="/out" \
   -e CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-4}" )
 
-# Run build inside container (privileged for perf)
-sudo docker run --rm --privileged \
+# Run build inside container
+docker run --rm \
   -u $(id -u):$(id -g) \
   -v "$ROOT_DIR":/work:rw \
   -v "$INSTALL_PREFIX":/out:rw \
   "${ENV_ARGS[@]}" \
-  "$IMG_TAG" \
+  "$BASE_IMAGE" \
   bash -euo pipefail "$IN_CONTAINER_SCRIPT"
 
 echo "Linux build completed at $INSTALL_PREFIX"
