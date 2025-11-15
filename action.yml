@@ -15,7 +15,7 @@
 
 name: "Set up MLIR toolchain"
 description: "Set up a specific version of the MLIR toolchain"
-author: "burgholzer"
+author: "Munich Quantum Software Company GmbH and Chair for Design Automation, TUM"
 inputs:
   tag:
     description: "The tag of the MLIR toolchain to install."

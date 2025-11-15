@@ -12,7 +12,7 @@
     "url": "git+https://github.com/burgholzer/portable-mlir-toolchain.git"
   },
   "keywords": [],
-  "author": "burgholzer",
+  "author": "Munich Quantum Software Company GmbH and Chair for Design Automation, TUM",
   "license": "Apache-2.0 WITH LLVM-exception",
   "type": "module",
   "bugs": {
