@@ -91,7 +91,7 @@ try {
         "-DCMAKE_LINKER=$lld_path",
         '-DLLVM_BUILD_EXAMPLES=OFF',
         '-DLLVM_BUILD_TESTS=OFF',
-        '-DLLVM_ENABLE_ASSERTIONS=OFF',
+        '-DLLVM_ENABLE_ASSERTIONS=ON',
         '-DLLVM_ENABLE_LTO=ON',
         '-DLLVM_ENABLE_PROJECTS=mlir',
         '-DLLVM_ENABLE_RTTI=OFF',
