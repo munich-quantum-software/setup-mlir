@@ -43,9 +43,13 @@ build_llvm() {
 
   echo "Building LLVM/MLIR $ref into $INSTALL_PREFIX..."
 
-  # Clone LLVM project
+  # Fetch LLVM project source archive
   repo_dir="$PWD/llvm-project"
-  git clone --depth 1 https://github.com/llvm/llvm-project.git --branch "$ref" "$repo_dir"
+  rm -rf "$repo_dir"
+  mkdir -p "$repo_dir"
+  curl -fL --retry 5 --retry-delay 5 \
+    "https://github.com/llvm/llvm-project/archive/${ref}.tar.gz" \
+    | tar -xz --strip-components=1 -C "$repo_dir"
 
   # Change to repo directory
   pushd "$repo_dir" > /dev/null

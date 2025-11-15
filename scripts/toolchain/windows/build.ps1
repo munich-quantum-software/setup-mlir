@@ -42,10 +42,20 @@ switch ($arch) {
 
 Write-Host "Building LLVM/MLIR $ref into $install_prefix..."
 
-# Clone LLVM project
+# Fetch LLVM project source archive
 $repo_dir = Join-Path $PWD "llvm-project"
 if (Test-Path $repo_dir) { Remove-Item -Recurse -Force $repo_dir }
-git clone --depth 1 https://github.com/llvm/llvm-project.git --branch $ref $repo_dir
+
+zipPath = Join-Path $env:TEMP "llvm-project-$ref.zip"
+$archiveUrl = "https://github.com/llvm/llvm-project/archive/$ref.zip"
+$tmpExtract = Join-Path $env:TEMP "llvm-project-$ref"
+
+Invoke-WebRequest -Uri $archiveUrl -OutFile $zipPath
+if (Test-Path $tmpExtract) { Remove-Item -Recurse -Force $tmpExtract }
+Expand-Archive -Path $zipPath -DestinationPath $tmpExtract -Force
+
+Move-Item -Path (Join-Path $tmpExtract "llvm-project-$ref") -Destination $repo_dir
+Remove-Item -Recurse -Force $tmpExtract, $zipPath
 
 # Change to repo directory
 pushd $repo_dir > $null
