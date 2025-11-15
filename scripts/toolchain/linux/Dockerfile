@@ -16,7 +16,7 @@ FROM ${BASE_IMAGE}
 
 # Install build dependencies
 RUN yum -y update && \
-    yum -y install git zstd gcc-c++ && \
+    yum -y install clang git llvm zstd && \
     yum clean all && rm -rf /var/cache/yum
 
 ENV PATH=/usr/bin:$PATH

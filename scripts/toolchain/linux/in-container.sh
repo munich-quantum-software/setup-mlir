@@ -44,12 +44,15 @@ build_llvm() {
   build_dir="build_llvm"
   cmake -S llvm -B "$build_dir" \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_COMPILER=gcc \
-    -DCMAKE_CXX_COMPILER=g++ \
+    -DCMAKE_C_COMPILER=$(which clang) \
+    -DCMAKE_CXX_COMPILER=$(which clang++) \
+    -DCMAKE_AR=$(which llvm-ar) \
+    -DCMAKE_RANLIB=$(which llvm-ranlib) \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
     -DLLVM_BUILD_EXAMPLES=OFF \
     -DLLVM_BUILD_TESTS=OFF \
     -DLLVM_ENABLE_ASSERTIONS=ON \
+    -DLLVM_ENABLE_LTO=THIN \
     -DLLVM_ENABLE_PROJECTS=mlir \
     -DLLVM_ENABLE_RTTI=ON \
     -DLLVM_INCLUDE_EXAMPLES=OFF \

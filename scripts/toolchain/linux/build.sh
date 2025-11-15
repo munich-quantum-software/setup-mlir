@@ -9,7 +9,6 @@
 # Description:
 #   Builds a manylinux_2_28 container image (arch-aware), mounts the repo and output directories,
 #   then runs the in-container build script to produce the MLIR toolchain.
-#   Uses ccache (mounted from the workspace) and emits a .tar.zst archive in the output directory.
 #
 # Usage:
 #   scripts/toolchain/linux/build.sh -r <ref> -p <install_prefix>
