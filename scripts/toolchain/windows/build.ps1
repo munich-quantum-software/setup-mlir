@@ -46,7 +46,7 @@ Write-Host "Building LLVM/MLIR $ref into $install_prefix..."
 $repo_dir = Join-Path $PWD "llvm-project"
 if (Test-Path $repo_dir) { Remove-Item -Recurse -Force $repo_dir }
 
-zipPath = Join-Path $env:TEMP "llvm-project-$ref.zip"
+$zipPath = Join-Path $env:TEMP "llvm-project-$ref.zip"
 $archiveUrl = "https://github.com/llvm/llvm-project/archive/$ref.zip"
 $tmpExtract = Join-Path $env:TEMP "llvm-project-$ref"
 
