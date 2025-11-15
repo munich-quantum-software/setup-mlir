@@ -69,6 +69,7 @@ build_llvm() {
     -DLLVM_ENABLE_RTTI=OFF \
     -DLLVM_INCLUDE_EXAMPLES=OFF \
     -DLLVM_INCLUDE_TESTS=OFF \
+    -DLLVM_INCLUDE_BENCHMARKS=OFF \
     -DLLVM_INSTALL_UTILS=ON \
     -DLLVM_TARGETS_TO_BUILD="$HOST_TARGET"
   cmake --build "$build_dir" --target install --config Release
