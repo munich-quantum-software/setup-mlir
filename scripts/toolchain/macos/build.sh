@@ -49,10 +49,8 @@ UNAME_ARCH=$(uname -m)
 # Determine target
 if [[ "$UNAME_ARCH" == "arm64" || "$UNAME_ARCH" == "aarch64" ]]; then
   HOST_TARGET="AArch64"
-  ENABLE_LTO="THIN"
 elif [[ "$UNAME_ARCH" == "x86_64" ]]; then
   HOST_TARGET="X86"
-  ENABLE_LTO="OFF"
 else
   echo "Unsupported architecture on macOS: ${UNAME_ARCH}. Only x86_64 and arm64 are supported." >&2
   exit 1
