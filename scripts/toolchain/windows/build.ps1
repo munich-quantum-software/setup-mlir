@@ -131,15 +131,6 @@ if (Test-Path $install_lib_clang) {
     Remove-Item -Path $install_lib_clang -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-# Check for zstd availability
-$zstd_available = $false
-try {
-    & zstd --version | Out-Null
-    $zstd_available = $true
-} catch {
-    $zstd_available = $false
-}
-
 # Define archive variables
 $archive_name = "llvm-mlir_$($ref)_windows_$($arch)_$($host_target).tar.zst"
 $archive_path = Join-Path $PWD $archive_name
@@ -149,11 +140,8 @@ pushd $install_prefix > $null
 
 # Emit compressed archive (.tar.zst)
 try {
-    if ($zstd_available) {
-        & tar -cf - . | & zstd -T0 -19 -o $archive_path
-    } else {
-        & tar --zstd -cf $archive_path .
-    }
+   $env:ZSTD_CLEVEL = 19
+   tar --zstd -cf $archive_path .
 } catch {
     Write-Error "Error: Failed to create archive: $($_.Exception.Message)"
     exit 1

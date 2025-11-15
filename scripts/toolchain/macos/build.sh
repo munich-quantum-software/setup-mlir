@@ -131,18 +131,10 @@ ARCHIVE_PATH="$(pwd)/${ARCHIVE_NAME}"
 pushd $INSTALL_PREFIX > /dev/null
 
 # Emit compressed archive (.tar.zst)
-if command -v gtar >/dev/null 2>&1; then TAR=gtar; else TAR=tar; fi
-if command -v zstd >/dev/null 2>&1; then
-  ( $TAR -cf - . | zstd -T0 -19 -o "${ARCHIVE_PATH}" )  || {
-    echo "Error: Failed to create archive" >&2
-    exit 1
-  }
-else
-  ( $TAR --zstd -cf "${ARCHIVE_PATH}" . ) || {
-    echo "Error: Failed to create archive" >&2
-    exit 1
-  }
-fi
+ZSTD_CLEVEL=19 tar --zstd -cf "${ARCHIVE_PATH}" . || {
+  echo "Error: Failed to create archive" >&2
+  exit 1
+}
 
 # Return to original directory
 popd > /dev/null
