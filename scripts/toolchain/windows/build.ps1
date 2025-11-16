@@ -47,7 +47,14 @@ $repo_dir = Join-Path $PWD "llvm-project"
 if (Test-Path $repo_dir) { Remove-Item -Recurse -Force $repo_dir }
 New-Item -ItemType Directory -Path $repo_dir -Force | Out-Null
 $archiveUrl = "https://github.com/llvm/llvm-project/archive/$ref.tar.gz"
-Invoke-WebRequest -Uri $archiveUrl -OutFile - | tar -xz --strip-components=1 -C $repo_dir
+
+# Download archive to a temporary file, then extract it
+$tmpArchive = Join-Path ([IO.Path]::GetTempPath()) ("llvm-project-$($ref).tar.gz")
+Write-Host "Downloading $archiveUrl to $tmpArchive..."
+Invoke-WebRequest -Uri $archiveUrl -OutFile $tmpArchive
+
+Write-Host "Extracting archive into $repo_dir..."
+tar -xzf $tmpArchive --strip-components=1 -C $repo_dir
 
 # Change to repo directory
 pushd $repo_dir > $null
