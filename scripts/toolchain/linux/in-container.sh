@@ -102,14 +102,14 @@ if command -v strip >/dev/null 2>&1; then
 fi
 
 # Define archive variables
-ARCHIVE_NAME="llvm-mlir_${REF}_linux_${UNAME_ARCH}_${HOST_TARGET}.tar.zst"
+ARCHIVE_NAME="llvm-mlir_${REF}_linux_${UNAME_ARCH}_${HOST_TARGET}.tar.gz"
 ARCHIVE_PATH="$(pwd)/${ARCHIVE_NAME}"
 
 # Change to installation directory
 pushd $INSTALL_PREFIX > /dev/null
 
-# Emit compressed archive (.tar.zst)
-ZSTD_CLEVEL=19 tar --zstd -cf "${ARCHIVE_PATH}" . || {
+# Emit compressed archive (.tar.gz)
+tar -czf "$ARCHIVE_PATH" . || {
   echo "Error: Failed to create archive" >&2
   exit 1
 }
