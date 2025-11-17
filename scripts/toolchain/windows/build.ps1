@@ -46,15 +46,16 @@ Write-Host "Building LLVM/MLIR $ref into $install_prefix..."
 $repo_dir = Join-Path $PWD "llvm-project"
 if (Test-Path $repo_dir) { Remove-Item -Recurse -Force $repo_dir }
 New-Item -ItemType Directory -Path $repo_dir -Force | Out-Null
-$archiveUrl = "https://github.com/llvm/llvm-project/archive/$ref.tar.gz"
+$archive_url = "https://github.com/llvm/llvm-project/archive/$ref.tar.gz"
 
-# Download archive to a temporary file, then extract it
-$tmpArchive = Join-Path ([IO.Path]::GetTempPath()) ("llvm-project-$($ref).tar.gz")
-Write-Host "Downloading $archiveUrl to $tmpArchive..."
-Invoke-WebRequest -Uri $archiveUrl -OutFile $tmpArchive
+# Download archive to a temporary file
+$temp_archive = Join-Path ([IO.Path]::GetTempPath()) ("llvm-project-$($ref).tar.gz")
+Write-Host "Downloading $archive_url to $temp_archive..."
+Invoke-WebRequest -Uri $archive_url -OutFile $temp_archive
 
+# Extract archive
 Write-Host "Extracting archive into $repo_dir..."
-tar -xzf $tmpArchive --strip-components=1 -C $repo_dir
+tar -xzf $temp_archive --strip-components=1 -C $repo_dir
 
 # Change to repo directory
 pushd $repo_dir > $null
