@@ -1,52 +1,42 @@
-Portable LLVM/MLIR Optimized Toolchain (PGO + ThinLTO [+ BOLT on Linux])
+# Portable MLIR Toolchain
 
-Overview
+This repository aims to streamline the setup of the MLIR toolchain.
 
-- This directory is a self-contained, copy-ready bundle of scripts and CI to build optimized, portable MLIR toolchains for Linux, macOS, and Windows.
-- It is designed so you can copy the CONTENTS of this directory into a new repository and start experimenting immediately.
+## GitHub Action
 
-What's included
+We provide a GitHub Action.
 
-- scripts/toolchain/
-  - linux/
-    - build.sh: Host-side wrapper. Builds a manylinux_2_28 container image and runs the in-container build.
-    - in-container.sh: The actual Linux build (multi-stage: Stage0/1/2) with PGO + ThinLTO, optional BOLT.
-    - Dockerfile: Minimal manylinux_2_28 image with build tools.
-  - macos/
-    - build.sh: Host-side script performing Stage0/1/2 and producing an archive in the working directory.
-  - windows/
-    - build.sh: Full bash builder performing Stage0/1/2 and producing a .tar.zst archive.
-    - build.ps1: Optional PowerShell variant (not used by the CI in this bundle).
-- .github/actions/
-  - build-llvm-mlir-opt/: Composite GitHub Action that can download prebuilt bundles or build locally using these scripts.
-- .github/workflows/
-  - build-portable-mlir-toolchain.yml: Example matrix workflow covering Linux, macOS (both Intel and Apple Silicon), and Windows (x64 and ARM). Uploads produced artifacts for inspection.
+```yaml
+- name: Setup MLIR
+  uses: munich-quantum-software/setup-mlir@2025.11.19
+  with:
+    tag: 2025.11.19
+```
 
-How to use in a new repository
+This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and defines `$LLVM_DIR` and `$MLIR_DIR`.
+The pre-built MLIR installation can be found in the release assets on GitHub.
+We are using calendar versioning for our releases.
+Refer to the release notes of the respective release for information on the LLVM version and the build settings.
 
-1. Create a new empty repository.
-2. Copy all files and folders INSIDE portable-mlir-toolchain/ into the repository root, keeping the structure (scripts/, .github/, etc.).
-3. Commit and push. The workflow (workflow_dispatch) can then be manually triggered in GitHub Actions.
+## Installation Scripts
 
-Quick start (local)
+If you want to use the pre-built MLIR installations locally, we also provide installation scripts.
+For Linux and macOS, use [`installation/setup-mlir.sh`](./installation/setup-mlir.sh).
+For Windows, use [`installation/setup-mlir.ps1`](./installation/setup-mlir.ps1).
+Both scripts require the release tag (e.g, `2025.11.19`) and the desired installation directory to be passed.
 
-- Linux (host requires Docker):
-  scripts/toolchain/linux/build.sh llvmorg-20.1.8 "$PWD/llvm-install" "X86;AArch64"
+```bash
+./installation_scripts/setup-mlir.sh -t 2025.11.19 -p /path/to/installation
+```
 
-  # Archive will be written next to the install dir (in the install dir on Linux via /out mount).
+## Build Scripts
 
-- macOS:
-  scripts/toolchain/macos/build.sh llvmorg-20.1.8 "$PWD/llvm-install" "X86;AArch64"
+If desired, you can also use our build scripts directly.
+Refer to
 
-  # Archive is created in the current working directory; install goes to the given prefix.
+- [`scripts/toolchain/linux/build.sh`](./scripts/toolchain/linux/build.sh) for Linux,
+- [`scripts/toolchain/macos/build.sh`](./scripts/toolchain/macos/build.sh) for macOS, and
+- [`scripts/toolchain/windows/build.ps1`](./scripts/toolchain/windows/build.ps1) for Windows.
 
-- Windows:
-  scripts/toolchain/windows/build.sh llvmorg-20.1.8 "$PWD/llvm-install" "X86;AArch64"
-  # Archive is created in the current working directory; install goes to the given prefix.
-
-Notes
-
-- Linux build uses manylinux_2_28 container images (x86_64 or aarch64) and optionally applies BOLT optimization using perf profiles if available.
-- macOS build targets macOS 11+ and uses ThinLTO, with optional ccache.
-- Windows build uses bash (Git Bash) and performs PGO + ThinLTO similar to macOS (no BOLT step).
-- The composite action can be used independently inside reusable workflows to fetch prebuilt assets from GitHub Releases when available or fall back to building.
+The usage is detailed in the scripts.
+Note that the Linux script requires Docker to be installed on the host system.
