@@ -61,7 +61,7 @@ tar -xzf $temp_archive --strip-components=1 -C $repo_dir
 pushd $repo_dir > $null
 
 # Build LLD
-$install_prefix_lld = Join-Path $install_prefix "lld"
+$install_prefix_lld = Join-Path $PWD "lld"
 try {
     $build_dir_lld = 'build_lld'
     $cmake_args_lld = @(
@@ -78,7 +78,6 @@ try {
         "-DLLVM_TARGETS_TO_BUILD=$host_target"
     )
     cmake @cmake_args_lld
-
     cmake --build $build_dir_lld --target install --config Release
 } catch {
     # Return to original directory
@@ -110,7 +109,6 @@ try {
         "-DLLVM_TARGETS_TO_BUILD=$host_target"
     )
     cmake @cmake_args
-
     cmake --build $build_dir --target install --config Release
 } finally {
     # Return to original directory
