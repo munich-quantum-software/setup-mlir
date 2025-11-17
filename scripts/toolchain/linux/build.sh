@@ -75,7 +75,7 @@ IN_CONTAINER_SCRIPT="/work${REL_DIR}/in-container.sh"
 
 # Build environment vars (only pass optional ones if provided)
 ENV_ARGS=(-e HOME=/work -e REF="$REF" -e INSTALL_PREFIX="/out" \
-  -e CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-4}" )
+  -e CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-4}")
 
 # Run build inside container
 docker run --rm \
