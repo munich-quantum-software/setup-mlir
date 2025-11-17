@@ -40,7 +40,7 @@ if ($token) {
     $headers["Authorization"] = "Bearer $token"
 }
 
-$release_url = "https://api.github.com/repos/burgholzer/portable-mlir-toolchain/releases/tags/$tag"
+$release_url = "https://api.github.com/repos/munich-quantum-software/setup-mlir/releases/tags/$tag"
 $release_json = Invoke-RestMethod -Uri $release_url -Headers $headers
 
 $assets_url = $release_json.assets_url

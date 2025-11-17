@@ -65,7 +65,7 @@ case "$ARCH" in
 esac
 
 # Determine download URL
-RELEASE_URL="https://api.github.com/repos/burgholzer/portable-mlir-toolchain/releases/tags/${TAG}"
+RELEASE_URL="https://api.github.com/repos/munich-quantum-software/setup-mlir/releases/tags/${TAG}"
 RELEASE_JSON=$(curl -L \
                     -H "Accept: application/vnd.github+json" \
                     ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \

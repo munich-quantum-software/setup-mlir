@@ -9,16 +9,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/burgholzer/portable-mlir-toolchain.git"
+    "url": "git+https://github.com/munich-quantum-software/setup-mlir.git"
   },
   "keywords": [],
   "author": "Munich Quantum Software Company GmbH and Chair for Design Automation, TUM",
   "license": "Apache-2.0 WITH LLVM-exception",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/burgholzer/portable-mlir-toolchain/issues"
+    "url": "https://github.com/munich-quantum-software/setup-mlir/issues"
   },
-  "homepage": "https://github.com/burgholzer/portable-mlir-toolchain#readme",
+  "homepage": "https://github.com/munich-quantum-software/setup-mlir#readme",
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/tool-cache": "^2.0.2",
