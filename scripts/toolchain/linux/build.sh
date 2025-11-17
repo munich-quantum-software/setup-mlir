@@ -78,17 +78,11 @@ ENV_ARGS=(-e HOME=/work -e REF="$REF" -e INSTALL_PREFIX="/out" \
   -e CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-4}")
 
 # Run build inside container
-docker run --rm \
-  -u $(id -u):$(id -g) \
+sudo docker run --rm --privileged \
   -v "$ROOT_DIR":/work:rw \
   -v "$INSTALL_PREFIX":/out:rw \
   "${ENV_ARGS[@]}" \
   "$BASE_IMAGE" \
-  bash -euo pipefail \
-  yum -y update && \
-  yum -y install zstd && \
-  yum clean all && \
-  rm -rf /var/cache/yum && \
-  "$IN_CONTAINER_SCRIPT"
+  bash -c "yum -y update && yum -y install zstd && yum clean all && rm -rf /var/cache/yum && bash -euo pipefail $IN_CONTAINER_SCRIPT"
 
 echo "Linux build completed at $INSTALL_PREFIX"
