@@ -84,6 +84,11 @@ docker run --rm \
   -v "$INSTALL_PREFIX":/out:rw \
   "${ENV_ARGS[@]}" \
   "$BASE_IMAGE" \
-  bash -euo pipefail "$IN_CONTAINER_SCRIPT"
+  bash -euo pipefail \
+  yum -y update && \
+  yum -y install zstd && \
+  yum clean all && \
+  rm -rf /var/cache/yum && \
+  "$IN_CONTAINER_SCRIPT"
 
 echo "Linux build completed at $INSTALL_PREFIX"
