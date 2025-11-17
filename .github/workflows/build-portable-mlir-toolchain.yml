@@ -3,16 +3,20 @@ name: Build Portable MLIR Toolchain (staged)
 on:
   workflow_dispatch:
     inputs:
-      ref:
-        description: "llvm-project ref or tag (e.g., llvmorg-21.1.0)"
+      llvmorg-ref:
+        description: "llvm-project ref or tag (e.g., llvmorg-21.1.5)"
         required: true
         type: string
       release:
-        description: "Whether to create a GitHub Release with the built artifacts"
+        description: "Whether to create a GitHub release with the built artifacts"
         required: true
         type: boolean
-      tag:
-        description: "Tag for the GitHub Release"
+      release-tag:
+        description: "Tag for the GitHub release (e.g., 2025.11.19)"
+        required: false
+        type: string
+      release-notes:
+        description: "Release notes for the GitHub release"
         required: false
         type: string
   pull_request:
@@ -25,17 +29,17 @@ jobs:
   linux:
     uses: ./.github/workflows/build-mlir-linux.yml
     with:
-      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
+      ref: ${{ inputs.llvmorg-ref || 'llvmorg-21.1.5' }}
 
   macos:
     uses: ./.github/workflows/build-mlir-macos.yml
     with:
-      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
+      ref: ${{ inputs.llvmorg-ref || 'llvmorg-21.1.5' }}
 
   windows:
     uses: ./.github/workflows/build-mlir-windows.yml
     with:
-      ref: ${{ inputs.ref || 'llvmorg-21.1.5' }}
+      ref: ${{ inputs.llvmorg-ref || 'llvmorg-21.1.5' }}
 
   release:
     needs: [linux, macos, windows]
@@ -48,11 +52,11 @@ jobs:
         uses: actions/download-artifact@v5.0.0
         with:
           path: artifacts
-      - name: Create GitHub Release
+      - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ${{ inputs.tag || 'test-release-7'}} \
+          gh release create ${{ inputs.release-tag || 'test-release-7'}} \
                             artifacts/**/* \
-                            --title "Test Release" \
+                            --title "Portable MLIR Toolchain ${{ inputs.release-tag || 'test-release-7'}} Release" \
                             --notes "This is a test release. It will be deleted."
