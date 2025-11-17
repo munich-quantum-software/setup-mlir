@@ -17,7 +17,6 @@
 
 import * as core from "@actions/core"
 import * as tc from "@actions/tool-cache"
-import * as exec from "@actions/exec"
 import getDownloadLink from "./get-download-link.js"
 import path from "node:path"
 
