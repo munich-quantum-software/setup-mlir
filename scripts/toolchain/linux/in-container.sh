@@ -109,7 +109,7 @@ ARCHIVE_PATH="$(pwd)/${ARCHIVE_NAME}"
 pushd $INSTALL_PREFIX > /dev/null
 
 # Emit compressed archive (.tar.zst)
-ZSTD_CLEVEL=19 tar --zstd -cf "${ARCHIVE_PATH}" . || {
+ZSTD_CLEVEL=19 tar --use-compress-program zstd -cf "${ARCHIVE_PATH}" . || {
   echo "Error: Failed to create archive" >&2
   exit 1
 }
