@@ -56,7 +56,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ${{ inputs.release-tag || 'test-release-7'}} \
+          gh release create ${{ inputs.release-tag || 'test-release-8'}} \
                             artifacts/**/* \
-                            --title "Portable MLIR Toolchain ${{ inputs.release-tag || 'test-release-7'}} Release" \
+                            --title "Portable MLIR Toolchain ${{ inputs.release-tag || 'test-release-8'}} Release" \
                             --notes "This is a test release. It will be deleted."
