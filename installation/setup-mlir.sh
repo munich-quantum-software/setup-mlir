@@ -109,6 +109,10 @@ echo "Extracting archive..."
 zstd -d "asset.tar.zst" --output-dir-flat .
 tar -xf "asset.tar"
 
+# Clean up
+rm -f "asset.tar.zst"
+rm -f "asset.tar"
+
 # Return to original directory
 popd > /dev/null
 

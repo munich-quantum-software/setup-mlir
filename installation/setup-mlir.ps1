@@ -81,6 +81,10 @@ Write-Host "Extracting archive..."
 & zstd -d "asset.tar.zst" --output-dir-flat .
 & tar -xf "asset.tar"
 
+# Clean up
+Remove-Item "asset.tar.zst" -Force
+Remove-Item "asset.tar" -Force
+
 # Return to original directory
 popd > $null
 
