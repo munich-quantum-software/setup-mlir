@@ -70,7 +70,7 @@ mkdir -p "$INSTALL_PREFIX"
 
 # Determine path to in-container script once mounted at /work
 # If ROOT_DIR is mounted at /work, then SCRIPT_DIR becomes /work${REL_DIR}
-REL_DIR="${SCRIPT_DIR#${ROOT_DIR}}"
+REL_DIR="${SCRIPT_DIR#"${ROOT_DIR}"}"
 IN_CONTAINER_SCRIPT="/work${REL_DIR}/in-container.sh"
 
 # Build environment vars (only pass optional ones if provided)
