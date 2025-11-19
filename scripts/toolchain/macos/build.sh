@@ -32,7 +32,7 @@ while getopts "r:p:*" opt; do
 done
 
 # Check arguments
-if [ -z "$REF" ]; then
+if [ -z "${REF:-}" ]; then
   echo "Error: Ref (-r) is required"
   echo "Usage: $0 -r <ref> -p <installation directory>"
   exit 1

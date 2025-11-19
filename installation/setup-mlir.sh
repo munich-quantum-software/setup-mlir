@@ -33,7 +33,7 @@ while getopts "t:p:a:" opt; do
   esac
 done
 
-if [ -z "$TAG" ]; then
+if [ -z "${TAG:-}" ]; then
   echo "Error: Tag (-t) is required"
   echo "Usage: $0 -t <tag> -p <installation directory>"
   exit 1
