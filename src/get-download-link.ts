@@ -73,7 +73,7 @@ function determinePlatform(): string {
 
 /**
  * Determine the architecture of the current host.
- * @returns {string} - architecture of the current host (either x64 or arm64)
+ * @returns {string} - architecture of the current host (either X86 or AArch64)
  */
 function determineArchitecture(): string {
   if (process.arch === "x64") {

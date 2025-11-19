@@ -49,7 +49,7 @@ async function run(): Promise<void> {
 
 try {
   core.debug("==> Starting MLIR toolchain setup")
-  run()
+  await run()
   core.debug("==> Finished MLIR toolchain setup")
 } catch (error) {
   if (typeof error === "string") {

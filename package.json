@@ -4,8 +4,7 @@
   "description": "Portable MLIR toolchain",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt"
   },
   "repository": {
     "type": "git",
