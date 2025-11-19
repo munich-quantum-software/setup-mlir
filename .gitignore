@@ -174,5 +174,4 @@ node_modules/
 wheelhouse/
 
 # mlir
-
 **/.lit
