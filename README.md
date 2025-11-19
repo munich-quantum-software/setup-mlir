@@ -26,7 +26,7 @@ For Windows, use [`installation/setup-mlir.ps1`](./installation/setup-mlir.ps1).
 Both scripts require the release tag (e.g, `2025.11.19`) and the desired installation directory to be passed.
 
 ```bash
-./installation_scripts/setup-mlir.sh -t 2025.11.19 -p /path/to/installation
+./installation/setup-mlir.sh -t 2025.11.19 -p /path/to/installation
 ```
 
 ## Build Scripts
