@@ -25,6 +25,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Check if installation directory exists
+if (-not (Test-Path $install_prefix -PathType Container)) {
+    Write-Error "Installation directory $install_prefix does not exist."
+    exit 1
+}
+
 # Change to installation directory
 pushd $install_prefix > $null
 

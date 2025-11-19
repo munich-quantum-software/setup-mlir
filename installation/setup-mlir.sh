@@ -33,15 +33,21 @@ while getopts "t:p:a:" opt; do
   esac
 done
 
+# Check arguments
 if [ -z "${TAG:-}" ]; then
   echo "Error: Tag (-t) is required"
   echo "Usage: $0 -t <tag> -p <installation directory>"
   exit 1
 fi
-
 if [ -z "${INSTALL_PREFIX:-}" ]; then
   echo "Error: Installation directory (-p) is required"
   echo "Usage: $0 -t <tag> -p <installation directory>"
+  exit 1
+fi
+
+# Check if installation directory exists
+if [ ! -d "$INSTALL_PREFIX" ]; then
+  echo "Error: Installation directory $INSTALL_PREFIX does not exist." >&2
   exit 1
 fi
 
@@ -55,13 +61,12 @@ ARCH=$(uname -m)
 case "$OS" in
   linux) PLATFORM="linux" ;;
   darwin) PLATFORM="macos" ;;
-  *) echo "Unsupported OS: $OS" >&2; exit 1 ;;
+  *) echo "Error: Unsupported OS: $OS" >&2; exit 1 ;;
 esac
-
 case "$ARCH" in
   x86_64) ARCH_SUFFIX="x86_64" ;;
   arm64|aarch64) ARCH_SUFFIX="arm64" ;;
-  *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;;
+  *) echo "Error: Unsupported architecture: $ARCH" >&2; exit 1 ;;
 esac
 
 # Determine download URL
@@ -96,11 +101,14 @@ fi
 
 # Download asset
 echo "Downloading asset from $DOWNLOAD_URL..."
-curl -L -o "asset.tar.zst" "$DOWNLOAD_URL"
+if ! curl -f -L -o "asset.tar.zst" "$DOWNLOAD_URL"; then
+  echo "Error: Download failed." >&2
+  exit 1
+fi
 
 # Check for zstd
 if ! command -v zstd >/dev/null 2>&1; then
-  echo "zstd not found. Please install zstd (brew install zstd or sudo apt-get install zstd)." >&2
+  echo "Error: zstd not found. Please install zstd." >&2
   exit 1
 fi
 
