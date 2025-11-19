@@ -115,6 +115,6 @@ popd > /dev/null
 # Output instructions
 echo "MLIR toolchain has been installed"
 echo "Run the following commands to set up your environment:"
-echo "  export LLVM_DIR=$PWD/lib/cmake/llvm"
-echo "  export MLIR_DIR=$PWD/lib/cmake/mlir"
-echo "  export PATH=$PWD/bin:\$PATH"
+echo "  export LLVM_DIR=$INSTALL_PREFIX/lib/cmake/llvm"
+echo "  export MLIR_DIR=$INSTALL_PREFIX/lib/cmake/mlir"
+echo "  export PATH=$INSTALL_PREFIX/bin:\$PATH"

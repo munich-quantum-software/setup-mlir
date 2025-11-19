@@ -87,6 +87,6 @@ popd > $null
 # Output instructions
 Write-Host "MLIR toolchain has been installed"
 Write-Host "Run the following commands to set up your environment:"
-Write-Host "  `$env:LLVM_DIR = '$(Get-Location -PSProvider FileSystem | Select-Object -ExpandProperty Path)\lib\cmake\llvm'"
-Write-Host "  `$env:MLIR_DIR = '$(Get-Location -PSProvider FileSystem | Select-Object -ExpandProperty Path)\lib\cmake\mlir'"
-Write-Host "  `$env:Path = '$(Get-Location -PSProvider FileSystem | Select-Object -ExpandProperty Path)\bin;`$env:Path'"
+Write-Host "  `$env:LLVM_DIR = '$install_prefix\lib\cmake\llvm'"
+Write-Host "  `$env:MLIR_DIR = '$install_prefix\lib\cmake\mlir'"
+Write-Host "  `$env:Path = '$install_prefix\bin;`$env:Path'"
