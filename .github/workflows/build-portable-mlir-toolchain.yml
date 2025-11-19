@@ -12,7 +12,7 @@ on:
         required: true
         type: boolean
       release-tag:
-        description: "Tag for the GitHub release (e.g., 2025.11.19)"
+        description: "Tag for the GitHub release (e.g., 2025.11.20)"
         required: false
         type: string
       release-notes:
