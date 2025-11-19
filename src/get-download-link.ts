@@ -98,8 +98,8 @@ async function getAssets(token: string, tag: string): Promise<ReleaseAsset[]> {
   }
   const octokit = new Octokit(options)
     const response = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
-        owner: "burgholzer",
-        repo: "portable-mlir-toolchain",
+        owner: "munich-quantum-software",
+        repo: "setup-mlir",
         tag: tag
     })
     return response.data.assets
