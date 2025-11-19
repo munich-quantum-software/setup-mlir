@@ -32,14 +32,11 @@
 set -euo pipefail
 
 # Parse arguments
-while getopts "r:p:*" opt; do
+while getopts "r:p:" opt; do
   case $opt in
     r) REF="$OPTARG"
     ;;
     p) INSTALL_PREFIX="$OPTARG"
-    ;;
-    *) echo "Invalid option -$OPTARG" >&2
-    exit 1
     ;;
   esac
 done

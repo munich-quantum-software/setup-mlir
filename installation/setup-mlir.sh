@@ -27,9 +27,6 @@ while getopts "t:p:a:" opt; do
     ;;
     a) GITHUB_TOKEN="$OPTARG"
     ;;
-    *) echo "Invalid option -$OPTARG" >&2
-    exit 1
-    ;;
   esac
 done
 
