@@ -36,7 +36,8 @@ switch ($arch) {
         $host_target = "AArch64"
     }
     default {
-        Write-Error "Unsupported architecture on Windows: $arch. Only x64 and arm64 are supported."; exit 1
+        Write-Error "Unsupported architecture on Windows: $arch. Only x64 and arm64 are supported."
+        exit 1
     }
 }
 
@@ -80,6 +81,9 @@ try {
     cmake @cmake_args_lld
     cmake --build $build_dir_lld --target install --config Release
 } catch {
+    Write-Error "Failed to build LLD: $($_.Exception.Message)"
+    exit 1
+
     # Return to original directory
     popd > $null
 }
@@ -150,7 +154,7 @@ try {
    $env:ZSTD_CLEVEL = 19
    tar --zstd -cf $archive_path .
 } catch {
-    Write-Error "Error: Failed to create archive: $($_.Exception.Message)"
+    Write-Error "Failed to create archive: $($_.Exception.Message)"
     exit 1
 } finally {
     # Return to original directory
