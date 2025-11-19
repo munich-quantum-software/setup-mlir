@@ -79,13 +79,15 @@ try {
         "-DLLVM_TARGETS_TO_BUILD=$host_target"
     )
     cmake @cmake_args_lld
+    if ($LASTEXITCODE -ne 0) { throw "LLD configuration failed" }
     cmake --build $build_dir_lld --target install --config Release
+    if ($LASTEXITCODE -ne 0) { throw "LLD build failed" }
 } catch {
-    Write-Error "Failed to build LLD: $($_.Exception.Message)"
-    exit 1
-
     # Return to original directory
     popd > $null
+
+    Write-Error "Failed to build LLD: $($_.Exception.Message)"
+    exit 1
 }
 
 $lld_path = Join-Path $install_prefix_lld "bin\lld-link.exe"
@@ -113,7 +115,9 @@ try {
         "-DLLVM_TARGETS_TO_BUILD=$host_target"
     )
     cmake @cmake_args
+    if ($LASTEXITCODE -ne 0) { throw "LLVM configuration failed" }
     cmake --build $build_dir --target install --config Release
+    if ($LASTEXITCODE -ne 0) { throw "LLVM build failed" }
 } finally {
     # Return to original directory
     popd > $null
@@ -153,6 +157,7 @@ pushd $install_prefix > $null
 try {
    $env:ZSTD_CLEVEL = 19
    tar --zstd -cf $archive_path .
+   if ($LASTEXITCODE -ne 0) { throw "Archive creation failed" }
 } catch {
     Write-Error "Failed to create archive: $($_.Exception.Message)"
     exit 1
