@@ -105,7 +105,7 @@ async function getAssets(token: string, tag: string): Promise<ReleaseAsset[]> {
     return response.data.assets
 }
 
-/**s
+/**
  * Find the release asset for the given platform and architecture.
  * @param {ReleaseAsset[]} assets - list of release assets
  * @param {string} platform - platform to look for (either linux, macOS, or windows)
