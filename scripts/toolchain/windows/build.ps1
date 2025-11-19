@@ -128,8 +128,6 @@ $install_bin = Join-Path $install_prefix "bin"
 if (Test-Path $install_bin) {
     $patterns = @(
         'clang*.exe',
-        'clang-?*.exe',
-        'clang++*.exe',
         'clangd.exe',
         'clang-format*.exe',
         'clang-tidy*.exe',
