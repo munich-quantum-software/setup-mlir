@@ -46,7 +46,7 @@ if [ -z "${INSTALL_PREFIX:-}" ]; then
 fi
 
 # Change to installation directory
-pushd $INSTALL_PREFIX > /dev/null
+pushd "$INSTALL_PREFIX" > /dev/null
 
 # Detect platform and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
