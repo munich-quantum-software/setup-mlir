@@ -14,13 +14,13 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 name: "Set up MLIR toolchain"
-description: "Set up a specific version of the MLIR toolchain"
 author: "Munich Quantum Software Company GmbH and Chair for Design Automation, TUM"
+description: "Set up a specific version of the MLIR toolchain"
+
 inputs:
   tag:
     description: "The tag of the MLIR toolchain to install."
     required: true
-    type: string
   platform:
     description: "The platform to install the MLIR toolchain for (either linux, macOS, or windows). Defaults to host."
     required: false
@@ -33,9 +33,11 @@ inputs:
     description: "The token that the action will use to query the GitHub API. Defaults to the repository's GitHub token."
     required: false
     default: ${{ github.token }}
+
 runs:
-  using: "node24"
-  main: "dist/index.js"
+  using: node24
+  main: dist/index.js
+
 branding:
   icon: "package"
   color: "blue"
