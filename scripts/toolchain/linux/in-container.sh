@@ -83,11 +83,6 @@ build_llvm "$REF" "$INSTALL_PREFIX"
 # Prune non-essential tools
 if [[ -d "$INSTALL_PREFIX/bin" ]]; then
   rm -f "$INSTALL_PREFIX/bin/clang*" \
-        "$INSTALL_PREFIX/bin/clang-?*" \
-        "$INSTALL_PREFIX/bin/clang++*" \
-        "$INSTALL_PREFIX/bin/clangd" \
-        "$INSTALL_PREFIX/bin/clang-format*" \
-        "$INSTALL_PREFIX/bin/clang-tidy*" \
         "$INSTALL_PREFIX/bin/lld*" \
         "$INSTALL_PREFIX/bin/llvm-bolt" \
         "$INSTALL_PREFIX/bin/perf2bolt" \
