@@ -32,7 +32,7 @@ if [[ "$UNAME_ARCH" == "x86_64" ]]; then
 elif [[ "$UNAME_ARCH" == "aarch64" || "$UNAME_ARCH" == "arm64" ]]; then
   HOST_TARGET="AArch64"
 else
-  echo "Unsupported architecture on Linux: ${UNAME_ARCH}. Only x86_64 and aarch64 are supported." >&2
+  echo "Error: Unsupported architecture: ${UNAME_ARCH}. Only x86_64 and aarch64 are supported." >&2
   exit 1
 fi
 

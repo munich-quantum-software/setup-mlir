@@ -19,7 +19,7 @@
 set -euo pipefail
 
 # Parse arguments
-while getopts "t:p:a:" opt; do
+while getopts ":t:p:a:" opt; do
   case $opt in
     t) TAG="$OPTARG"
     ;;
@@ -27,18 +27,20 @@ while getopts "t:p:a:" opt; do
     ;;
     a) GITHUB_TOKEN="$OPTARG"
     ;;
+    \?) echo "Error: Invalid option -$OPTARG" >&2; exit 1
+    ;;
   esac
 done
 
 # Check arguments
 if [ -z "${TAG:-}" ]; then
-  echo "Error: Tag (-t) is required"
-  echo "Usage: $0 -t <tag> -p <installation directory>"
+  echo "Error: Tag (-t) is required" >&2
+  echo "Usage: $0 -t <tag> -p <installation directory>" >&2
   exit 1
 fi
 if [ -z "${INSTALL_PREFIX:-}" ]; then
-  echo "Error: Installation directory (-p) is required"
-  echo "Usage: $0 -t <tag> -p <installation directory>"
+  echo "Error: Installation directory (-p) is required" >&2
+  echo "Usage: $0 -t <tag> -p <installation directory>" >&2
   exit 1
 fi
 

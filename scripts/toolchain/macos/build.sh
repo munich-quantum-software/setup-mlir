@@ -19,24 +19,26 @@
 set -euo pipefail
 
 # Parse arguments
-while getopts "r:p:" opt; do
+while getopts ":r:p:" opt; do
   case $opt in
     r) REF="$OPTARG"
     ;;
     p) INSTALL_PREFIX="$OPTARG"
+    ;;
+    \?) echo "Error: Invalid option -$OPTARG" >&2; exit 1
     ;;
   esac
 done
 
 # Check arguments
 if [ -z "${REF:-}" ]; then
-  echo "Error: Ref (-r) is required"
-  echo "Usage: $0 -r <ref> -p <installation directory>"
+  echo "Error: Ref (-r) is required" >&2
+  echo "Usage: $0 -r <ref> -p <installation directory>" >&2
   exit 1
 fi
 if [ -z "${INSTALL_PREFIX:-}" ]; then
-  echo "Error: Installation directory (-p) is required"
-  echo "Usage: $0 -r <ref> -p <installation directory>"
+  echo "Error: Installation directory (-p) is required" >&2
+  echo "Usage: $0 -r <ref> -p <installation directory>" >&2
   exit 1
 fi
 
@@ -51,7 +53,7 @@ elif [[ "$UNAME_ARCH" == "x86_64" ]]; then
   HOST_TARGET="X86"
   ENABLE_LTO=OFF
 else
-  echo "Unsupported architecture on macOS: ${UNAME_ARCH}. Only x86_64 and arm64 are supported." >&2
+  echo "Error: Unsupported architecture: ${UNAME_ARCH}. Only x86_64 and arm64 are supported." >&2
   exit 1
 fi
 
