@@ -49,7 +49,7 @@ export default async function getDownloadLink(
   const asset = findAsset(assets, platform, architecture)
 
   if (asset) {
-    return { url: asset.browser_download_url, name: asset.name  }
+    return { url: asset.browser_download_url, name: asset.name }
   } else {
     throw new Error(`No ${architecture} ${platform} archive found for tag ${tag}.`)
   }
@@ -98,9 +98,9 @@ async function getAssets(token: string, tag: string): Promise<ReleaseAsset[]> {
   }
   const octokit = new Octokit(options)
     const response = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
-        owner: "munich-quantum-software",
-        repo: "setup-mlir",
-        tag: tag
+      owner: "munich-quantum-software",
+      repo: "setup-mlir",
+      tag: tag
     })
     return response.data.assets
 }
