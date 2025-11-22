@@ -21,12 +21,18 @@ Refer to the release notes of the respective release for information on the LLVM
 ## Installation Scripts
 
 If you want to use the pre-built MLIR installations locally, we also provide installation scripts.
-For Linux and macOS, use [`installation/setup-mlir.sh`](./installation/setup-mlir.sh).
-For Windows, use [`installation/setup-mlir.ps1`](./installation/setup-mlir.ps1).
-Both scripts require the release tag (e.g, `2025.11.24`) and the desired installation directory to be passed.
+The scripts require the `setup-mlir` release tag (e.g, `2025.11.24`) and the desired installation directory to be passed.
+
+On Linux and macOS, use the following to run the installation script:
 
 ```bash
-./installation/setup-mlir.sh -t 2025.11.24 -p /path/to/installation
+curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -t 2025.11.24 -p /path/to/installation
+```
+
+On Windows, use this PowerShell command:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1 | iex; setup-mlir.ps1 -setup_mlir_tag 2025.11.24 -install_prefix /path/to/installation"
 ```
 
 ## Build Scripts
