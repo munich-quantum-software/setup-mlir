@@ -50,7 +50,7 @@ if [ ! -d "$INSTALL_PREFIX" ]; then
   exit 1
 fi
 
-# Check is zstd is installed
+# Check if zstd is installed
 if ! command -v zstd >/dev/null 2>&1; then
   echo "Error: zstd not found. Please install zstd." >&2
   exit 1
