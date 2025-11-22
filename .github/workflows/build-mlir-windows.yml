@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v5.0.0
       - name: Build
         shell: pwsh
-        run: ${{ github.workspace }}\scripts\toolchain\windows\build.ps1 -ref ${{ inputs.llvm-project-ref }} -install_prefix ${{ github.workspace }}\llvm-install
+        run: ${{ github.workspace }}\scripts\toolchain\windows\build.ps1 -llvm_project_ref ${{ inputs.llvm-project-ref }} -install_prefix ${{ github.workspace }}\llvm-install
       - name: Upload archive
         uses: actions/upload-artifact@v5.0.0
         with:
