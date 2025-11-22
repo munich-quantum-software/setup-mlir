@@ -50,6 +50,12 @@ if [ ! -d "$INSTALL_PREFIX" ]; then
   exit 1
 fi
 
+# Check is zstd is installed
+if ! command -v zstd >/dev/null 2>&1; then
+  echo "Error: zstd not found. Please install zstd." >&2
+  exit 1
+fi
+
 # Change to installation directory
 pushd "$INSTALL_PREFIX" > /dev/null
 
@@ -102,12 +108,6 @@ fi
 echo "Downloading asset from $DOWNLOAD_URL..."
 if ! curl -f -L -o "asset.tar.zst" "$DOWNLOAD_URL"; then
   echo "Error: Download failed." >&2
-  exit 1
-fi
-
-# Check for zstd
-if ! command -v zstd >/dev/null 2>&1; then
-  echo "Error: zstd not found. Please install zstd." >&2
   exit 1
 fi
 
