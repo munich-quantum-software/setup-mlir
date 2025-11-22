@@ -58,5 +58,6 @@ jobs:
         run: |
           gh release create ${{ inputs.release-tag }} \
                             artifacts/**/* \
+                            installation/* \
                             --title "Portable MLIR Toolchain ${{ inputs.release-tag }} Release" \
                             --notes "${{ inputs.release-notes }}"
