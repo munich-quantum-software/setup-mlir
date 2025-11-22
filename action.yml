@@ -19,14 +19,14 @@ description: "Set up a specific version of the MLIR toolchain"
 
 inputs:
   tag:
-    description: "The tag of the MLIR toolchain to install."
+    description: "The release tag of the assets to install (e.g., 2025.11.24)."
     required: true
   platform:
-    description: "The platform to install the MLIR toolchain for (either linux, macOS, or windows). Defaults to host."
+    description: "The platform to install the MLIR toolchain for (either linux, macOS, windows, or host). Defaults to host."
     required: false
     default: "host"
   architecture:
-    description: "The architecture to install the MLIR toolchain for (either X86 or AArch64). Defaults to host."
+    description: "The architecture to install the MLIR toolchain for (either X86, AArch64, or host). Defaults to host."
     required: false
     default: "host"
   token:

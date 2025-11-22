@@ -1,4 +1,4 @@
-name: Build Portable MLIR Toolchain (staged)
+name: Build Portable MLIR Toolchain
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ on:
         required: true
         type: boolean
       release-tag:
-        description: "Tag for the GitHub release (e.g., 2025.11.20)"
+        description: "Tag for the GitHub release (e.g., 2025.11.24)"
         required: false
         type: string
       release-notes:

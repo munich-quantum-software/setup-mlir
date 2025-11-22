@@ -8,9 +8,9 @@ We provide a GitHub Action.
 
 ```yaml
 - name: Setup MLIR
-  uses: munich-quantum-software/setup-mlir@2025.11.20
+  uses: munich-quantum-software/setup-mlir@2025.11.24
   with:
-    tag: 2025.11.20
+    tag: 2025.11.24
 ```
 
 This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and defines `$LLVM_DIR` and `$MLIR_DIR`.
@@ -23,10 +23,10 @@ Refer to the release notes of the respective release for information on the LLVM
 If you want to use the pre-built MLIR installations locally, we also provide installation scripts.
 For Linux and macOS, use [`installation/setup-mlir.sh`](./installation/setup-mlir.sh).
 For Windows, use [`installation/setup-mlir.ps1`](./installation/setup-mlir.ps1).
-Both scripts require the release tag (e.g, `2025.11.20`) and the desired installation directory to be passed.
+Both scripts require the release tag (e.g, `2025.11.24`) and the desired installation directory to be passed.
 
 ```bash
-./installation/setup-mlir.sh -t 2025.11.20 -p /path/to/installation
+./installation/setup-mlir.sh -t 2025.11.24 -p /path/to/installation
 ```
 
 ## Build Scripts

@@ -1,7 +1,7 @@
 {
   "name": "setup-mlir",
-  "version": "1.0.0",
-  "description": "Portable MLIR toolchain",
+  "version": "2025.11.24",
+  "description": "GitHub Action that sets up a specific version of the MLIR toolchain",
   "main": "./dist/index.js",
   "scripts": {
     "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt"
