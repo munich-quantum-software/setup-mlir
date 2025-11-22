@@ -31,7 +31,7 @@ if (-not (Test-Path $install_prefix -PathType Container)) {
     exit 1
 }
 
-# Check is zstd is installed
+# Check if zstd is installed
 if (-not (Get-Command zstd -ErrorAction SilentlyContinue)) {
     Write-Error "zstd not found. Please install zstd (e.g., via Chocolatey: choco install zstd)."
     exit 1
