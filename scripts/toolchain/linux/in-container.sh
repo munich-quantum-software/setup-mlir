@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-: "${REF:?REF (commit) not set}"
+: "${LLVM_PROJECT_REF:?LLVM_PROJECT_REF (commit) not set}"
 : "${INSTALL_PREFIX:?INSTALL_PREFIX not set}"
 
 cd /work
@@ -38,17 +38,17 @@ fi
 
 # Main LLVM setup function
 build_llvm() {
-  local ref=$1
+  local llvm_project_ref=$1
   local INSTALL_PREFIX=$2
 
-  echo "Building LLVM/MLIR $ref into $INSTALL_PREFIX..."
+  echo "Building MLIR $llvm_project_ref into $INSTALL_PREFIX..."
 
   # Fetch LLVM project source archive
   repo_dir="$PWD/llvm-project"
   rm -rf "$repo_dir"
   mkdir -p "$repo_dir"
   curl -fL --retry 5 --retry-delay 5 \
-    "https://github.com/llvm/llvm-project/archive/${ref}.tar.gz" \
+    "https://github.com/llvm/llvm-project/archive/${llvm_project_ref}.tar.gz" \
     | tar -xz --strip-components=1 -C "$repo_dir"
 
   # Change to repo directory
@@ -78,7 +78,7 @@ build_llvm() {
   popd > /dev/null
 }
 
-build_llvm "$REF" "$INSTALL_PREFIX"
+build_llvm "$LLVM_PROJECT_REF" "$INSTALL_PREFIX"
 
 # Prune non-essential tools
 if [[ -d "$INSTALL_PREFIX/bin" ]]; then
@@ -97,7 +97,7 @@ if command -v strip >/dev/null 2>&1; then
 fi
 
 # Define archive variables
-ARCHIVE_NAME="llvm-mlir_${REF}_linux_${UNAME_ARCH}_${HOST_TARGET}.tar.zst"
+ARCHIVE_NAME="llvm-mlir_${LLVM_PROJECT_REF}_linux_${UNAME_ARCH}_${HOST_TARGET}.tar.zst"
 ARCHIVE_PATH="$(pwd)/${ARCHIVE_NAME}"
 
 # Change to installation directory

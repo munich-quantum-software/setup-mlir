@@ -24,18 +24,18 @@ type ReleaseAsset = components["schemas"]["release-asset"]
 /**
  * Determine the URL of the release asset for the given platform and architecture.
  * @param {string} token - GitHub token
- * @param {string} tag - toolchain tag
+ * @param {string} setup_mlir_tag - setup-mlir tag
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
  * @returns {{url: string, name: string}} - Download URL for the release asset and the asset name
  */
 export default async function getDownloadLink(
   token: string,
-  tag: string,
+  setup_mlir_tag: string,
   platform = "host",
   architecture = "host"
 ): Promise<{ url: string; name: string }> {
-  const assets = await getAssets(token, tag)
+  const assets = await getAssets(token, setup_mlir_tag)
 
   if (platform === "host") {
     platform = determinePlatform()
@@ -51,7 +51,7 @@ export default async function getDownloadLink(
   if (asset) {
     return { url: asset.browser_download_url, name: asset.name }
   } else {
-    throw new Error(`No ${architecture} ${platform} archive found for tag ${tag}.`)
+    throw new Error(`No ${architecture} ${platform} archive found for setup-mlir tag ${setup_mlir_tag}.`)
   }
 }
 
@@ -86,12 +86,12 @@ function determineArchitecture(): string {
 }
 
 /**
- * Get the release assets for the given tag from GitHub.
+ * Get the release assets for the given setup-mlir tag from GitHub.
  * @param {string} token - GitHub token
- * @param tag - toolchain tag
+ * @param setup_mlir_tag - setup-mlir tag
  * @returns {Promise<ReleaseAsset[]>} - list of release assets
  */
-async function getAssets(token: string, tag: string): Promise<ReleaseAsset[]> {
+async function getAssets(token: string, setup_mlir_tag: string): Promise<ReleaseAsset[]> {
   const options: OctokitOptions = {}
   if (token) {
     options.auth = token
@@ -100,7 +100,7 @@ async function getAssets(token: string, tag: string): Promise<ReleaseAsset[]> {
     const response = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
       owner: "munich-quantum-software",
       repo: "setup-mlir",
-      tag: tag
+      tag: setup_mlir_tag
     })
     return response.data.assets
 }

@@ -21,7 +21,7 @@ set -euo pipefail
 # Parse arguments
 while getopts ":r:p:" opt; do
   case $opt in
-    r) REF="$OPTARG"
+    r) LLVM_PROJECT_REF="$OPTARG"
     ;;
     p) INSTALL_PREFIX="$OPTARG"
     ;;
@@ -31,14 +31,14 @@ while getopts ":r:p:" opt; do
 done
 
 # Check arguments
-if [ -z "${REF:-}" ]; then
-  echo "Error: Ref (-r) is required" >&2
-  echo "Usage: $0 -r <ref> -p <installation directory>" >&2
+if [ -z "${LLVM_PROJECT_REF:-}" ]; then
+  echo "Error: llvm-project ref (-r) is required" >&2
+  echo "Usage: $0 -r <llvm-project ref> -p <installation directory>" >&2
   exit 1
 fi
 if [ -z "${INSTALL_PREFIX:-}" ]; then
   echo "Error: Installation directory (-p) is required" >&2
-  echo "Usage: $0 -r <ref> -p <installation directory>" >&2
+  echo "Usage: $0 -r <llvm-project ref> -p <installation directory>" >&2
   exit 1
 fi
 
@@ -59,17 +59,17 @@ fi
 
 # Main LLVM setup function
 build_llvm() {
-  local ref=$1
+  local llvm_project_ref=$1
   local install_prefix=$2
 
-  echo "Building LLVM/MLIR $ref into $install_prefix..."
+  echo "Building MLIR $llvm_project_ref into $install_prefix..."
 
   # Fetch LLVM project source archive
   repo_dir="$PWD/llvm-project"
   rm -rf "$repo_dir"
   mkdir -p "$repo_dir"
   curl -fL --retry 5 --retry-delay 5 \
-    "https://github.com/llvm/llvm-project/archive/${ref}.tar.gz" \
+    "https://github.com/llvm/llvm-project/archive/${llvm_project_ref}.tar.gz" \
     | tar -xz --strip-components=1 -C "$repo_dir"
 
   # Change to repo directory
@@ -100,7 +100,7 @@ build_llvm() {
   popd > /dev/null
 }
 
-build_llvm "$REF" "$INSTALL_PREFIX"
+build_llvm "$LLVM_PROJECT_REF" "$INSTALL_PREFIX"
 
 # Prune non-essential tools
 if [[ -d "$INSTALL_PREFIX/bin" ]]; then
@@ -119,7 +119,7 @@ if command -v strip >/dev/null 2>&1; then
 fi
 
 # Define archive variables
-ARCHIVE_NAME="llvm-mlir_${REF}_macos_${UNAME_ARCH}_${HOST_TARGET}.tar.zst"
+ARCHIVE_NAME="llvm-mlir_${LLVM_PROJECT_REF}_macos_${UNAME_ARCH}_${HOST_TARGET}.tar.zst"
 ARCHIVE_PATH="$(pwd)/${ARCHIVE_NAME}"
 
 # Change to installation directory

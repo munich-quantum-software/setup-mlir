@@ -3,7 +3,7 @@ name: Build Portable MLIR Toolchain
 on:
   workflow_dispatch:
     inputs:
-      llvmorg-ref:
+      llvm-project-ref:
         description: "llvm-project ref or tag (e.g., llvmorg-21.1.5)"
         required: true
         type: string
@@ -29,17 +29,17 @@ jobs:
   linux:
     uses: ./.github/workflows/build-mlir-linux.yml
     with:
-      ref: ${{ inputs.llvmorg-ref || 'llvmorg-21.1.5' }}
+      llvm-project-ref: ${{ inputs.llvm-project-ref || 'llvmorg-21.1.5' }}
 
   macos:
     uses: ./.github/workflows/build-mlir-macos.yml
     with:
-      ref: ${{ inputs.llvmorg-ref || 'llvmorg-21.1.5' }}
+      llvm-project-ref: ${{ inputs.llvm-project-ref || 'llvmorg-21.1.5' }}
 
   windows:
     uses: ./.github/workflows/build-mlir-windows.yml
     with:
-      ref: ${{ inputs.llvmorg-ref || 'llvmorg-21.1.5' }}
+      llvm-project-ref: ${{ inputs.llvm-project-ref || 'llvmorg-21.1.5' }}
 
   release:
     needs: [linux, macos, windows]

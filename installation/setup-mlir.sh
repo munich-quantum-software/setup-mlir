@@ -14,14 +14,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: ./setup-mlir.sh -t <tag> -p <installation directory> [-a <GitHub token>]
+# Usage: ./setup-mlir.sh -t <setup-mlir tag> -p <installation directory> [-a <GitHub token>]
 
 set -euo pipefail
 
 # Parse arguments
 while getopts ":t:p:a:" opt; do
   case $opt in
-    t) TAG="$OPTARG"
+    t) SETUP_MLIR_TAG="$OPTARG"
     ;;
     p) INSTALL_PREFIX="$OPTARG"
     ;;
@@ -33,14 +33,14 @@ while getopts ":t:p:a:" opt; do
 done
 
 # Check arguments
-if [ -z "${TAG:-}" ]; then
-  echo "Error: Tag (-t) is required" >&2
-  echo "Usage: $0 -t <tag> -p <installation directory>" >&2
+if [ -z "${SETUP_MLIR_TAG:-}" ]; then
+  echo "Error: setup-mlir tag (-t) is required" >&2
+  echo "Usage: $0 -t <setup-mlir tag> -p <installation directory>" >&2
   exit 1
 fi
 if [ -z "${INSTALL_PREFIX:-}" ]; then
   echo "Error: Installation directory (-p) is required" >&2
-  echo "Usage: $0 -t <tag> -p <installation directory>" >&2
+  echo "Usage: $0 -t <setup-mlir tag> -p <installation directory>" >&2
   exit 1
 fi
 
@@ -69,7 +69,7 @@ case "$ARCH" in
 esac
 
 # Determine download URL
-RELEASE_URL="https://api.github.com/repos/munich-quantum-software/setup-mlir/releases/tags/${TAG}"
+RELEASE_URL="https://api.github.com/repos/munich-quantum-software/setup-mlir/releases/tags/${SETUP_MLIR_TAG}"
 RELEASE_JSON=$(curl -L \
                     -H "Accept: application/vnd.github+json" \
                     ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \

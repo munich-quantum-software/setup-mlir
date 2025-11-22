@@ -25,19 +25,19 @@ import path from "node:path"
  * @returns {Promise<void>}
  */
 async function run(): Promise<void> {
-  const tag = core.getInput("tag", { required: true })
+  const setup_mlir_tag = core.getInput("tag", { required: true })
   const platform = core.getInput("platform", { required: true })
   const architecture = core.getInput("architecture", { required: true })
   const token = core.getInput("token", { required: true })
 
   core.debug("==> Determining asset URL")
-  const asset = await getDownloadLink(token, tag, platform, architecture)
+  const asset = await getDownloadLink(token, setup_mlir_tag, platform, architecture)
   core.debug(`==> Downloading asset: ${asset.url}`)
   const file = await tc.downloadTool(asset.url)
   core.debug("==> Extracting asset")
   const dir = await tc.extractTar(path.resolve(file), undefined, ["--zstd", "-xv"])
   core.debug("==> Adding MLIR toolchain to tool cache")
-  const cachedPath = await tc.cacheDir(dir, "llvm-mlir-toolchain", tag)
+  const cachedPath = await tc.cacheDir(dir, "mlir-toolchain", setup_mlir_tag)
 
   core.debug("==> Adding MLIR toolchain to PATH")
   core.addPath(path.join(cachedPath, "bin"))

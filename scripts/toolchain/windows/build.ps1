@@ -13,11 +13,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: pwsh scripts/toolchain/windows/build.ps1 -ref <ref> -install_prefix <installation directory>
+# Usage: pwsh scripts/toolchain/windows/build.ps1 -llvm_project_ref <llvm-project ref> -install_prefix <installation directory>
 
 param(
     [Parameter(Mandatory=$true)]
-    [string]$ref,
+    [string]$llvm_project_ref,
     [Parameter(Mandatory=$true)]
     [string]$install_prefix
 )
@@ -41,16 +41,16 @@ switch ($arch) {
     }
 }
 
-Write-Host "Building LLVM/MLIR $ref into $install_prefix..."
+Write-Host "Building MLIR $llvm_project_ref into $install_prefix..."
 
 # Fetch LLVM project source archive
 $repo_dir = Join-Path $PWD "llvm-project"
 if (Test-Path $repo_dir) { Remove-Item -Recurse -Force $repo_dir }
 New-Item -ItemType Directory -Path $repo_dir -Force | Out-Null
-$archive_url = "https://github.com/llvm/llvm-project/archive/$ref.tar.gz"
+$archive_url = "https://github.com/llvm/llvm-project/archive/$llvm_project_ref.tar.gz"
 
 # Download archive to a temporary file
-$temp_archive = Join-Path ([IO.Path]::GetTempPath()) ("llvm-project-$($ref).tar.gz")
+$temp_archive = Join-Path ([IO.Path]::GetTempPath()) ("llvm-project-$($llvm_project_ref).tar.gz")
 Write-Host "Downloading $archive_url to $temp_archive..."
 Invoke-WebRequest -Uri $archive_url -OutFile $temp_archive
 
@@ -142,7 +142,7 @@ if (Test-Path $install_lib_clang) {
 }
 
 # Define archive variables
-$archive_name = "llvm-mlir_$($ref)_windows_$($arch)_$($host_target).tar.zst"
+$archive_name = "llvm-mlir_$($llvm_project_ref)_windows_$($arch)_$($host_target).tar.zst"
 $archive_path = Join-Path $PWD $archive_name
 
 # Change to installation directory

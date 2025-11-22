@@ -21,20 +21,20 @@
 #   then runs the in-container build script to produce the MLIR toolchain.
 #
 # Usage:
-#   scripts/toolchain/linux/build.sh -r <ref> -p <install_prefix>
-#     ref            Git ref or commit SHA (e.g., llvmorg-20.1.8 or 179d30f...)
-#     install_prefix Absolute path on the host for the final install (also where archive is written)
+#   scripts/toolchain/linux/build.sh -r <llvm_project_ref> -p <install_prefix>
+#     llvm_project_ref llvm-project Git ref or commit SHA (e.g., llvmorg-20.1.8 or 179d30f...)
+#     install_prefix   Absolute path on the host for the final install (also where archive is written)
 #
 # Outputs:
 #   - Installs into <install_prefix>
-#   - Creates <install_prefix>/llvm-mlir_<ref>_linux_<arch>_<host_target>.tar.zst
+#   - Creates <install_prefix>/llvm-mlir_<llvm_project_ref>_linux_<arch>_<host_target>.tar.zst
 
 set -euo pipefail
 
 # Parse arguments
 while getopts ":r:p:" opt; do
   case $opt in
-    r) REF="$OPTARG"
+    r) LLVM_PROJECT_REF="$OPTARG"
     ;;
     p) INSTALL_PREFIX="$OPTARG"
     ;;
@@ -44,14 +44,14 @@ while getopts ":r:p:" opt; do
 done
 
 # Check arguments
-if [ -z "${REF:-}" ]; then
-  echo "Error: Ref (-r) is required" >&2
-  echo "Usage: $0 -r <ref> -p <installation directory>" >&2
+if [ -z "${LLVM_PROJECT_REF:-}" ]; then
+  echo "Error: llvm-project ref (-r) is required" >&2
+  echo "Usage: $0 -r <llvm-project ref> -p <installation directory>" >&2
   exit 1
 fi
 if [ -z "${INSTALL_PREFIX:-}" ]; then
   echo "Error: Installation directory (-p) is required" >&2
-  echo "Usage: $0 -r <ref> -p <installation directory>" >&2
+  echo "Usage: $0 -r <llvm-project ref> -p <installation directory>" >&2
   exit 1
 fi
 
@@ -73,7 +73,7 @@ REL_DIR="${SCRIPT_DIR#"${ROOT_DIR}"}"
 IN_CONTAINER_SCRIPT="/work${REL_DIR}/in-container.sh"
 
 # Build environment vars (only pass optional ones if provided)
-ENV_ARGS=(-e HOME=/work -e REF="$REF" -e INSTALL_PREFIX="/out" \
+ENV_ARGS=(-e HOME=/work -e LLVM_PROJECT_REF="$LLVM_PROJECT_REF" -e INSTALL_PREFIX="/out" \
   -e CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-4}")
 
 # Run build inside container

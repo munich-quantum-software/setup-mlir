@@ -13,11 +13,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: setup-mlir.ps1 -tag <tag> -install_prefix <installation directory>
+# Usage: setup-mlir.ps1 -setup_mlir_tag <tag> -install_prefix <installation directory>
 
 param(
     [Parameter(Mandatory=$true)]
-    [string]$tag,
+    [string]$setup_mlir_tag,
     [Parameter(Mandatory=$true)]
     [string]$install_prefix,
     [string]$token
@@ -46,7 +46,7 @@ if ($token) {
     $headers["Authorization"] = "Bearer $token"
 }
 
-$release_url = "https://api.github.com/repos/munich-quantum-software/setup-mlir/releases/tags/$tag"
+$release_url = "https://api.github.com/repos/munich-quantum-software/setup-mlir/releases/tags/$setup_mlir_tag"
 $release_json = Invoke-RestMethod -Uri $release_url -Headers $headers
 
 $assets_url = $release_json.assets_url
