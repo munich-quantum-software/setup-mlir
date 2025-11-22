@@ -76,14 +76,14 @@ esac
 
 # Determine download URL
 RELEASE_URL="https://api.github.com/repos/munich-quantum-software/setup-mlir/releases/tags/${SETUP_MLIR_TAG}"
-RELEASE_JSON=$(curl -L \
+RELEASE_JSON=$(curl -fL \
                     -H "Accept: application/vnd.github+json" \
                     ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
                     -H "X-GitHub-Api-Version: 2022-11-28" \
                     "$RELEASE_URL")
 
 ASSETS_URL=$(echo "$RELEASE_JSON" | jq -r '.assets_url')
-ASSETS_JSON=$(curl -L \
+ASSETS_JSON=$(curl -fL \
                    -H "Accept: application/vnd.github+json" \
                    ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
                    -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -106,7 +106,7 @@ fi
 
 # Download asset
 echo "Downloading asset from $DOWNLOAD_URL..."
-if ! curl -f -L -o "asset.tar.zst" "$DOWNLOAD_URL"; then
+if ! curl -fL -o "asset.tar.zst" "$DOWNLOAD_URL"; then
   echo "Error: Download failed." >&2
   exit 1
 fi
