@@ -78,7 +78,7 @@ if (-not (Get-Command zstd -ErrorAction SilentlyContinue)) {
 
 # Check for tar
 if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
-    Write-Error "tar not found. Please install tar (e.g., via Chocolatey: choco install git)."
+    Write-Error "tar not found. Please install tar (e.g., via Chocolatey: choco install tar)."
     exit 1
 }
 
