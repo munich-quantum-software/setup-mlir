@@ -19,7 +19,7 @@ exclude: >
 
 repos:
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.9
+    rev: 0.9.11
     hooks:
       - id: uv-lock
 
@@ -63,7 +63,7 @@ repos:
 
   # Python linting using ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.5
+    rev: v0.14.6
     hooks:
       - id: ruff-check
         args: ["--fix", "--show-fixes"]
@@ -102,6 +102,6 @@ repos:
 
   # Check the pyproject.toml file
   - repo: https://github.com/henryiii/validate-pyproject-schema-store
-    rev: 2025.11.14
+    rev: 2025.11.21
     hooks:
       - id: validate-pyproject
