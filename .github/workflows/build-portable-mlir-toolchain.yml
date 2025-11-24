@@ -13,11 +13,11 @@ on:
         type: boolean
       release-tag:
         description: "Tag for the GitHub release (e.g., 2025.11.24)"
-        required: false
+        required: true
         type: string
       release-notes:
         description: "Release notes for the GitHub release"
-        required: false
+        required: true
         type: string
   pull_request:
 
