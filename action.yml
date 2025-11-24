@@ -19,7 +19,7 @@ description: "Set up a specific version of the MLIR toolchain"
 
 inputs:
   tag:
-    description: "The release tag of the assets to install (e.g., 2025.11.24)."
+    description: "The release tag of the assets to install (e.g., 2025.11.25)."
     required: true
   platform:
     description: "The platform to install the MLIR toolchain for (either linux, macOS, windows, or host). Defaults to host."
