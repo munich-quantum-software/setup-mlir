@@ -1,0 +1,63 @@
+name: Build Portable MLIR Toolchain
+
+on:
+  workflow_dispatch:
+    inputs:
+      llvm-project-ref:
+        description: "llvm-project ref or tag (e.g., llvmorg-21.1.6)"
+        required: true
+        type: string
+      release:
+        description: "Whether to create a GitHub release with the built artifacts"
+        required: true
+        type: boolean
+      release-tag:
+        description: "Tag for the GitHub release (e.g., 2025.11.24)"
+        required: true
+        type: string
+      release-notes:
+        description: "Release notes for the GitHub release"
+        required: true
+        type: string
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    uses: ./.github/workflows/build-mlir-linux.yml
+    with:
+      llvm-project-ref: ${{ inputs.llvm-project-ref || 'llvmorg-21.1.6' }}
+
+  macos:
+    uses: ./.github/workflows/build-mlir-macos.yml
+    with:
+      llvm-project-ref: ${{ inputs.llvm-project-ref || 'llvmorg-21.1.6' }}
+
+  windows:
+    uses: ./.github/workflows/build-mlir-windows.yml
+    with:
+      llvm-project-ref: ${{ inputs.llvm-project-ref || 'llvmorg-21.1.6' }}
+
+  release:
+    needs: [linux, macos, windows]
+    if: ${{ inputs.release == true || false }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5.0.0
+      - name: Download artifacts
+        uses: actions/download-artifact@v5.0.0
+        with:
+          path: artifacts
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create ${{ inputs.release-tag }} \
+                            artifacts/**/* \
+                            installation/* \
+                            --title "Setup MLIR ${{ inputs.release-tag }} Release" \
+                            --notes "${{ inputs.release-notes }}"

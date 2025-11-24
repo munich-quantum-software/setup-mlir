@@ -1,0 +1,32 @@
+{
+  "name": "setup-mlir",
+  "version": "2025.11.24",
+  "description": "GitHub Action that sets up a specific version of the MLIR toolchain",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/munich-quantum-software/setup-mlir.git"
+  },
+  "keywords": [],
+  "author": "Munich Quantum Software Company GmbH and Chair for Design Automation, TUM",
+  "license": "Apache-2.0 WITH LLVM-exception",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/munich-quantum-software/setup-mlir/issues"
+  },
+  "homepage": "https://github.com/munich-quantum-software/setup-mlir#readme",
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/tool-cache": "^2.0.2",
+    "@octokit/core": "^7.0.6",
+    "@octokit/openapi-types": "^27.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@vercel/ncc": "^0.38.4",
+    "typescript": "^5.9.3"
+  }
+}
