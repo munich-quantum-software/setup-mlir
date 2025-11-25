@@ -19,7 +19,7 @@ jobs:
         runs-on: [macos-15, macos-15-intel]
     runs-on: ${{ matrix.runs-on }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
       - name: Build
         run: bash ${{ github.workspace }}/scripts/toolchain/macos/build.sh -r ${{ inputs.llvm-project-ref }} -p ${{ github.workspace }}/llvm-install
       - name: Upload archive
