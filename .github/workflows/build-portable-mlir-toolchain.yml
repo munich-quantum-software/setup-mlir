@@ -19,8 +19,8 @@ on:
         description: "Release notes for the GitHub release"
         required: true
         type: string
-  # Uncomment the following lines to enable the workflow on pull requests (e.g., for testing new build scripts)
-#  pull_request:
+  # Uncomment the following line to enable the workflow on pull requests (e.g., for testing new build scripts)
+  # pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
