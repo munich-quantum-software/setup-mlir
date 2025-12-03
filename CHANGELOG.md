@@ -8,6 +8,10 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 
 ## [Unreleased]
 
+### Changed
+
+- 📌 Pin `manylinux` images used for Linux builds ([#23]) ([**@denialhaag**])
+
 ## [2025.11.25]
 
 _This is the initial release of the `setup-mlir` project._
@@ -27,6 +31,7 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#23]: https://github.com/munich-quantum-software/setup-mlir/pull/23
 [#14]: https://github.com/munich-quantum-software/setup-mlir/pull/14
 [#6]: https://github.com/munich-quantum-software/setup-mlir/pull/6
 [#3]: https://github.com/munich-quantum-software/setup-mlir/pull/3
