@@ -1,4 +1,4 @@
-name: Build Portable MLIR Toolchain
+name: 👷 Build Portable MLIR Toolchain
 
 on:
   workflow_dispatch:
@@ -19,6 +19,7 @@ on:
         description: "Release notes for the GitHub release"
         required: true
         type: string
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
