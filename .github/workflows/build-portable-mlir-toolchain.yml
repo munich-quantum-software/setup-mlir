@@ -44,7 +44,7 @@ jobs:
         uses: Ana06/get-changed-files@25f79e676e7ea1868813e21465014798211fad8c # v2.3.0
         with:
           filter: scripts/toolchain/linux/**
-      - name: Set a flag for running the C++ tests
+      - name: Set a flag for running Linux builds
         if: github.event_name != 'pull_request' || steps.changed-linux-files.outputs.added_modified_renamed != ''
         id: linux-changes
         run: echo "run-linux=true" >> "${GITHUB_OUTPUT}"
@@ -54,7 +54,7 @@ jobs:
         uses: Ana06/get-changed-files@25f79e676e7ea1868813e21465014798211fad8c # v2.3.0
         with:
           filter: scripts/toolchain/macos/**
-      - name: Set a flag for running the macOS tests
+      - name: Set a flag for running macOS builds
         if: github.event_name != 'pull_request' || steps.changed-macos-files.outputs.added_modified_renamed != ''
         id: macos-changes
         run: echo "run-macos=true" >> "${GITHUB_OUTPUT}"
@@ -64,7 +64,7 @@ jobs:
         uses: Ana06/get-changed-files@25f79e676e7ea1868813e21465014798211fad8c # v2.3.0
         with:
           filter: scripts/toolchain/windows/**
-      - name: Set a flag for running the Windows tests
+      - name: Set a flag for running Windows builds
         if: github.event_name != 'pull_request' || steps.changed-windows-files.outputs.added_modified_renamed != ''
         id: windows-changes
         run: echo "run-windows=true" >> "${GITHUB_OUTPUT}"
