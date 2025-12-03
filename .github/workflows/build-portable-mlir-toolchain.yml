@@ -33,9 +33,9 @@ jobs:
     name: 🕵️ Check
     runs-on: ubuntu-24.04
     outputs:
-      run-linux: ${{ steps.linux-changes.outputs.run-linux || true }}
-      run-macos: ${{ steps.macos-changes.outputs.run-macos || true }}
-      run-windows: ${{ steps.windows-changes.outputs.run-windows || true }}
+      run-linux: ${{ steps.linux-changes.outputs.run-linux || false }}
+      run-macos: ${{ steps.macos-changes.outputs.run-macos || false }}
+      run-windows: ${{ steps.windows-changes.outputs.run-windows || false }}
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
       - name: Collect changed Linux build files
