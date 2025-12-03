@@ -19,8 +19,6 @@ on:
         description: "Release notes for the GitHub release"
         required: true
         type: string
-  # Uncomment the following line to enable the workflow on pull requests (e.g., for testing new build scripts)
-  # pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -30,17 +28,63 @@ permissions:
   contents: read
 
 jobs:
+  change-detection:
+    name: 🕵️ Check
+    runs-on: ubuntu-24.04
+    outputs:
+      run-linux: ${{ steps.linux-changes.outputs.run-linux || true }}
+      run-macos: ${{ steps.macos-changes.outputs.run-macos || true }}
+      run-windows: ${{ steps.windows-changes.outputs.run-windows || true }}
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - name: Collect changed Linux build files
+        if: github.event_name == 'pull_request'
+        id: changed-linux-files
+        uses: Ana06/get-changed-files@25f79e676e7ea1868813e21465014798211fad8c # v2.3.0
+        with:
+          filter: scripts/toolchain/linux/**
+      - name: Set a flag for running the C++ tests
+        if: github.event_name != 'pull_request' || steps.changed-linux-files.outputs.added_modified_renamed != ''
+        id: linux-changes
+        run: echo "run-linux=true" >> "${GITHUB_OUTPUT}"
+      - name: Collect changed macOS build files
+        if: github.event_name == 'pull_request'
+        id: changed-macos-files
+        uses: Ana06/get-changed-files@25f79e676e7ea1868813e21465014798211fad8c # v2.3.0
+        with:
+          filter: scripts/toolchain/macos/**
+      - name: Set a flag for running the macOS tests
+        if: github.event_name != 'pull_request' || steps.changed-macos-files.outputs.added_modified_renamed != ''
+        id: macos-changes
+        run: echo "run-macos=true" >> "${GITHUB_OUTPUT}"
+      - name: Collect changed Windows build files
+        if: github.event_name == 'pull_request'
+        id: changed-windows-files
+        uses: Ana06/get-changed-files@25f79e676e7ea1868813e21465014798211fad8c # v2.3.0
+        with:
+          filter: scripts/toolchain/windows/**
+      - name: Set a flag for running the Windows tests
+        if: github.event_name != 'pull_request' || steps.changed-windows-files.outputs.added_modified_renamed != ''
+        id: windows-changes
+        run: echo "run-windows=true" >> "${GITHUB_OUTPUT}"
+
   linux:
+    needs: change-detection
+    if: fromJson(needs.change-detection.outputs.run-linux)
     uses: ./.github/workflows/build-mlir-linux.yml
     with:
       llvm-project-ref: ${{ inputs.llvm-project-ref || 'llvmorg-21.1.6' }}
 
   macos:
+    needs: change-detection
+    if: fromJson(needs.change-detection.outputs.run-macos)
     uses: ./.github/workflows/build-mlir-macos.yml
     with:
       llvm-project-ref: ${{ inputs.llvm-project-ref || 'llvmorg-21.1.6' }}
 
   windows:
+    needs: change-detection
+    if: fromJson(needs.change-detection.outputs.run-windows)
     uses: ./.github/workflows/build-mlir-windows.yml
     with:
       llvm-project-ref: ${{ inputs.llvm-project-ref || 'llvmorg-21.1.6' }}
