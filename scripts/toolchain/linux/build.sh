@@ -59,9 +59,9 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 ROOT_DIR=$(cd "$SCRIPT_DIR/../../.." && pwd)
 
 ARCH=$(uname -m)
-BASE_IMAGE="quay.io/pypa/manylinux_2_28_x86_64"
+BASE_IMAGE="quay.io/pypa/manylinux_2_28_x86_64:2025.11.29-1"
 if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
-  BASE_IMAGE="quay.io/pypa/manylinux_2_28_aarch64"
+  BASE_IMAGE="quay.io/pypa/manylinux_2_28_aarch64:2025.11.29-1"
 fi
 
 # Ensure output dir exists
