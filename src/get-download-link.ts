@@ -24,7 +24,8 @@ type ReleaseAsset = components["schemas"]["release-asset"]
 /**
  * Determine the URL of the release asset for the given platform and architecture.
  * @param {string} token - GitHub token
- * @param {string} setup_mlir_tag - setup-mlir tag
+ * @param {string} [setup_mlir_tag] - setup-mlir tag
+ * @param {string} [llvm_version] - LLVM version
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
  * @returns {{url: string, name: string}} - Download URL for the release asset and the asset name
@@ -32,10 +33,11 @@ type ReleaseAsset = components["schemas"]["release-asset"]
 export default async function getDownloadLink(
   token: string,
   setup_mlir_tag: string,
+  llvm_version: string,
   platform = "host",
   architecture = "host"
 ): Promise<{ url: string; name: string }> {
-  const assets = await getAssets(token, setup_mlir_tag)
+  const assets = await getAssets(token, setup_mlir_tag, llvm_version)
 
   if (platform === "host") {
     platform = determinePlatform()
@@ -88,21 +90,38 @@ function determineArchitecture(): string {
 /**
  * Get the release assets for the given setup-mlir tag from GitHub.
  * @param {string} token - GitHub token
- * @param setup_mlir_tag - setup-mlir tag
+ * @param {string} setup_mlir_tag - setup-mlir tag
+ * @param {string} llvm_version - LLVM version
  * @returns {Promise<ReleaseAsset[]>} - list of release assets
  */
-async function getAssets(token: string, setup_mlir_tag: string): Promise<ReleaseAsset[]> {
+async function getAssets(token: string, setup_mlir_tag: string, llvm_version: string): Promise<ReleaseAsset[]> {
   const options: OctokitOptions = {}
   if (token) {
     options.auth = token
   }
   const octokit = new Octokit(options)
-    const response = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
+  if (setup_mlir_tag != "") {
+    const release = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
       owner: "munich-quantum-software",
       repo: "setup-mlir",
       tag: setup_mlir_tag
     })
-    return response.data.assets
+    return release.data.assets
+  }
+  if (llvm_version != "") {
+    const llvm_tag = `llvmorg-${llvm_version}`
+    const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
+      owner: "munich-quantum-software",
+      repo: "setup-mlir"
+    })
+    for (const release_data of releases.data) {
+      if (release_data.assets && release_data.body && release_data.body.includes(llvm_version)) {
+        return release_data.assets
+      }
+    }
+    throw new Error(`No release with LLVM ${llvm_version} found.`)
+  }
+  throw new Error("Either setup_mlir_tag or llvm_version must be provided to get release assets.")
 }
 
 /**

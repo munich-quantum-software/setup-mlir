@@ -29217,13 +29217,14 @@ class Octokit {
 /**
  * Determine the URL of the release asset for the given platform and architecture.
  * @param {string} token - GitHub token
- * @param {string} setup_mlir_tag - setup-mlir tag
+ * @param {string} [setup_mlir_tag] - setup-mlir tag
+ * @param {string} [llvm_version] - LLVM version
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
  * @returns {{url: string, name: string}} - Download URL for the release asset and the asset name
  */
-async function getDownloadLink(token, setup_mlir_tag, platform = "host", architecture = "host") {
-    const assets = await getAssets(token, setup_mlir_tag);
+async function getDownloadLink(token, setup_mlir_tag, llvm_version, platform = "host", architecture = "host") {
+    const assets = await getAssets(token, setup_mlir_tag, llvm_version);
     if (platform === "host") {
         platform = determinePlatform();
     }
@@ -29275,21 +29276,38 @@ function determineArchitecture() {
 /**
  * Get the release assets for the given setup-mlir tag from GitHub.
  * @param {string} token - GitHub token
- * @param setup_mlir_tag - setup-mlir tag
+ * @param {string} setup_mlir_tag - setup-mlir tag
+ * @param {string} llvm_version - LLVM version
  * @returns {Promise<ReleaseAsset[]>} - list of release assets
  */
-async function getAssets(token, setup_mlir_tag) {
+async function getAssets(token, setup_mlir_tag, llvm_version) {
     const options = {};
     if (token) {
         options.auth = token;
     }
     const octokit = new Octokit(options);
-    const response = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
-        owner: "munich-quantum-software",
-        repo: "setup-mlir",
-        tag: setup_mlir_tag
-    });
-    return response.data.assets;
+    if (setup_mlir_tag != "") {
+        const release = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
+            owner: "munich-quantum-software",
+            repo: "setup-mlir",
+            tag: setup_mlir_tag
+        });
+        return release.data.assets;
+    }
+    if (llvm_version != "") {
+        const llvm_tag = `llvmorg-${llvm_version}`;
+        const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
+            owner: "munich-quantum-software",
+            repo: "setup-mlir"
+        });
+        for (const release_data of releases.data) {
+            if (release_data.assets && release_data.body && release_data.body.includes(llvm_version)) {
+                return release_data.assets;
+            }
+        }
+        throw new Error(`No release with LLVM ${llvm_version} found.`);
+    }
+    throw new Error("Either setup_mlir_tag or llvm_version must be provided to get release assets.");
 }
 /**
  * Find the release asset for the given platform and architecture.
@@ -29351,11 +29369,12 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
  */
 async function run() {
     const setup_mlir_tag = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("tag", { required: true });
+    const llvm_version = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("llvm-version", { required: true });
     const platform = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("platform", { required: true });
     const architecture = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("architecture", { required: true });
     const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("token", { required: true });
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Determining asset URL");
-    const asset = await (0,_get_download_link_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(token, setup_mlir_tag, platform, architecture);
+    const asset = await (0,_get_download_link_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(token, setup_mlir_tag, llvm_version, platform, architecture);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug(`==> Downloading asset: ${asset.url}`);
     const file = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.downloadTool(asset.url);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Extracting asset");

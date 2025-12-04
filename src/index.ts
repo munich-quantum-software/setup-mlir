@@ -26,12 +26,13 @@ import path from "node:path"
  */
 async function run(): Promise<void> {
   const setup_mlir_tag = core.getInput("tag", { required: true })
+  const llvm_version = core.getInput("llvm-version", { required: true })
   const platform = core.getInput("platform", { required: true })
   const architecture = core.getInput("architecture", { required: true })
   const token = core.getInput("token", { required: true })
 
   core.debug("==> Determining asset URL")
-  const asset = await getDownloadLink(token, setup_mlir_tag, platform, architecture)
+  const asset = await getDownloadLink(token, setup_mlir_tag, llvm_version, platform, architecture)
   core.debug(`==> Downloading asset: ${asset.url}`)
   const file = await tc.downloadTool(asset.url)
   core.debug("==> Extracting asset")
