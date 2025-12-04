@@ -25,8 +25,8 @@ import path from "node:path"
  * @returns {Promise<void>}
  */
 async function run(): Promise<void> {
-  const setup_mlir_tag = core.getInput("tag", { required: true })
-  const llvm_version = core.getInput("llvm-version", { required: true })
+  const setup_mlir_tag = core.getInput("tag", { required: false })
+  const llvm_version = core.getInput("llvm-version", { required: false })
   const platform = core.getInput("platform", { required: true })
   const architecture = core.getInput("architecture", { required: true })
   const token = core.getInput("token", { required: true })

@@ -29367,8 +29367,8 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
  * @returns {Promise<void>}
  */
 async function run() {
-    const setup_mlir_tag = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("tag", { required: true });
-    const llvm_version = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("llvm-version", { required: true });
+    const setup_mlir_tag = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("tag", { required: false });
+    const llvm_version = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("llvm-version", { required: false });
     const platform = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("platform", { required: true });
     const architecture = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("architecture", { required: true });
     const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("token", { required: true });
