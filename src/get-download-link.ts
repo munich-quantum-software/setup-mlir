@@ -109,13 +109,12 @@ async function getAssets(token: string, setup_mlir_tag: string, llvm_version: st
     return release.data.assets
   }
   if (llvm_version != "") {
-    const llvm_tag = `llvmorg-${llvm_version}`
     const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
       owner: "munich-quantum-software",
       repo: "setup-mlir"
     })
     for (const release_data of releases.data) {
-      if (release_data.assets && release_data.body && release_data.body.includes(llvm_version)) {
+      if (release_data.assets && release_data.body && release_data.body.includes(`llvmorg-${llvm_version}`)) {
         return release_data.assets
       }
     }
