@@ -18,14 +18,9 @@ author: "Munich Quantum Software Company GmbH and Chair for Design Automation, T
 description: "Set up a specific version of the MLIR toolchain"
 
 inputs:
-  tag:
-    description: "The release tag of the assets to install (e.g., 2025.11.25)."
-    required: false
-    default: ""
   llvm-version:
     description: "The LLVM version to install (e.g., 21.1.6)."
-    required: false
-    default: ""
+    required: true
   platform:
     description: "The platform to install the MLIR toolchain for (either linux, macOS, windows, or host). Defaults to host."
     required: false
