@@ -29289,7 +29289,7 @@ async function getAssets(token, llvm_version) {
         repo: "setup-mlir",
     });
     const matching_releases = releases.data.filter((release) => release.assets &&
-        release.assets.some((asset) => asset.name && asset.name.includes(llvm_version)));
+        release.assets.some((asset) => asset.name && asset.name.includes(`llvmorg-${llvm_version}_`)));
     if (matching_releases.length > 0) {
         matching_releases.sort((a, b) => {
             const time_a = a.published_at ? new Date(a.published_at).getTime() : 0;

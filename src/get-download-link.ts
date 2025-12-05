@@ -112,7 +112,7 @@ async function getAssets(
       release.assets &&
       release.assets.some(
         (asset: ReleaseAsset) =>
-          asset.name && asset.name.includes(llvm_version),
+          asset.name && asset.name.includes(`llvmorg-${llvm_version}_`),
       ),
   );
   if (matching_releases.length > 0) {

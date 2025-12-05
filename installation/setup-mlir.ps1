@@ -62,7 +62,7 @@ $releases_url = "https://api.github.com/repos/munich-quantum-software/setup-mlir
 $releases_json = Invoke-RestMethod -Uri $releases_url -Headers $headers
 
 $matching_releases = $releases_json | Where-Object {
-    $_.assets -and ($_.assets | Where-Object { $_.name -and $_.name -like "*${llvm_version}*" })
+    $_.assets -and ($_.assets | Where-Object { $_.name -and $_.name -like "*llvmorg-${llvm_version}_*" })
 }
 if (-not $matching_releases) {
     Write-Error "No release with LLVM $llvm_version found."

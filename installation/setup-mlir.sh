@@ -84,12 +84,12 @@ RELEASES_JSON=$(curl -fL \
                      -H "X-GitHub-Api-Version: 2022-11-28" \
                      "$RELEASES_URL")
 
-ASSETS_JSON=$(echo "$RELEASES_JSON" | jq --arg v "$LLVM_VERSION" '
+ASSETS_JSON=$(echo "$RELEASES_JSON" | jq --arg m "llvmorg-${LLVM_VERSION}_" '
   map(
     select(
       (.assets | type == "array") and
       (.assets | length > 0) and
-      (.assets | any(.name? // empty | contains($v)))
+      (.assets | any(.name? // empty | contains($m)))
     )
   ) | sort_by(.published_at) | reverse | .[0].assets // empty
 ')
