@@ -16,7 +16,7 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 
 ### Changed
 
-- ✨ Add support for passing desired LLVM version to Action ([#25]) ([**@denialhaag**])
+- ✨ Restructure installation scripts and GitHub Action to accept LLVM version instead of `setup-mlir` tag ([#25]) ([**@denialhaag**])
 - 📌 Pin `manylinux` images used for Linux builds ([#23]) ([**@denialhaag**])
 
 ## [2025.11.25]
