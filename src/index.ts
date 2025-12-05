@@ -30,6 +30,13 @@ async function run(): Promise<void> {
   const architecture = core.getInput("architecture", { required: true });
   const token = core.getInput("token", { required: true });
 
+  // Validate LLVM version
+  if (!RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version)) {
+    throw new Error(
+      `Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z.`,
+    );
+  }
+
   core.debug("==> Determining asset URL");
   const asset = await getDownloadLink(
     token,
