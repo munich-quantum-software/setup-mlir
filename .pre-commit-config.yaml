@@ -61,7 +61,7 @@ repos:
     rev: v3.7.3
     hooks:
       - id: prettier
-        types_or: [yaml, markdown, html, css, scss, javascript, json, ts]
+        types_or: [yaml, markdown, html, css, scss, javascript, json, ts, tsx]
 
   # Check for spelling
   - repo: https://github.com/crate-ci/typos
