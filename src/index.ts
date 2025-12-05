@@ -15,46 +15,69 @@
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 
-import * as core from "@actions/core"
-import * as tc from "@actions/tool-cache"
-import getDownloadLink from "./get-download-link.js"
-import path from "node:path"
+import * as core from "@actions/core";
+import * as tc from "@actions/tool-cache";
+import getDownloadLink from "./get-download-link.js";
+import path from "node:path";
 
 /**
  * Setup MLIR toolchain
  * @returns {Promise<void>}
  */
 async function run(): Promise<void> {
-  const setup_mlir_tag = core.getInput("tag", { required: true })
-  const platform = core.getInput("platform", { required: true })
-  const architecture = core.getInput("architecture", { required: true })
-  const token = core.getInput("token", { required: true })
+  const llvm_version = core.getInput("llvm-version", { required: true });
+  const platform = core.getInput("platform", { required: true });
+  const architecture = core.getInput("architecture", { required: true });
+  const token = core.getInput("token", { required: true });
 
-  core.debug("==> Determining asset URL")
-  const asset = await getDownloadLink(token, setup_mlir_tag, platform, architecture)
-  core.debug(`==> Downloading asset: ${asset.url}`)
-  const file = await tc.downloadTool(asset.url)
-  core.debug("==> Extracting asset")
-  const dir = await tc.extractTar(path.resolve(file), undefined, ["--zstd", "-xv"])
-  core.debug("==> Adding MLIR toolchain to tool cache")
-  const cachedPath = await tc.cacheDir(dir, "mlir-toolchain", setup_mlir_tag)
+  // Validate LLVM version
+  if (!RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version)) {
+    throw new Error(
+      `Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z.`,
+    );
+  }
 
-  core.debug("==> Adding MLIR toolchain to PATH")
-  core.addPath(path.join(cachedPath, "bin"))
-  core.debug("==> Exporting LLVM_DIR")
-  core.exportVariable("LLVM_DIR", path.join(cachedPath, "lib", "cmake", "llvm"))
-  core.debug("==> Exporting MLIR_DIR")
-  core.exportVariable("MLIR_DIR", path.join(cachedPath, "lib", "cmake", "mlir"))
+  core.debug("==> Determining asset URL");
+  const asset = await getDownloadLink(
+    token,
+    llvm_version,
+    platform,
+    architecture,
+  );
+  core.debug(`==> Downloading asset: ${asset.url}`);
+  const file = await tc.downloadTool(asset.url);
+  core.debug("==> Extracting asset");
+  const dir = await tc.extractTar(path.resolve(file), undefined, [
+    "--zstd",
+    "-xv",
+  ]);
+  core.debug("==> Adding MLIR toolchain to tool cache");
+  const cachedPath = await tc.cacheDir(dir, "mlir-toolchain", llvm_version);
+
+  core.debug("==> Adding MLIR toolchain to PATH");
+  core.addPath(path.join(cachedPath, "bin"));
+  core.debug("==> Exporting LLVM_DIR");
+  core.exportVariable(
+    "LLVM_DIR",
+    path.join(cachedPath, "lib", "cmake", "llvm"),
+  );
+  core.debug("==> Exporting MLIR_DIR");
+  core.exportVariable(
+    "MLIR_DIR",
+    path.join(cachedPath, "lib", "cmake", "mlir"),
+  );
 }
 
 try {
-  core.debug("==> Starting MLIR toolchain setup")
-  await run()
-  core.debug("==> Finished MLIR toolchain setup")
+  core.debug("==> Starting MLIR toolchain setup");
+  await run();
+  core.debug("==> Finished MLIR toolchain setup");
 } catch (error) {
   if (typeof error === "string") {
-    core.setFailed(error)
+    core.setFailed(error);
   } else if (error instanceof Error) {
-    core.setFailed(error.message)
+    core.setFailed(error.message);
+  } else {
+    core.setFailed(`Unknown error: ${JSON.stringify(error)}`);
   }
 }

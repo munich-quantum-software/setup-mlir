@@ -29217,13 +29217,13 @@ class Octokit {
 /**
  * Determine the URL of the release asset for the given platform and architecture.
  * @param {string} token - GitHub token
- * @param {string} setup_mlir_tag - setup-mlir tag
+ * @param {string} llvm_version - LLVM version
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
  * @returns {{url: string, name: string}} - Download URL for the release asset and the asset name
  */
-async function getDownloadLink(token, setup_mlir_tag, platform = "host", architecture = "host") {
-    const assets = await getAssets(token, setup_mlir_tag);
+async function getDownloadLink(token, llvm_version, platform = "host", architecture = "host") {
+    const assets = await getAssets(token, llvm_version);
     if (platform === "host") {
         platform = determinePlatform();
     }
@@ -29236,7 +29236,7 @@ async function getDownloadLink(token, setup_mlir_tag, platform = "host", archite
         return { url: asset.browser_download_url, name: asset.name };
     }
     else {
-        throw new Error(`No ${architecture} ${platform} archive found for setup-mlir tag ${setup_mlir_tag}.`);
+        throw new Error(`No ${architecture} ${platform} archive found for LLVM ${llvm_version}.`);
     }
 }
 /**
@@ -29275,21 +29275,31 @@ function determineArchitecture() {
 /**
  * Get the release assets for the given setup-mlir tag from GitHub.
  * @param {string} token - GitHub token
- * @param setup_mlir_tag - setup-mlir tag
+ * @param {string} llvm_version - LLVM version
  * @returns {Promise<ReleaseAsset[]>} - list of release assets
  */
-async function getAssets(token, setup_mlir_tag) {
+async function getAssets(token, llvm_version) {
     const options = {};
     if (token) {
         options.auth = token;
     }
     const octokit = new Octokit(options);
-    const response = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
+    const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
         owner: "munich-quantum-software",
         repo: "setup-mlir",
-        tag: setup_mlir_tag
+        per_page: 100,
     });
-    return response.data.assets;
+    const matching_releases = releases.data.filter((release) => release.assets &&
+        release.assets.some((asset) => asset.name && asset.name.includes(`llvmorg-${llvm_version}_`)));
+    if (matching_releases.length > 0) {
+        matching_releases.sort((a, b) => {
+            const time_a = a.published_at ? new Date(a.published_at).getTime() : 0;
+            const time_b = b.published_at ? new Date(b.published_at).getTime() : 0;
+            return time_b - time_a;
+        });
+        return matching_releases[0].assets;
+    }
+    throw new Error(`No release with LLVM ${llvm_version} found.`);
 }
 /**
  * Find the release asset for the given platform and architecture.
@@ -29300,13 +29310,13 @@ async function getAssets(token, setup_mlir_tag) {
  */
 function findAsset(assets, platform, architecture) {
     if (platform === "linux") {
-        return assets.find(asset => RegExp(`.*_linux_.*_${architecture}.tar.zst$`, 'i').exec(asset.name));
+        return assets.find((asset) => RegExp(`.*_linux_.*_${architecture}.tar.zst$`, "i").exec(asset.name));
     }
     if (platform === "macOS") {
-        return assets.find(asset => RegExp(`.*_macos_.*_${architecture}.tar.zst$`, 'i').exec(asset.name));
+        return assets.find((asset) => RegExp(`.*_macos_.*_${architecture}.tar.zst$`, "i").exec(asset.name));
     }
     if (platform === "windows") {
-        return assets.find(asset => RegExp(`.*_windows_.*_${architecture}.tar.zst$`, 'i').exec(asset.name));
+        return assets.find((asset) => RegExp(`.*_windows_.*_${architecture}.tar.zst$`, "i").exec(asset.name));
     }
     throw new Error(`Invalid platform: ${platform}`);
 }
@@ -29350,18 +29360,25 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
  * @returns {Promise<void>}
  */
 async function run() {
-    const setup_mlir_tag = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("tag", { required: true });
+    const llvm_version = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("llvm-version", { required: true });
     const platform = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("platform", { required: true });
     const architecture = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("architecture", { required: true });
     const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("token", { required: true });
+    // Validate LLVM version
+    if (!RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version)) {
+        throw new Error(`Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z.`);
+    }
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Determining asset URL");
-    const asset = await (0,_get_download_link_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(token, setup_mlir_tag, platform, architecture);
+    const asset = await (0,_get_download_link_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(token, llvm_version, platform, architecture);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug(`==> Downloading asset: ${asset.url}`);
     const file = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.downloadTool(asset.url);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Extracting asset");
-    const dir = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.extractTar(node_path__WEBPACK_IMPORTED_MODULE_3___default().resolve(file), undefined, ["--zstd", "-xv"]);
+    const dir = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.extractTar(node_path__WEBPACK_IMPORTED_MODULE_3___default().resolve(file), undefined, [
+        "--zstd",
+        "-xv",
+    ]);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Adding MLIR toolchain to tool cache");
-    const cachedPath = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.cacheDir(dir, "mlir-toolchain", setup_mlir_tag);
+    const cachedPath = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.cacheDir(dir, "mlir-toolchain", llvm_version);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Adding MLIR toolchain to PATH");
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.addPath(node_path__WEBPACK_IMPORTED_MODULE_3___default().join(cachedPath, "bin"));
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Exporting LLVM_DIR");
@@ -29380,6 +29397,9 @@ catch (error) {
     }
     else if (error instanceof Error) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error.message);
+    }
+    else {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Unknown error: ${JSON.stringify(error)}`);
     }
 }
 

@@ -14,39 +14,41 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: ./setup-mlir.sh -t <setup-mlir tag> -p <installation directory> [-a <GitHub token>]
+# Usage: ./setup-mlir.sh -v <LLVM version> -p <installation directory> [-t <GitHub token>]
 
 set -euo pipefail
 
 # Parse arguments
-while getopts ":t:p:a:" opt; do
+while getopts ":v:p:t:" opt; do
   case $opt in
-    t) SETUP_MLIR_TAG="$OPTARG"
-    ;;
-    p) INSTALL_PREFIX="$OPTARG"
-    ;;
-    a) GITHUB_TOKEN="$OPTARG"
-    ;;
-    \?) echo "Error: Invalid option -$OPTARG" >&2; exit 1
-    ;;
+    v) LLVM_VERSION="$OPTARG" ;;
+    p) INSTALL_PREFIX="$OPTARG" ;;
+    t) GITHUB_TOKEN="$OPTARG" ;;
+    \?) echo "Error: Invalid option -$OPTARG" >&2; exit 1 ;;
   esac
 done
 
 # Check arguments
-if [ -z "${SETUP_MLIR_TAG:-}" ]; then
-  echo "Error: setup-mlir tag (-t) is required" >&2
-  echo "Usage: $0 -t <setup-mlir tag> -p <installation directory>" >&2
+if [ -z "${LLVM_VERSION:-}" ]; then
+  echo "Error: LLVM version (-v) is required" >&2
+  echo "Usage: $0 -v <LLVM version> -p <installation directory> [-t <GitHub token>]" >&2
   exit 1
 fi
 if [ -z "${INSTALL_PREFIX:-}" ]; then
   echo "Error: Installation directory (-p) is required" >&2
-  echo "Usage: $0 -t <setup-mlir tag> -p <installation directory>" >&2
+  echo "Usage: $0 -v <LLVM version> -p <installation directory> [-t <GitHub token>]" >&2
   exit 1
 fi
 
 # Check if installation directory exists
 if [ ! -d "$INSTALL_PREFIX" ]; then
   echo "Error: Installation directory $INSTALL_PREFIX does not exist." >&2
+  exit 1
+fi
+
+# Check if jq is installed
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: jq not found. Please install jq." >&2
   exit 1
 fi
 
@@ -75,19 +77,27 @@ case "$ARCH" in
 esac
 
 # Determine download URL
-RELEASE_URL="https://api.github.com/repos/munich-quantum-software/setup-mlir/releases/tags/${SETUP_MLIR_TAG}"
-RELEASE_JSON=$(curl -fL \
-                    -H "Accept: application/vnd.github+json" \
-                    ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
-                    -H "X-GitHub-Api-Version: 2022-11-28" \
-                    "$RELEASE_URL")
+RELEASES_URL="https://api.github.com/repos/munich-quantum-software/setup-mlir/releases?per_page=100"
+RELEASES_JSON=$(curl -fL \
+                     -H "Accept: application/vnd.github+json" \
+                     ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
+                     -H "X-GitHub-Api-Version: 2022-11-28" \
+                     "$RELEASES_URL")
 
-ASSETS_URL=$(echo "$RELEASE_JSON" | jq -r '.assets_url')
-ASSETS_JSON=$(curl -fL \
-                   -H "Accept: application/vnd.github+json" \
-                   ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
-                   -H "X-GitHub-Api-Version: 2022-11-28" \
-                   "$ASSETS_URL")
+ASSETS_JSON=$(echo "$RELEASES_JSON" | jq --arg m "llvmorg-${LLVM_VERSION}_" '
+  map(
+    select(
+      (.assets | type == "array") and
+      (.assets | length > 0) and
+      (.assets | any(.name? // empty | contains($m)))
+    )
+  ) | sort_by(.published_at) | reverse | .[0].assets // empty
+')
+
+if [ -z "$ASSETS_JSON" ] || [ "$ASSETS_JSON" = "null" ] || [ "$ASSETS_JSON" = "[]" ]; then
+  echo "Error: No release with LLVM $LLVM_VERSION found." >&2
+  exit 1
+fi
 
 DOWNLOAD_URLS=$(echo "$ASSETS_JSON" | jq -r '.[].browser_download_url')
 
@@ -101,6 +111,11 @@ elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "arm64" ]]; then
   DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_macos_.*_AArch64.tar.zst')
 else
   echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
+  exit 1
+fi
+
+if [ -z "$DOWNLOAD_URL" ]; then
+  echo "Error: No asset found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
   exit 1
 fi
 

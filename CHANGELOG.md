@@ -8,8 +8,15 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 
 ## [Unreleased]
 
+## [2025.12.05]
+
+### Distribution
+
+- LLVM tag: `llvmorg-21.1.7`
+
 ### Changed
 
+- ✨ Restructure installation scripts and GitHub Action to accept LLVM version instead of `setup-mlir` tag ([#25]) ([**@denialhaag**])
 - 📌 Pin `manylinux` images used for Linux builds ([#23]) ([**@denialhaag**])
 
 ## [2025.11.25]
@@ -26,11 +33,13 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- Version links -->
 
-[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/2025.11.25...HEAD
-[2025.11.25]: https://github.com/munich-quantum-software/setup-mlir/releases/2025.11.25
+[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/2025.12.05...HEAD
+[2025.12.05]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/2025.12.05
+[2025.11.25]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/2025.11.25
 
 <!-- PR links -->
 
+[#25]: https://github.com/munich-quantum-software/setup-mlir/pull/25
 [#23]: https://github.com/munich-quantum-software/setup-mlir/pull/23
 [#14]: https://github.com/munich-quantum-software/setup-mlir/pull/14
 [#6]: https://github.com/munich-quantum-software/setup-mlir/pull/6

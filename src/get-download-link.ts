@@ -15,43 +15,46 @@
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 
-import process from "node:process"
-import { Octokit, OctokitOptions } from "@octokit/core"
-import type { components } from "@octokit/openapi-types"
+import process from "node:process";
+import { Octokit, OctokitOptions } from "@octokit/core";
+import type { components } from "@octokit/openapi-types";
 
-type ReleaseAsset = components["schemas"]["release-asset"]
+type Release = components["schemas"]["release"];
+type ReleaseAsset = components["schemas"]["release-asset"];
 
 /**
  * Determine the URL of the release asset for the given platform and architecture.
  * @param {string} token - GitHub token
- * @param {string} setup_mlir_tag - setup-mlir tag
+ * @param {string} llvm_version - LLVM version
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
  * @returns {{url: string, name: string}} - Download URL for the release asset and the asset name
  */
 export default async function getDownloadLink(
   token: string,
-  setup_mlir_tag: string,
+  llvm_version: string,
   platform = "host",
-  architecture = "host"
+  architecture = "host",
 ): Promise<{ url: string; name: string }> {
-  const assets = await getAssets(token, setup_mlir_tag)
+  const assets = await getAssets(token, llvm_version);
 
   if (platform === "host") {
-    platform = determinePlatform()
+    platform = determinePlatform();
   }
 
   if (architecture === "host") {
-    architecture = determineArchitecture()
+    architecture = determineArchitecture();
   }
 
   // Determine the file name of the asset
-  const asset = findAsset(assets, platform, architecture)
+  const asset = findAsset(assets, platform, architecture);
 
   if (asset) {
-    return { url: asset.browser_download_url, name: asset.name }
+    return { url: asset.browser_download_url, name: asset.name };
   } else {
-    throw new Error(`No ${architecture} ${platform} archive found for setup-mlir tag ${setup_mlir_tag}.`)
+    throw new Error(
+      `No ${architecture} ${platform} archive found for LLVM ${llvm_version}.`,
+    );
   }
 }
 
@@ -61,13 +64,13 @@ export default async function getDownloadLink(
  */
 function determinePlatform(): string {
   if (process.platform === "linux") {
-    return "linux"
+    return "linux";
   } else if (process.platform === "darwin") {
-    return "macOS"
+    return "macOS";
   } else if (process.platform === "win32") {
-    return "windows"
+    return "windows";
   } else {
-    throw new Error(`Unsupported platform: ${process.platform}`)
+    throw new Error(`Unsupported platform: ${process.platform}`);
   }
 }
 
@@ -77,32 +80,51 @@ function determinePlatform(): string {
  */
 function determineArchitecture(): string {
   if (process.arch === "x64") {
-    return "X86"
+    return "X86";
   } else if (process.arch === "arm64") {
-    return "AArch64"
+    return "AArch64";
   } else {
-    throw new Error(`Unsupported architecture: ${process.arch}`)
+    throw new Error(`Unsupported architecture: ${process.arch}`);
   }
 }
 
 /**
  * Get the release assets for the given setup-mlir tag from GitHub.
  * @param {string} token - GitHub token
- * @param setup_mlir_tag - setup-mlir tag
+ * @param {string} llvm_version - LLVM version
  * @returns {Promise<ReleaseAsset[]>} - list of release assets
  */
-async function getAssets(token: string, setup_mlir_tag: string): Promise<ReleaseAsset[]> {
-  const options: OctokitOptions = {}
+async function getAssets(
+  token: string,
+  llvm_version: string,
+): Promise<ReleaseAsset[]> {
+  const options: OctokitOptions = {};
   if (token) {
-    options.auth = token
+    options.auth = token;
   }
-  const octokit = new Octokit(options)
-    const response = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
-      owner: "munich-quantum-software",
-      repo: "setup-mlir",
-      tag: setup_mlir_tag
-    })
-    return response.data.assets
+  const octokit = new Octokit(options);
+  const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
+    owner: "munich-quantum-software",
+    repo: "setup-mlir",
+    per_page: 100,
+  });
+  const matching_releases = releases.data.filter(
+    (release: Release) =>
+      release.assets &&
+      release.assets.some(
+        (asset: ReleaseAsset) =>
+          asset.name && asset.name.includes(`llvmorg-${llvm_version}_`),
+      ),
+  );
+  if (matching_releases.length > 0) {
+    matching_releases.sort((a: Release, b: Release) => {
+      const time_a = a.published_at ? new Date(a.published_at).getTime() : 0;
+      const time_b = b.published_at ? new Date(b.published_at).getTime() : 0;
+      return time_b - time_a;
+    });
+    return matching_releases[0].assets;
+  }
+  throw new Error(`No release with LLVM ${llvm_version} found.`);
 }
 
 /**
@@ -115,19 +137,25 @@ async function getAssets(token: string, setup_mlir_tag: string): Promise<Release
 function findAsset(
   assets: ReleaseAsset[],
   platform: string,
-  architecture: string
+  architecture: string,
 ): ReleaseAsset | undefined {
   if (platform === "linux") {
-    return assets.find(asset => RegExp(`.*_linux_.*_${architecture}.tar.zst$`, 'i').exec(asset.name))
+    return assets.find((asset) =>
+      RegExp(`.*_linux_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
+    );
   }
 
   if (platform === "macOS") {
-    return assets.find(asset => RegExp(`.*_macos_.*_${architecture}.tar.zst$`, 'i').exec(asset.name))
+    return assets.find((asset) =>
+      RegExp(`.*_macos_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
+    );
   }
 
   if (platform === "windows") {
-    return assets.find(asset => RegExp(`.*_windows_.*_${architecture}.tar.zst$`, 'i').exec(asset.name))
+    return assets.find((asset) =>
+      RegExp(`.*_windows_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
+    );
   }
 
-  throw new Error(`Invalid platform: ${platform}`)
+  throw new Error(`Invalid platform: ${platform}`);
 }
