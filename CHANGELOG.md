@@ -12,7 +12,7 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 
 ### Distribution
 
-- This release does not distribute assets
+- LLVM tag: `llvmorg-21.1.7`
 
 ### Changed
 

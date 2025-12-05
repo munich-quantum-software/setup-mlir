@@ -10,7 +10,7 @@ We provide a GitHub Action.
 - name: Setup MLIR
   uses: munich-quantum-software/setup-mlir@2025.12.05
   with:
-    llvm-version: 21.1.6
+    llvm-version: 21.1.7
 ```
 
 This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and defines `$LLVM_DIR` and `$MLIR_DIR`.
@@ -21,18 +21,18 @@ Refer to the release notes of the respective release for information on the LLVM
 ## Installation Scripts
 
 If you want to use the pre-built MLIR installations locally, we also provide installation scripts.
-The scripts require the `setup-mlir` release tag (e.g., `2025.11.25`) and the desired installation directory to be passed.
+The scripts require the LLVM version (e.g., `21.1.7`) and the desired installation directory to be passed.
 
 On Linux and macOS, use the following to run the installation script:
 
 ```bash
-curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -t 2025.11.25 -p /path/to/installation
+curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -v 21.1.7 -p /path/to/installation
 ```
 
 On Windows, use this PowerShell command:
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1 | iex; setup-mlir.ps1 -setup_mlir_tag 2025.11.25 -install_prefix /path/to/installation"
+powershell -ExecutionPolicy ByPass -c "irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1 | iex; setup-mlir.ps1 -llvm_version 21.1.7 -install_prefix /path/to/installation"
 ```
 
 ## Build Scripts
