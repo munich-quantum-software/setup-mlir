@@ -29288,10 +29288,10 @@ async function getAssets(token, llvm_version) {
         owner: "munich-quantum-software",
         repo: "setup-mlir"
     });
-    for (const release_data of releases.data) {
-        if (release_data.assets && release_data.assets.some((asset) => asset.name.includes(llvm_version))) {
-            return release_data.assets;
-        }
+    const matching_releases = releases.data.filter((release_data) => release_data.assets &&
+        release_data.assets.some((asset) => asset.name && asset.name.includes(llvm_version)));
+    if (matching_releases.length > 0) {
+        return matching_releases[0].assets;
     }
     throw new Error(`No release with LLVM ${llvm_version} found.`);
 }
