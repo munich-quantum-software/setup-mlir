@@ -15,11 +15,11 @@
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 
-import process from "node:process"
-import { Octokit, OctokitOptions } from "@octokit/core"
-import type { components } from "@octokit/openapi-types"
+import process from "node:process";
+import { Octokit, OctokitOptions } from "@octokit/core";
+import type { components } from "@octokit/openapi-types";
 
-type ReleaseAsset = components["schemas"]["release-asset"]
+type ReleaseAsset = components["schemas"]["release-asset"];
 
 /**
  * Determine the URL of the release asset for the given platform and architecture.
@@ -33,25 +33,27 @@ export default async function getDownloadLink(
   token: string,
   llvm_version: string,
   platform = "host",
-  architecture = "host"
+  architecture = "host",
 ): Promise<{ url: string; name: string }> {
-  const assets = await getAssets(token, llvm_version)
+  const assets = await getAssets(token, llvm_version);
 
   if (platform === "host") {
-    platform = determinePlatform()
+    platform = determinePlatform();
   }
 
   if (architecture === "host") {
-    architecture = determineArchitecture()
+    architecture = determineArchitecture();
   }
 
   // Determine the file name of the asset
-  const asset = findAsset(assets, platform, architecture)
+  const asset = findAsset(assets, platform, architecture);
 
   if (asset) {
-    return { url: asset.browser_download_url, name: asset.name }
+    return { url: asset.browser_download_url, name: asset.name };
   } else {
-    throw new Error(`No ${architecture} ${platform} archive found for LLVM ${llvm_version}.`)
+    throw new Error(
+      `No ${architecture} ${platform} archive found for LLVM ${llvm_version}.`,
+    );
   }
 }
 
@@ -61,13 +63,13 @@ export default async function getDownloadLink(
  */
 function determinePlatform(): string {
   if (process.platform === "linux") {
-    return "linux"
+    return "linux";
   } else if (process.platform === "darwin") {
-    return "macOS"
+    return "macOS";
   } else if (process.platform === "win32") {
-    return "windows"
+    return "windows";
   } else {
-    throw new Error(`Unsupported platform: ${process.platform}`)
+    throw new Error(`Unsupported platform: ${process.platform}`);
   }
 }
 
@@ -77,11 +79,11 @@ function determinePlatform(): string {
  */
 function determineArchitecture(): string {
   if (process.arch === "x64") {
-    return "X86"
+    return "X86";
   } else if (process.arch === "arm64") {
-    return "AArch64"
+    return "AArch64";
   } else {
-    throw new Error(`Unsupported architecture: ${process.arch}`)
+    throw new Error(`Unsupported architecture: ${process.arch}`);
   }
 }
 
@@ -91,25 +93,31 @@ function determineArchitecture(): string {
  * @param {string} llvm_version - LLVM version
  * @returns {Promise<ReleaseAsset[]>} - list of release assets
  */
-async function getAssets(token: string, llvm_version: string): Promise<ReleaseAsset[]> {
-  const options: OctokitOptions = {}
+async function getAssets(
+  token: string,
+  llvm_version: string,
+): Promise<ReleaseAsset[]> {
+  const options: OctokitOptions = {};
   if (token) {
-    options.auth = token
+    options.auth = token;
   }
-  const octokit = new Octokit(options)
+  const octokit = new Octokit(options);
   const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
     owner: "munich-quantum-software",
-    repo: "setup-mlir"
-  })
+    repo: "setup-mlir",
+  });
   const matching_releases = releases.data.filter(
     (release_data: any) =>
       release_data.assets &&
-      release_data.assets.some((asset: ReleaseAsset) => asset.name && asset.name.includes(llvm_version))
-  )
+      release_data.assets.some(
+        (asset: ReleaseAsset) =>
+          asset.name && asset.name.includes(llvm_version),
+      ),
+  );
   if (matching_releases.length > 0) {
-    return matching_releases[0].assets
+    return matching_releases[0].assets;
   }
-  throw new Error(`No release with LLVM ${llvm_version} found.`)
+  throw new Error(`No release with LLVM ${llvm_version} found.`);
 }
 
 /**
@@ -122,19 +130,25 @@ async function getAssets(token: string, llvm_version: string): Promise<ReleaseAs
 function findAsset(
   assets: ReleaseAsset[],
   platform: string,
-  architecture: string
+  architecture: string,
 ): ReleaseAsset | undefined {
   if (platform === "linux") {
-    return assets.find(asset => RegExp(`.*_linux_.*_${architecture}.tar.zst$`, 'i').exec(asset.name))
+    return assets.find((asset) =>
+      RegExp(`.*_linux_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
+    );
   }
 
   if (platform === "macOS") {
-    return assets.find(asset => RegExp(`.*_macos_.*_${architecture}.tar.zst$`, 'i').exec(asset.name))
+    return assets.find((asset) =>
+      RegExp(`.*_macos_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
+    );
   }
 
   if (platform === "windows") {
-    return assets.find(asset => RegExp(`.*_windows_.*_${architecture}.tar.zst$`, 'i').exec(asset.name))
+    return assets.find((asset) =>
+      RegExp(`.*_windows_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
+    );
   }
 
-  throw new Error(`Invalid platform: ${platform}`)
+  throw new Error(`Invalid platform: ${platform}`);
 }

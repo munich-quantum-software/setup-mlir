@@ -18,11 +18,6 @@ exclude: >
   )$
 
 repos:
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.13
-    hooks:
-      - id: uv-lock
-
   # Standard hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -61,21 +56,12 @@ repos:
     hooks:
       - id: license-tools
 
-  # Python linting using ruff
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.7
-    hooks:
-      - id: ruff-check
-        args: ["--fix", "--show-fixes"]
-        require_serial: true
-      - id: ruff-format
-
   # Format configuration files with prettier
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: v3.7.3
     hooks:
       - id: prettier
-        types_or: [yaml, markdown, html, css, scss, javascript, json]
+        types_or: [yaml, markdown, html, css, scss, javascript, json, ts]
 
   # Check for spelling
   - repo: https://github.com/crate-ci/typos

@@ -29286,7 +29286,7 @@ async function getAssets(token, llvm_version) {
     const octokit = new Octokit(options);
     const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
         owner: "munich-quantum-software",
-        repo: "setup-mlir"
+        repo: "setup-mlir",
     });
     const matching_releases = releases.data.filter((release_data) => release_data.assets &&
         release_data.assets.some((asset) => asset.name && asset.name.includes(llvm_version)));
@@ -29304,13 +29304,13 @@ async function getAssets(token, llvm_version) {
  */
 function findAsset(assets, platform, architecture) {
     if (platform === "linux") {
-        return assets.find(asset => RegExp(`.*_linux_.*_${architecture}.tar.zst$`, 'i').exec(asset.name));
+        return assets.find((asset) => RegExp(`.*_linux_.*_${architecture}.tar.zst$`, "i").exec(asset.name));
     }
     if (platform === "macOS") {
-        return assets.find(asset => RegExp(`.*_macos_.*_${architecture}.tar.zst$`, 'i').exec(asset.name));
+        return assets.find((asset) => RegExp(`.*_macos_.*_${architecture}.tar.zst$`, "i").exec(asset.name));
     }
     if (platform === "windows") {
-        return assets.find(asset => RegExp(`.*_windows_.*_${architecture}.tar.zst$`, 'i').exec(asset.name));
+        return assets.find((asset) => RegExp(`.*_windows_.*_${architecture}.tar.zst$`, "i").exec(asset.name));
     }
     throw new Error(`Invalid platform: ${platform}`);
 }
@@ -29363,7 +29363,10 @@ async function run() {
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug(`==> Downloading asset: ${asset.url}`);
     const file = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.downloadTool(asset.url);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Extracting asset");
-    const dir = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.extractTar(node_path__WEBPACK_IMPORTED_MODULE_3___default().resolve(file), undefined, ["--zstd", "-xv"]);
+    const dir = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.extractTar(node_path__WEBPACK_IMPORTED_MODULE_3___default().resolve(file), undefined, [
+        "--zstd",
+        "-xv",
+    ]);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Adding MLIR toolchain to tool cache");
     const cachedPath = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.cacheDir(dir, "mlir-toolchain", llvm_version);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Adding MLIR toolchain to PATH");
