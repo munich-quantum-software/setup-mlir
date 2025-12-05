@@ -34,8 +34,8 @@ _This is the initial release of the `setup-mlir` project._
 <!-- Version links -->
 
 [unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/2025.12.05...HEAD
-[2025.12.05]: https://github.com/munich-quantum-software/setup-mlir/releases/2025.12.05
-[2025.11.25]: https://github.com/munich-quantum-software/setup-mlir/releases/2025.11.25
+[2025.12.05]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/2025.12.05
+[2025.11.25]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/2025.11.25
 
 <!-- PR links -->
 
