@@ -46,6 +46,12 @@ if [ ! -d "$INSTALL_PREFIX" ]; then
   exit 1
 fi
 
+# Check if jq is installed
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: jq not found. Please install jq." >&2
+  exit 1
+fi
+
 # Check if zstd is installed
 if ! command -v zstd >/dev/null 2>&1; then
   echo "Error: zstd not found. Please install zstd." >&2
@@ -71,7 +77,7 @@ case "$ARCH" in
 esac
 
 # Determine download URL
-RELEASES_URL="https://api.github.com/repos/munich-quantum-software/setup-mlir/releases"
+RELEASES_URL="https://api.github.com/repos/munich-quantum-software/setup-mlir/releases?per_page=100"
 RELEASES_JSON=$(curl -fL \
                      -H "Accept: application/vnd.github+json" \
                      ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
@@ -89,7 +95,7 @@ ASSETS_JSON=$(echo "$RELEASES_JSON" | jq --arg v "$LLVM_VERSION" '
 ')
 
 if [ -z "$ASSETS_JSON" ] || [ "$ASSETS_JSON" = "null" ] || [ "$ASSETS_JSON" = "[]" ]; then
-  echo "Error: No release with LLVM $LLVM_VERSION found in asset file names." >&2
+  echo "Error: No release with LLVM $LLVM_VERSION found." >&2
   exit 1
 fi
 
@@ -105,6 +111,11 @@ elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "arm64" ]]; then
   DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_macos_.*_AArch64.tar.zst')
 else
   echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
+  exit 1
+fi
+
+if [ -z "$DOWNLOAD_URL" ]; then
+  echo "Error: No asset found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
   exit 1
 fi
 
