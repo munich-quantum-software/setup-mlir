@@ -107,14 +107,18 @@ async function getAssets(
     repo: "setup-mlir",
   });
   const matching_releases = releases.data.filter(
-    (release_data: any) =>
-      release_data.assets &&
-      release_data.assets.some(
+    (release: any) =>
+      release.assets &&
+      release.assets.some(
         (asset: ReleaseAsset) =>
           asset.name && asset.name.includes(llvm_version),
       ),
   );
   if (matching_releases.length > 0) {
+    matching_releases.sort(
+      (a: any, b: any) =>
+        new Date(b.published_at).getTime() - new Date(a.published_at).getTime(),
+    );
     return matching_releases[0].assets;
   }
   throw new Error(`No release with LLVM ${llvm_version} found.`);
