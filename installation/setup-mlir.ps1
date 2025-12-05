@@ -13,11 +13,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: setup-mlir.ps1 -setup_mlir_tag <tag> -install_prefix <installation directory>
+# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory> [-token <GitHub token>]
 
 param(
     [Parameter(Mandatory=$true)]
-    [string]$setup_mlir_tag,
+    [string]$llvm_version,
     [Parameter(Mandatory=$true)]
     [string]$install_prefix,
     [string]$token
@@ -58,11 +58,18 @@ if ($token) {
     $headers["Authorization"] = "Bearer $token"
 }
 
-$release_url = "https://api.github.com/repos/munich-quantum-software/setup-mlir/releases/tags/$setup_mlir_tag"
-$release_json = Invoke-RestMethod -Uri $release_url -Headers $headers
+$releases_url = "https://api.github.com/repos/munich-quantum-software/setup-mlir/releases?per_page=100"
+$releases_json = Invoke-RestMethod -Uri $releases_url -Headers $headers
 
-$assets_url = $release_json.assets_url
-$assets_json = Invoke-RestMethod -Uri $assets_url -Headers $headers
+$matching_releases = $releases_json | Where-Object {
+    $_.assets -and ($_.assets | Where-Object { $_.name -and $_.name -like "*${llvm_version}*" })
+}
+if (-not $matching_releases) {
+    Write-Error "No release with LLVM $llvm_version found."
+    exit 1
+}
+$newest_release = $matching_releases | Sort-Object -Property published_at -Descending | Select-Object -First 1
+$assets_json = $newest_release.assets
 
 $download_urls = $assets_json | ForEach-Object { $_.browser_download_url }
 
