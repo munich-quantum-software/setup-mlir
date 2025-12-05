@@ -77,5 +77,7 @@ try {
     core.setFailed(error);
   } else if (error instanceof Error) {
     core.setFailed(error.message);
+  } else {
+    core.setFailed(`Unknown error: ${JSON.stringify(error)}`);
   }
 }
