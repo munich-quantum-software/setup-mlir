@@ -29287,6 +29287,7 @@ async function getAssets(token, llvm_version) {
     const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
         owner: "munich-quantum-software",
         repo: "setup-mlir",
+        per_page: 100,
     });
     const matching_releases = releases.data.filter((release) => release.assets &&
         release.assets.some((asset) => asset.name && asset.name.includes(`llvmorg-${llvm_version}_`)));

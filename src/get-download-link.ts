@@ -106,6 +106,7 @@ async function getAssets(
   const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
     owner: "munich-quantum-software",
     repo: "setup-mlir",
+    per_page: 100,
   });
   const matching_releases = releases.data.filter(
     (release: Release) =>
