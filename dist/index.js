@@ -29291,7 +29291,11 @@ async function getAssets(token, llvm_version) {
     const matching_releases = releases.data.filter((release) => release.assets &&
         release.assets.some((asset) => asset.name && asset.name.includes(llvm_version)));
     if (matching_releases.length > 0) {
-        matching_releases.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+        matching_releases.sort((a, b) => {
+            const time_a = a.published_at ? new Date(a.published_at).getTime() : 0;
+            const time_b = b.published_at ? new Date(b.published_at).getTime() : 0;
+            return time_b - time_a;
+        });
         return matching_releases[0].assets;
     }
     throw new Error(`No release with LLVM ${llvm_version} found.`);

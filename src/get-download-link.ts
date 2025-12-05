@@ -19,6 +19,7 @@ import process from "node:process";
 import { Octokit, OctokitOptions } from "@octokit/core";
 import type { components } from "@octokit/openapi-types";
 
+type Release = components["schemas"]["release"];
 type ReleaseAsset = components["schemas"]["release-asset"];
 
 /**
@@ -107,7 +108,7 @@ async function getAssets(
     repo: "setup-mlir",
   });
   const matching_releases = releases.data.filter(
-    (release: any) =>
+    (release: Release) =>
       release.assets &&
       release.assets.some(
         (asset: ReleaseAsset) =>
@@ -115,10 +116,11 @@ async function getAssets(
       ),
   );
   if (matching_releases.length > 0) {
-    matching_releases.sort(
-      (a: any, b: any) =>
-        new Date(b.published_at).getTime() - new Date(a.published_at).getTime(),
-    );
+    matching_releases.sort((a: Release, b: Release) => {
+      const time_a = a.published_at ? new Date(a.published_at).getTime() : 0;
+      const time_b = b.published_at ? new Date(b.published_at).getTime() : 0;
+      return time_b - time_a;
+    });
     return matching_releases[0].assets;
   }
   throw new Error(`No release with LLVM ${llvm_version} found.`);
