@@ -48,7 +48,7 @@ UNAME_ARCH=$(uname -m)
 # Determine target
 if [[ "$UNAME_ARCH" == "arm64" || "$UNAME_ARCH" == "aarch64" ]]; then
   HOST_TARGET="AArch64"
-  ENABLE_LTO=THIN
+  ENABLE_LTO=OFF
 elif [[ "$UNAME_ARCH" == "x86_64" ]]; then
   HOST_TARGET="X86"
   ENABLE_LTO=OFF
