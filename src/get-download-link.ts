@@ -25,7 +25,7 @@ type ReleaseAsset = components["schemas"]["release-asset"];
 /**
  * Determine the URL of the release asset for the given platform and architecture.
  * @param {string} token - GitHub token
- * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., abc1234)
+ * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
  * @returns {{url: string, name: string}} - Download URL for the release asset and the asset name
