@@ -108,29 +108,27 @@ async function getAssets(
     repo: "setup-mlir",
     per_page: 100,
   });
-  
+
   // Check if llvm_version is a version tag or commit hash
   const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
-  
-  const matching_releases = releases.data.filter(
-    (release: Release) => {
-      if (!release.assets) return false;
-      
-      return release.assets.some((asset: ReleaseAsset) => {
-        if (!asset.name) return false;
-        
-        if (isVersionTag) {
-          // For version tags, match exact pattern
-          return asset.name.includes(`llvmorg-${llvm_version}_`);
-        } else {
-          // For commit hashes, match as prefix (supports short hashes)
-          // Extract hash from filename pattern like: llvmorg-<fullhash>_platform_...
-          const hashMatch = asset.name.match(/llvmorg-([0-9a-f]{40})_/i);
-          return hashMatch && hashMatch[1].startsWith(llvm_version.toLowerCase());
-        }
-      });
-    },
-  );
+
+  const matching_releases = releases.data.filter((release: Release) => {
+    if (!release.assets) return false;
+
+    return release.assets.some((asset: ReleaseAsset) => {
+      if (!asset.name) return false;
+
+      if (isVersionTag) {
+        // For version tags, match exact pattern
+        return asset.name.includes(`llvmorg-${llvm_version}_`);
+      } else {
+        // For commit hashes, match as prefix (supports short hashes)
+        // Extract hash from filename pattern like: llvmorg-<fullhash>_platform_...
+        const hashMatch = asset.name.match(/llvmorg-([0-9a-f]{40})_/i);
+        return hashMatch && hashMatch[1].startsWith(llvm_version.toLowerCase());
+      }
+    });
+  });
   if (matching_releases.length > 0) {
     matching_releases.sort((a: Release, b: Release) => {
       const time_a = a.published_at ? new Date(a.published_at).getTime() : 0;
