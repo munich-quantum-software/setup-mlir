@@ -30,10 +30,12 @@ async function run(): Promise<void> {
   const architecture = core.getInput("architecture", { required: true });
   const token = core.getInput("token", { required: true });
 
-  // Validate LLVM version
-  if (!RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version)) {
+  // Validate LLVM version (either X.Y.Z format or commit hash)
+  const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
+  const isCommitHash = RegExp("^[0-9a-f]{7,40}$", "i").test(llvm_version);
+  if (!isVersionTag && !isCommitHash) {
     throw new Error(
-      `Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z.`,
+      `Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z or a commit hash (minimum 7 characters).`,
     );
   }
 
