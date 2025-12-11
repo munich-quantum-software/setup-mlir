@@ -70,7 +70,6 @@ _This is the initial release of the `setup-mlir` project._
 
 [**@burgholzer**]: https://github.com/burgholzer
 [**@denialhaag**]: https://github.com/denialhaag
-[**@flowerthrower**]: https://github.com/flowerthrower
 
 <!-- General links -->
 
