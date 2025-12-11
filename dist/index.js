@@ -29366,7 +29366,7 @@ async function run() {
     const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("token", { required: true });
     // Validate LLVM version
     if (!RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version)) {
-        throw new Error(`Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z.`);
+        throw new Error(`Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z or a commit hash (minimum 7 characters).`);
     }
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Determining asset URL");
     const asset = await (0,_get_download_link_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(token, llvm_version, platform, architecture);
