@@ -12,8 +12,7 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 
 ### Distribution
 
-- Specific LLVM commit which [Catalyst pins to](https://github.com/PennyLaneAI/catalyst/blob/afb608306603b6269e50f008f6215df89feb23c0/doc/releases/changelog-0.13.0.md?plain=1#L440)
-- LLVM commit hash: `f8cb7987c64dcffb72414a40560055cb717dbf74`
+- LLVM commit: `f8cb7987c64dcffb72414a40560055cb717dbf74` ([Catalyst compatible version](https://github.com/PennyLaneAI/catalyst/blob/afb608306603b6269e50f008f6215df89feb23c0/doc/releases/changelog-0.13.0.md?plain=1#L440))
 
 ## [2025.12.06]
 
