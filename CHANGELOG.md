@@ -16,7 +16,7 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 
 ### Added
 
-- 🔧 Enable (short- and long-form) commit hash values as an alternative to version tags ([#30]) ([@flowerthrower]) 
+- 🔧 Enable (short- and long-form) commit hash values as an alternative to version tags ([#30]) ([@flowerthrower])
 
 ## [2025.12.06]
 
