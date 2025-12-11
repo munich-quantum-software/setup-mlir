@@ -12,11 +12,11 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 
 ### Distribution
 
-- LLVM commit: `f8cb7987c64dcffb72414a40560055cb717dbf74` ([Catalyst compatible version](https://github.com/PennyLaneAI/catalyst/blob/afb608306603b6269e50f008f6215df89feb23c0/doc/releases/changelog-0.13.0.md?plain=1#L440))
+- LLVM commit: `f8cb7987c64dcffb72414a40560055cb717dbf74` ([Same as Xanadu's PennyLane Catalyst `v0.13.0`](https://github.com/PennyLaneAI/catalyst/blob/afb608306603b6269e50f008f6215df89feb23c0/doc/releases/changelog-0.13.0.md?plain=1#L440))
 
-### Changed
+### Added
 
-- 🔧 Enable (short and long) hash input instead of version tag
+- 🔧 Enable (short- and long-form) commit hash values as an alternative to version tags ([#30]) ([@flowerthrower]) 
 
 ## [2025.12.06]
 
