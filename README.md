@@ -8,7 +8,7 @@ We provide a GitHub Action.
 
 ```yaml
 - name: Setup MLIR
-  uses: munich-quantum-software/setup-mlir@2025.12.05
+  uses: munich-quantum-software/setup-mlir@2025.12.12
   with:
     llvm-version: 21.1.7
 ```
