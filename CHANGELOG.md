@@ -10,7 +10,7 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 
 ### Fixed
 
-- 🚑 Fix commit-hash handling and update dist/index.js ([#32]) ([**@flowerthrower**])
+- 🚑 Fix commit-hash handling in action ([#32]) ([**@flowerthrower**])
 
 ## [2025.12.12]
 
