@@ -29217,7 +29217,7 @@ class Octokit {
 /**
  * Determine the URL of the release asset for the given platform and architecture.
  * @param {string} token - GitHub token
- * @param {string} llvm_version - LLVM version
+ * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
  * @returns {{url: string, name: string}} - Download URL for the release asset and the asset name
@@ -29275,7 +29275,7 @@ function determineArchitecture() {
 /**
  * Get the release assets for the given setup-mlir tag from GitHub.
  * @param {string} token - GitHub token
- * @param {string} llvm_version - LLVM version
+ * @param {string} llvm_version - LLVM version or commit hash
  * @returns {Promise<ReleaseAsset[]>} - list of release assets
  */
 async function getAssets(token, llvm_version) {
@@ -29289,8 +29289,30 @@ async function getAssets(token, llvm_version) {
         repo: "setup-mlir",
         per_page: 100,
     });
-    const matching_releases = releases.data.filter((release) => release.assets &&
-        release.assets.some((asset) => asset.name && asset.name.includes(`llvmorg-${llvm_version}_`)));
+    // Check if llvm_version is a version tag or commit hash
+    const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
+    const matching_releases = releases.data.filter((release) => {
+        if (!release.assets)
+            return false;
+        return release.assets.some((asset) => {
+            if (!asset.name)
+                return false;
+            if (isVersionTag) {
+                // For version tags, match exact pattern
+                return asset.name.includes(`llvmorg-${llvm_version}_`);
+            }
+            else {
+                // For commit hashes, match as prefix (supports short hashes)
+                // Extract hash from filename pattern like: llvmorg-<hash>_platform_...
+                const hashMatch = asset.name.match(/llvmorg-([0-9a-f]{7,40})_/i);
+                if (!hashMatch)
+                    return false;
+                return hashMatch[1]
+                    .toLowerCase()
+                    .startsWith(llvm_version.toLowerCase());
+            }
+        });
+    });
     if (matching_releases.length > 0) {
         matching_releases.sort((a, b) => {
             const time_a = a.published_at ? new Date(a.published_at).getTime() : 0;
@@ -29364,8 +29386,10 @@ async function run() {
     const platform = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("platform", { required: true });
     const architecture = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("architecture", { required: true });
     const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("token", { required: true });
-    // Validate LLVM version
-    if (!RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version)) {
+    // Validate LLVM version (either X.Y.Z format or commit hash)
+    const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
+    const isCommitHash = RegExp("^[0-9a-f]{7,40}$", "i").test(llvm_version);
+    if (!isVersionTag && !isCommitHash) {
         throw new Error(`Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z or a commit hash (minimum 7 characters).`);
     }
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Determining asset URL");
