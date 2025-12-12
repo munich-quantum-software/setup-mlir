@@ -123,8 +123,8 @@ async function getAssets(
         return asset.name.includes(`llvmorg-${llvm_version}_`);
       } else {
         // For commit hashes, match as prefix (supports short hashes)
-        // Extract hash from filename pattern like: llvmorg-<hash>_platform_...
-        const hashMatch = asset.name.match(/llvmorg-([0-9a-f]{7,40})_/i);
+        // Extract hash from file name pattern like: ..._<hash>_...
+        const hashMatch = asset.name.match(/_([0-9a-f]{7,40})_/i);
         if (!hashMatch) return false;
         return hashMatch[1]
           .toLowerCase()
