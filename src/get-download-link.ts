@@ -120,7 +120,7 @@ async function getAssets(
 
       if (isVersionTag) {
         // For version tags, match exact pattern like: llvm-mlir_llvmorg-21.1.7_platform_...
-        return asset.name.includes(`llvmorg-${llvm_version}_`);
+        return asset.name.includes(`llvm-mlir_llvmorg-${llvm_version}_`);
       } else {
         // For commit hashes, match as prefix (supports short hashes)
         // Extract hash from filename pattern like: llvm-mlir_f8cb798_platform_...
