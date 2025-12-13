@@ -32640,7 +32640,7 @@ class Octokit {
  * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
- * @returns {{url: string, name: string}} - Download URL for the release asset and the asset name
+ * @returns {{url: string, name: string}} - download URL for the release asset and the asset name
  */
 async function getDownloadLink(token, llvm_version, platform = "host", architecture = "host") {
     const assets = await getAssets(token, llvm_version);
@@ -32695,7 +32695,7 @@ function determineArchitecture() {
 /**
  * Get the release assets for the given setup-mlir tag from GitHub.
  * @param {string} token - GitHub token
- * @param {string} llvm_version - LLVM version or commit hash
+ * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
  * @returns {Promise<ReleaseAsset[]>} - list of release assets
  */
 async function getAssets(token, llvm_version) {
@@ -32718,12 +32718,12 @@ async function getAssets(token, llvm_version) {
             if (!asset.name)
                 return false;
             if (isVersionTag) {
-                // For version tags, match exact pattern like: llvm-mlir_llvmorg-21.1.7_platform_...
+                // For version tags, match exact pattern like: llvm-mlir_llvmorg-21.1.7_...
                 return asset.name.includes(`llvm-mlir_llvmorg-${llvm_version}_`);
             }
             else {
                 // For commit hashes, match as prefix (supports short hashes)
-                // Extract hash from filename pattern like: llvm-mlir_f8cb798_platform_...
+                // Extract hash from filename pattern like: llvm-mlir_f8cb798_...
                 const hashMatch = asset.name.match(/llvm-mlir_([0-9a-f]{7,40})_/i);
                 if (!hashMatch)
                     return false;
