@@ -17,6 +17,7 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 ### Fixed
 
 - 🚑 Fix commit-hash handling in Action ([#32]) ([**@flowerthrower**])
+- 👷 Fix workflow that checks Action distribution ([#32]) ([**@denialhaag**])
 
 ## [2025.12.12]
 
