@@ -8,6 +8,17 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 
 ## [Unreleased]
 
+## [2025.12.13]
+
+### Distribution
+
+- This release does not distribute any assets
+
+### Fixed
+
+- 🚑 Fix commit-hash handling in Action ([#32]) ([**@flowerthrower**])
+- 👷 Fix workflow that checks Action distribution ([#32]) ([**@denialhaag**])
+
 ## [2025.12.12]
 
 ### Distribution
@@ -36,7 +47,7 @@ The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
 
 ### Changed
 
-- ✨ Restructure installation scripts and GitHub Action to accept LLVM version instead of `setup-mlir` tag ([#25]) ([**@denialhaag**])
+- ✨ Restructure installation scripts and Action to accept LLVM version instead of `setup-mlir` tag ([#25]) ([**@denialhaag**])
 - 📌 Pin `manylinux` images used for Linux builds ([#23]) ([**@denialhaag**])
 
 ## [2025.11.25]
@@ -49,11 +60,12 @@ _This is the initial release of the `setup-mlir` project._
 
 ### Added
 
-- ✨ Add build and installation scripts as well as GitHub Action ([#1], [#3], [#6], [#14]) ([**@burgholzer**], [**@denialhaag**])
+- ✨ Add build and installation scripts as well as Action ([#1], [#3], [#6], [#14]) ([**@burgholzer**], [**@denialhaag**])
 
 <!-- Version links -->
 
-[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/2025.12.12...HEAD
+[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/2025.12.13...HEAD
+[2025.12.13]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/2025.12.13
 [2025.12.12]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/2025.12.12
 [2025.12.06]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/2025.12.06
 [2025.12.05]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/2025.12.05
@@ -61,6 +73,7 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#32]: https://github.com/munich-quantum-software/setup-mlir/pull/32
 [#30]: https://github.com/munich-quantum-software/setup-mlir/pull/30
 [#29]: https://github.com/munich-quantum-software/setup-mlir/pull/29
 [#25]: https://github.com/munich-quantum-software/setup-mlir/pull/25
