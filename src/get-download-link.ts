@@ -89,7 +89,7 @@ function determineArchitecture(): string {
 }
 
 /**
- * Get the release assets for the given setup-mlir tag from GitHub.
+ * Get the release assets for the given LLVM version from GitHub.
  * @param {string} token - GitHub token
  * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
  * @returns {Promise<ReleaseAsset[]>} - list of release assets
@@ -105,7 +105,7 @@ async function getAssets(
   const octokit = new Octokit(options);
   const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
     owner: "munich-quantum-software",
-    repo: "setup-mlir",
+    repo: "portable-mlir-toolchain",
     per_page: 100,
   });
 
