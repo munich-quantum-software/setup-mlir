@@ -40,12 +40,6 @@ if [ -z "${INSTALL_PREFIX:-}" ]; then
   exit 1
 fi
 
-# Check if jq is installed
-if ! command -v jq >/dev/null 2>&1; then
-  echo "Error: jq not found. Please install jq." >&2
-  exit 1
-fi
-
 # Check if tar is installed
 if ! command -v tar >/dev/null 2>&1; then
   echo "Error: tar not found. Please install tar." >&2
@@ -96,44 +90,34 @@ fi
 
 # Determine download URL
 RELEASES_URL="https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases?per_page=100"
-RELEASES_JSON=$(curl -fL \
+RELEASES_JSON=$(curl -fsSL \
                      -H "Accept: application/vnd.github+json" \
                      ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
                      -H "X-GitHub-Api-Version: 2022-11-28" \
                      "$RELEASES_URL")
 
-ASSETS_JSON=$(echo "$RELEASES_JSON" | jq --arg m "$MATCH_PATTERN" '
-  map(
-    select(
-      (.assets | type == "array") and
-      (.assets | length > 0) and
-      (.assets | any(.name? // empty | contains($m)))
-    )
-  ) | sort_by(.published_at) | reverse | .[0].assets // empty
-')
-
-if [ -z "$ASSETS_JSON" ] || [ "$ASSETS_JSON" = "null" ] || [ "$ASSETS_JSON" = "[]" ]; then
-  echo "Error: No release with LLVM $LLVM_VERSION found." >&2
-  exit 1
-fi
-
-DOWNLOAD_URLS=$(echo "$ASSETS_JSON" | jq -r '.[].browser_download_url')
-
 if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_linux_.*_X86.tar.zst')
+  ASSET_SUFFIX="_linux_.*_X86.tar.zst"
 elif [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_linux_.*_AArch64.tar.zst')
+  ASSET_SUFFIX="_linux_.*_AArch64.tar.zst"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_macos_.*_X86.tar.zst')
+  ASSET_SUFFIX="_macos_.*_X86.tar.zst"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_macos_.*_AArch64.tar.zst')
+  ASSET_SUFFIX="_macos_.*_AArch64.tar.zst"
 else
   echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
   exit 1
 fi
 
+DOWNLOAD_URL=$(echo "$RELEASES_JSON" | \
+  grep -o '"browser_download_url": "[^"]*"' | \
+  grep -F "$MATCH_PATTERN" | \
+  grep "$ASSET_SUFFIX" | \
+  head -n 1 | \
+  sed 's/"browser_download_url": "//;s/"$//')
+
 if [ -z "$DOWNLOAD_URL" ]; then
-  echo "Error: No asset found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
+  echo "Error: No release with LLVM $LLVM_VERSION found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
   exit 1
 fi
 
