@@ -79,8 +79,11 @@ esac
 # Determine whether version is version or commit SHA
 if [[ "$LLVM_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   MATCH_PATTERN="llvm-mlir_llvmorg-${LLVM_VERSION}_"
-else
+elif [[ "$LLVM_VERSION" =~ ^[0-9a-f]{7,40}$ ]]; then
   MATCH_PATTERN="llvm-mlir_${LLVM_VERSION}"
+else
+  echo "Error: Invalid LLVM version format: $LLVM_VERSION. Must be a version (e.g., 21.1.8) or a commit SHA." >&2
+  exit 1
 fi
 
 # Determine download URL

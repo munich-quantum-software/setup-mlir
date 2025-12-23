@@ -52,8 +52,11 @@ $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
 # Determine whether version is version or commit SHA
 if ($llvm_version -match '^\d+\.\d+\.\d+$') {
     $match_pattern = "llvm-mlir_llvmorg-${llvm_version}_"
-} else {
+} elseif ($llvm_version -match '^[0-9a-f]{7,40}$') {
     $match_pattern = "llvm-mlir_${llvm_version}"
+} else {
+    Write-Error "Invalid LLVM version format: $llvm_version. Must be a version (e.g., 21.1.8) or a commit SHA."
+    exit 1
 }
 
 # Determine download URL
