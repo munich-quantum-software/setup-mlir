@@ -108,10 +108,17 @@ if ! echo "$RELEASES_JSON" | grep -q '"assets"'; then
   echo "Error: Invalid response from GitHub API. Expected JSON with 'assets' field." >&2
   echo "This is likely due to rate limiting or an API error." >&2
   echo "Please provide a GitHub token using the -t flag to avoid rate limits." >&2
-  if [ ${#RELEASES_JSON} -lt 1000 ]; then
-    echo "Response received: $RELEASES_JSON" >&2
+  # Show response preview for debugging (limit to 500 chars for security)
+  RESPONSE_LENGTH=${#RELEASES_JSON}
+  if [ "$RESPONSE_LENGTH" -lt 500 ]; then
+    # For short responses, check if they might contain sensitive data
+    if echo "$RELEASES_JSON" | grep -qi "token"; then
+      echo "Response contains potential sensitive data. Length: $RESPONSE_LENGTH chars" >&2
+    else
+      echo "Response received: $RELEASES_JSON" >&2
+    fi
   else
-    echo "Response preview (first 500 chars): ${RELEASES_JSON:0:500}" >&2
+    echo "Response preview (first 500 chars): ${RELEASES_JSON:0:500}..." >&2
   fi
   exit 1
 fi
