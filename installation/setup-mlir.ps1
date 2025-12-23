@@ -58,7 +58,7 @@ if ($token) {
     $headers["Authorization"] = "Bearer $token"
 }
 
-$releases_url = "https://api.github.com/repos/munich-quantum-software/setup-mlir/releases?per_page=100"
+$releases_url = "https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases?per_page=100"
 $releases_json = Invoke-RestMethod -Uri $releases_url -Headers $headers
 
 $matching_releases = $releases_json | Where-Object {
