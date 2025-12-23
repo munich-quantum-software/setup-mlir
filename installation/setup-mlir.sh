@@ -96,9 +96,6 @@ fi
 # Compact JSON for easier processing
 RELEASES_JSON_COMPACT=$(echo "$RELEASES_JSON" | tr -d '\n' | sed 's/  */ /g')
 
-# Separate assets onto individual lines for proper matching (assets start with {"url")
-RELEASES_JSON_SEPARATED=$(echo "$RELEASES_JSON_COMPACT" | sed 's/},{"url"/}\n{"url"/g')
-
 # Escape special regex characters in the match pattern to prevent regex interpretation
 # Escape these chars: . [ ] \ * ^ $ ( ) + ? { | }
 MATCH_PATTERN_ESCAPED=$(echo "$MATCH_PATTERN" | sed 's/[][\\.*^$(){}|+?]/\\&/g')
@@ -124,10 +121,28 @@ if ! echo "$RELEASES_JSON" | grep -qE '"assets(_url|":\s*\[)'; then
   exit 1
 fi
 
-# Extract all assets that match the pattern along with their URLs
-# First filter lines with matching names, then extract browser_download_url from each
-DOWNLOAD_URLS=$(echo "$RELEASES_JSON_SEPARATED" | \
-  grep "$MATCH_PATTERN_ESCAPED" | \
+# Find the latest release with matching assets
+# Strategy: Extract timestamp from releases that have matching assets, sort desc, take first
+# Look for patterns like: "published_at":"2025-12-23...", ... "name":"...pattern..."
+LATEST_TIMESTAMP=$(echo "$RELEASES_JSON_COMPACT" | \
+  grep -oE '"published_at": *"[^"]*"[^{]*\{[^}]*"name": *"[^"]*'"$MATCH_PATTERN_ESCAPED"'[^"]*"' | \
+  grep -oE '"published_at": *"[^"]*"' | \
+  sed 's/"published_at": *"\([^"]*\)"/\1/' | \
+  sort -r | head -1)
+
+if [ -z "$LATEST_TIMESTAMP" ]; then
+  echo "Error: No release with LLVM $LLVM_VERSION found." >&2
+  exit 1
+fi
+
+# Extract the release block for the latest timestamp
+# This gets everything from the matching published_at through the end of that release's assets array
+LATEST_RELEASE_SECTION=$(echo "$RELEASES_JSON_COMPACT" | \
+  grep -oE '"published_at": *"'"$LATEST_TIMESTAMP"'"[^]]*"assets": *\[[^]]*\]')
+
+# Extract download URLs from assets in the latest release that match the pattern
+DOWNLOAD_URLS=$(echo "$LATEST_RELEASE_SECTION" | \
+  grep -oE '"name": *"[^"]*'"$MATCH_PATTERN_ESCAPED"'[^"]*"[^"]*"browser_download_url": *"[^"]*"' | \
   grep -oE '"browser_download_url": *"[^"]*"' | \
   sed 's/"browser_download_url": *"\([^"]*\)"/\1/')
 
