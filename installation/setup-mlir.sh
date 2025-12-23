@@ -40,9 +40,9 @@ if [ -z "${INSTALL_PREFIX:-}" ]; then
   exit 1
 fi
 
-# Check if jq is installed
-if ! command -v jq >/dev/null 2>&1; then
-  echo "Error: jq not found. Please install jq." >&2
+# Check if python3 is installed
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Error: python3 not found. Please install python3." >&2
   exit 1
 fi
 
@@ -91,22 +91,43 @@ RELEASES_JSON=$(curl -fL \
                      -H "X-GitHub-Api-Version: 2022-11-28" \
                      "$RELEASES_URL")
 
-ASSETS_JSON=$(echo "$RELEASES_JSON" | jq --arg m "$MATCH_PATTERN" '
-  map(
-    select(
-      (.assets | type == "array") and
-      (.assets | length > 0) and
-      (.assets | any(.name? // empty | contains($m)))
-    )
-  ) | sort_by(.published_at) | reverse | .[0].assets // empty
-')
+DOWNLOAD_URLS=$(python3 -c "
+import json
+import sys
 
-if [ -z "$ASSETS_JSON" ] || [ "$ASSETS_JSON" = "null" ] || [ "$ASSETS_JSON" = "[]" ]; then
+try:
+    data = json.loads('''$RELEASES_JSON''')
+    match_pattern = '''$MATCH_PATTERN'''
+    
+    # Filter releases with matching assets
+    matching_releases = [
+        r for r in data
+        if isinstance(r.get('assets'), list) and
+        len(r.get('assets', [])) > 0 and
+        any(match_pattern in asset.get('name', '') for asset in r.get('assets', []))
+    ]
+    
+    if not matching_releases:
+        sys.exit(1)
+    
+    # Sort by published_at (descending)
+    matching_releases.sort(key=lambda r: r.get('published_at', ''), reverse=True)
+    
+    # Get download URLs from the first matching release
+    assets = matching_releases[0].get('assets', [])
+    for asset in assets:
+        url = asset.get('browser_download_url', '')
+        if url:
+            print(url)
+except Exception as e:
+    print(f'Error parsing JSON: {e}', file=sys.stderr)
+    sys.exit(1)
+")
+
+if [ $? -ne 0 ] || [ -z "$DOWNLOAD_URLS" ]; then
   echo "Error: No release with LLVM $LLVM_VERSION found." >&2
   exit 1
 fi
-
-DOWNLOAD_URLS=$(echo "$ASSETS_JSON" | jq -r '.[].browser_download_url')
 
 if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
   DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_linux_.*_X86.tar.zst')
