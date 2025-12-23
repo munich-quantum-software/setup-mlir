@@ -49,6 +49,13 @@ pushd $install_prefix > $null
 # Detect architecture
 $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
 
+# Determine whether version is version or commit SHA
+if ($llvm_version -match '^\d+\.\d+\.\d+$') {
+    $match_pattern = "llvm-mlir_llvmorg-${llvm_version}_"
+} else {
+    $match_pattern = "llvm-mlir_${llvm_version}"
+}
+
 # Determine download URL
 $headers = @{
     "Accept" = "application/vnd.github+json"
@@ -62,7 +69,7 @@ $releases_url = "https://api.github.com/repos/munich-quantum-software/portable-m
 $releases_json = Invoke-RestMethod -Uri $releases_url -Headers $headers
 
 $matching_releases = $releases_json | Where-Object {
-    $_.assets -and ($_.assets | Where-Object { $_.name -and $_.name -like "*llvmorg-${llvm_version}_*" })
+    $_.assets -and ($_.assets | Where-Object { $_.name -and $_.name -like "*${match_pattern}*" })
 }
 if (-not $matching_releases) {
     Write-Error "No release with LLVM $llvm_version found."

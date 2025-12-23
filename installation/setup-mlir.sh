@@ -76,6 +76,13 @@ case "$ARCH" in
   *) echo "Error: Unsupported architecture: $ARCH" >&2; exit 1 ;;
 esac
 
+# Determine whether version is version or commit SHA
+if [[ "$LLVM_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  MATCH_PATTERN="llvm-mlir_llvmorg-${LLVM_VERSION}_"
+else
+  MATCH_PATTERN="llvm-mlir_${LLVM_VERSION}"
+fi
+
 # Determine download URL
 RELEASES_URL="https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases?per_page=100"
 RELEASES_JSON=$(curl -fL \
@@ -84,7 +91,7 @@ RELEASES_JSON=$(curl -fL \
                      -H "X-GitHub-Api-Version: 2022-11-28" \
                      "$RELEASES_URL")
 
-ASSETS_JSON=$(echo "$RELEASES_JSON" | jq --arg m "llvmorg-${LLVM_VERSION}_" '
+ASSETS_JSON=$(echo "$RELEASES_JSON" | jq --arg m "$MATCH_PATTERN" '
   map(
     select(
       (.assets | type == "array") and
