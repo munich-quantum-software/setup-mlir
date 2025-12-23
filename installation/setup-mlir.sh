@@ -96,6 +96,12 @@ RELEASES_JSON_COMPACT=$(echo "$RELEASES_JSON" | tr -d '\n' | sed 's/  */ /g')
 # Escape these chars: . [ ] \ * ^ $ ( ) + ? { | }
 MATCH_PATTERN_ESCAPED=$(echo "$MATCH_PATTERN" | sed 's/[].\[\*^$()+?{|\\]/\\&/g')
 
+# Validate that we received valid JSON from the API
+if ! echo "$RELEASES_JSON" | grep -q '"assets"'; then
+  echo "Error: Invalid response from GitHub API. Expected JSON with 'assets' field." >&2
+  exit 1
+fi
+
 # Extract all assets that match the pattern along with their URLs
 # The regex matches: "name":"<pattern>...","browser_download_url":"<url>"
 # Account for optional spaces after colons and commas
