@@ -9,6 +9,11 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ## [Unreleased]
 
+### Changed
+
+- 🚸 Remove dependency on `jq` in UNIX installers ([#47]) ([**@burgholzer**])
+- 🚸 Use tar-native zstd support in installer when available ([#49]) ([**@burgholzer**])
+
 ## [1.0.0] - 2025-12-23
 
 _This is the initial release of the `setup-mlir` project._
@@ -24,6 +29,8 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#49]: https://github.com/munich-quantum-software/setup-mlir/pull/49
+[#47]: https://github.com/munich-quantum-software/setup-mlir/pull/47
 [#41]: https://github.com/munich-quantum-software/setup-mlir/pull/41
 [#32]: https://github.com/munich-quantum-software/setup-mlir/pull/32
 [#30]: https://github.com/munich-quantum-software/setup-mlir/pull/30
