@@ -25,12 +25,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Check if installation directory exists
-if (-not (Test-Path $install_prefix -PathType Container)) {
-    Write-Error "Installation directory $install_prefix does not exist."
-    exit 1
-}
-
 # Check if zstd is installed
 if (-not (Get-Command zstd -ErrorAction SilentlyContinue)) {
     Write-Error "zstd not found. Please install zstd (e.g., via Chocolatey: choco install zstd)."
@@ -41,6 +35,11 @@ if (-not (Get-Command zstd -ErrorAction SilentlyContinue)) {
 if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
     Write-Error "tar not found. Please install tar (e.g., via Chocolatey: choco install tar)."
     exit 1
+}
+
+# Create installation directory if it does not exist
+if (-not (Test-Path -Path $install_prefix)) {
+    New-Item -ItemType Directory -Path $install_prefix | Out-Null
 }
 
 # Change to installation directory
