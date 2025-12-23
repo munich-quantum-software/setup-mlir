@@ -40,12 +40,6 @@ if [ -z "${INSTALL_PREFIX:-}" ]; then
   exit 1
 fi
 
-# Check if installation directory exists
-if [ ! -d "$INSTALL_PREFIX" ]; then
-  echo "Error: Installation directory $INSTALL_PREFIX does not exist." >&2
-  exit 1
-fi
-
 # Check if jq is installed
 if ! command -v jq >/dev/null 2>&1; then
   echo "Error: jq not found. Please install jq." >&2
@@ -57,6 +51,9 @@ if ! command -v zstd >/dev/null 2>&1; then
   echo "Error: zstd not found. Please install zstd." >&2
   exit 1
 fi
+
+# Create installation directory if it does not exist
+mkdir -p "$INSTALL_PREFIX"
 
 # Change to installation directory
 pushd "$INSTALL_PREFIX" > /dev/null
