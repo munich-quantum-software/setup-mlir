@@ -46,12 +46,6 @@ if ! command -v tar >/dev/null 2>&1; then
   exit 1
 fi
 
-# Check if tar is installed
-if ! command -v tar >/dev/null 2>&1; then
-  echo "Error: tar not found. Please install tar." >&2
-  exit 1
-fi
-
 # Check if we can extract zstd archives
 # Prefer tar with native zstd support, fallback to separate zstd command
 USE_TAR_ZSTD=false
