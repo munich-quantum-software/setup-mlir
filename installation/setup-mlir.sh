@@ -104,7 +104,8 @@ RELEASES_JSON_SEPARATED=$(echo "$RELEASES_JSON_COMPACT" | sed 's/},{"url"/}\n{"u
 MATCH_PATTERN_ESCAPED=$(echo "$MATCH_PATTERN" | sed 's/[][\\.*^$(){}|+?]/\\&/g')
 
 # Validate that we received valid JSON from the API
-if ! echo "$RELEASES_JSON" | grep -q '"assets"'; then
+# Check for either "assets" array or "assets_url" field to confirm valid release data
+if ! echo "$RELEASES_JSON" | grep -qE '"assets(_url|":\s*\[)'; then
   echo "Error: Invalid response from GitHub API. Expected JSON with 'assets' field." >&2
   echo "This is likely due to rate limiting or an API error." >&2
   echo "Please provide a GitHub token using the -t flag to avoid rate limits." >&2
