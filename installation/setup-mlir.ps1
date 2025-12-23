@@ -39,7 +39,7 @@ if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
 
 # Create installation directory if it does not exist
 if (-not (Test-Path -Path $install_prefix)) {
-    New-Item -ItemType Directory -Path $install_prefix | Out-Null
+    New-Item -ItemType Directory -Path $install_prefix -Force | Out-Null
 }
 
 # Change to installation directory
