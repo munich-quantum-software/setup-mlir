@@ -90,93 +90,34 @@ fi
 
 # Determine download URL
 RELEASES_URL="https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases?per_page=100"
-if ! RELEASES_JSON=$(curl -fsSL \
+RELEASES_JSON=$(curl -fsSL \
                      -H "Accept: application/vnd.github+json" \
                      ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
                      -H "X-GitHub-Api-Version: 2022-11-28" \
-                     "$RELEASES_URL" 2>&1); then
-  echo "Error: Failed to fetch releases from GitHub API." >&2
-  echo "This is likely due to rate limiting. Please provide a GitHub token using the -t flag." >&2
-  exit 1
-fi
-
-# Parse JSON to find matching release and extract download URLs
-# Use grep and sed for JSON parsing without external dependencies
-# This approach matches assets by name pattern and extracts their browser_download_url
-# from the same asset object (GitHub API includes intervening fields between these)
-# Compact JSON for easier processing
-RELEASES_JSON_COMPACT=$(echo "$RELEASES_JSON" | tr -d '\n' | sed 's/  */ /g')
-
-# Escape special regex characters in the match pattern to prevent regex interpretation
-# Escape these chars: . [ ] \ * ^ $ ( ) + ? { | }
-MATCH_PATTERN_ESCAPED=$(echo "$MATCH_PATTERN" | sed 's/[][\\.*^$(){}|+?]/\\&/g')
-
-# Validate that we received valid JSON from the API
-# Check for either "assets" array or "assets_url" field to confirm valid release data
-if ! echo "$RELEASES_JSON" | grep -qE '"assets(_url|":\s*\[)'; then
-  echo "Error: Invalid response from GitHub API. Expected JSON with 'assets' field." >&2
-  echo "This is likely due to rate limiting or an API error." >&2
-  echo "Please provide a GitHub token using the -t flag to avoid rate limits." >&2
-  # Show response preview for debugging (limit to 500 chars for security)
-  RESPONSE_LENGTH=${#RELEASES_JSON}
-  if [ "$RESPONSE_LENGTH" -lt 500 ]; then
-    # For short responses, check if they might contain sensitive data
-    if echo "$RELEASES_JSON" | grep -qi "token"; then
-      echo "Response contains potential sensitive data. Length: $RESPONSE_LENGTH chars" >&2
-    else
-      echo "Response received: $RELEASES_JSON" >&2
-    fi
-  else
-    echo "Response preview (first 500 chars): ${RELEASES_JSON:0:500}..." >&2
-  fi
-  exit 1
-fi
-
-# Find the latest release with matching assets
-# Strategy: Extract timestamp from releases that have matching assets, sort desc, take first
-# Look for patterns like: "published_at":"2025-12-23...", ... "name":"...pattern..."
-LATEST_TIMESTAMP=$(echo "$RELEASES_JSON_COMPACT" | \
-  grep -oE '"published_at": *"[^"]*"[^{]*\{[^}]*"name": *"[^"]*'"$MATCH_PATTERN_ESCAPED"'[^"]*"' | \
-  grep -oE '"published_at": *"[^"]*"' | \
-  sed 's/"published_at": *"\([^"]*\)"/\1/' | \
-  sort -r | head -1)
-
-if [ -z "$LATEST_TIMESTAMP" ]; then
-  echo "Error: No release with LLVM $LLVM_VERSION found." >&2
-  exit 1
-fi
-
-# Extract the release block for the latest timestamp
-# This gets everything from the matching published_at through the end of that release's assets array
-LATEST_RELEASE_SECTION=$(echo "$RELEASES_JSON_COMPACT" | \
-  grep -oE '"published_at": *"'"$LATEST_TIMESTAMP"'"[^]]*"assets": *\[[^]]*\]')
-
-# Extract download URLs from assets in the latest release that match the pattern
-DOWNLOAD_URLS=$(echo "$LATEST_RELEASE_SECTION" | \
-  grep -oE '"name": *"[^"]*'"$MATCH_PATTERN_ESCAPED"'[^"]*"[^"]*"browser_download_url": *"[^"]*"' | \
-  grep -oE '"browser_download_url": *"[^"]*"' | \
-  sed 's/"browser_download_url": *"\([^"]*\)"/\1/')
-
-if [ -z "$DOWNLOAD_URLS" ]; then
-  echo "Error: No release with LLVM $LLVM_VERSION found." >&2
-  exit 1
-fi
+                     "$RELEASES_URL")
 
 if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_linux_.*_X86.tar.zst')
+  ASSET_SUFFIX="_linux_.*_X86.tar.zst"
 elif [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_linux_.*_AArch64.tar.zst')
+  ASSET_SUFFIX="_linux_.*_AArch64.tar.zst"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_macos_.*_X86.tar.zst')
+  ASSET_SUFFIX="_macos_.*_X86.tar.zst"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_macos_.*_AArch64.tar.zst')
+  ASSET_SUFFIX="_macos_.*_AArch64.tar.zst"
 else
   echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
   exit 1
 fi
 
+DOWNLOAD_URL=$(echo "$RELEASES_JSON" | \
+  grep -o '"browser_download_url": "[^"]*"' | \
+  grep -F "$MATCH_PATTERN" | \
+  grep "$ASSET_SUFFIX" | \
+  head -n 1 | \
+  sed 's/"browser_download_url": "//;s/"$//')
+
 if [ -z "$DOWNLOAD_URL" ]; then
-  echo "Error: No asset found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
+  echo "Error: No release with LLVM $LLVM_VERSION found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
   exit 1
 fi
 
