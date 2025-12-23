@@ -69,7 +69,7 @@ jobs:
             script: setup-mlir.sh
             shell: bash
           # macOS X86
-          - os: macos-15-large
+          - os: macos-15-intel
             arch: X86
             version: "f8cb798"
             script: setup-mlir.sh
@@ -91,27 +91,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      - name: Install dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq zstd
-
-      - name: Install dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install jq zstd
-
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install zstd -y
+          choco install zstandard -y
 
       - name: Test installer script (Bash)
         if: matrix.shell == 'bash'
         run: |
-          mkdir -p /tmp/mlir-install
-          bash installation/${{ matrix.script }} -v ${{ matrix.version }} -p /tmp/mlir-install -t ${{ secrets.GITHUB_TOKEN }}
+          bash installation/${{ matrix.script }} -v ${{ matrix.version }} -p /tmp/mlir-install -t ${{ github.token }}
 
           # Verify installation
           if [ ! -d "/tmp/mlir-install/bin" ]; then
@@ -146,9 +134,8 @@ jobs:
         shell: pwsh
         run: |
           $install_dir = Join-Path $env:TEMP "mlir-install"
-          New-Item -ItemType Directory -Path $install_dir -Force | Out-Null
 
-          & installation/${{ matrix.script }} -llvm_version ${{ matrix.version }} -install_prefix $install_dir -token ${{ secrets.GITHUB_TOKEN }}
+          & installation/${{ matrix.script }} -llvm_version ${{ matrix.version }} -install_prefix $install_dir -token ${{ github.token }}
 
           # Verify installation
           if (-not (Test-Path "$install_dir\bin")) {
@@ -201,7 +188,7 @@ jobs:
             platform: macOS
             version: "21.1.8"
           # macOS X86
-          - os: macos-15-large
+          - os: macos-15-intel
             arch: X86
             platform: macOS
             version: "f8cb798"
