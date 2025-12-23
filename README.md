@@ -2,7 +2,7 @@
 
 This repository provides an action for setting up MLIR in GitHub Actions and installation scripts for setting up MLIR locally.
 
-The MLIR binaries are built and distributed in the [`portable-mlir-toolchain`](https://github.com/munich-quantum-software/setup-mlir/) repository.
+The MLIR binaries are built and distributed in the [`portable-mlir-toolchain`](https://github.com/munich-quantum-software/portable-mlir-toolchain/) repository.
 
 ## GitHub Actions
 

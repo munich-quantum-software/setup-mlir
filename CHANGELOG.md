@@ -26,7 +26,7 @@ _This is the initial release of the `setup-mlir` project._
 
 ### Removed
 
-- 🔥 Remove build-reated files, as building will be handled by [munich-quantum-software/portable-mlir-toolchain] in the future ([#41]) ([**@denialhaag**])
+- 🔥 Remove build-related files, as building will be handled by [munich-quantum-software/portable-mlir-toolchain] in the future ([#41]) ([**@denialhaag**])
 
 ### Fixed
 
