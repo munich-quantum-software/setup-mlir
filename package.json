@@ -4,7 +4,9 @@
   "description": "GitHub Action that sets up a specific version of the MLIR toolchain",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt"
+    "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "repository": {
     "type": "git",
@@ -22,11 +24,15 @@
     "@actions/core": "^2.0.0",
     "@actions/tool-cache": "^2.0.2",
     "@octokit/core": "^7.0.6",
-    "@octokit/openapi-types": "^27.0.0"
+    "@octokit/openapi-types": "^27.0.0",
+    "ci": "^2.3.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
     "@vercel/ncc": "^0.38.4",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
     "typescript": "^5.9.3"
   }
 }

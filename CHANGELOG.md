@@ -9,10 +9,19 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ## [Unreleased]
 
+### Added
+
+- 👷 Add GitHub Actions CI ([#51]) ([**@burgholzer**])
+
 ### Changed
 
-- 🚸 Remove dependency on `jq` in UNIX installers ([#47]) ([**@burgholzer**])
-- 🚸 Use tar-native zstd support in installer when available ([#49]) ([**@burgholzer**])
+- 🚸 Remove dependency on `jq` in UNIX installer ([#47]) ([**@burgholzer**])
+- 🚸 Use tar-native zstd support in installers when available ([#49]) ([**@burgholzer**])
+- 🚸 Create the installation directory if it does not exist ([#46]) ([**@denialhaag**])
+
+### Fixed
+
+- 🐛 Fix installation scripts to also accept commit SHAs ([#43]) ([**@denialhaag**])
 
 ## [1.0.0] - 2025-12-23
 
@@ -29,8 +38,11 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#51]: https://github.com/munich-quantum-software/setup-mlir/pull/51
 [#49]: https://github.com/munich-quantum-software/setup-mlir/pull/49
 [#47]: https://github.com/munich-quantum-software/setup-mlir/pull/47
+[#46]: https://github.com/munich-quantum-software/setup-mlir/pull/46
+[#43]: https://github.com/munich-quantum-software/setup-mlir/pull/43
 [#41]: https://github.com/munich-quantum-software/setup-mlir/pull/41
 [#32]: https://github.com/munich-quantum-software/setup-mlir/pull/32
 [#30]: https://github.com/munich-quantum-software/setup-mlir/pull/30
