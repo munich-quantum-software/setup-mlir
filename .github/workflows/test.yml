@@ -1,0 +1,345 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-installer-scripts:
+    name: Test installer script on ${{ matrix.os }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux X86
+          - os: ubuntu-24.04
+            arch: X86
+            version: "21.1.8"
+            script: setup-mlir.sh
+            shell: bash
+          # Linux ARM
+          - os: ubuntu-24.04-arm
+            arch: AArch64
+            version: "f8cb798"
+            script: setup-mlir.sh
+            shell: bash
+          # macOS ARM
+          - os: macos-14
+            arch: AArch64
+            version: "21.1.8"
+            script: setup-mlir.sh
+            shell: bash
+          # macOS X86
+          - os: macos-15-large
+            arch: X86
+            version: "f8cb798"
+            script: setup-mlir.sh
+            shell: bash
+          # Windows X86
+          - os: windows-2022
+            arch: X86
+            version: "21.1.8"
+            script: setup-mlir.ps1
+            shell: pwsh
+          # Windows ARM
+          - os: windows-11-arm
+            arch: AArch64
+            version: "f8cb798"
+            script: setup-mlir.ps1
+            shell: pwsh
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq zstd
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install jq zstd
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install zstd -y
+
+      - name: Test installer script (Bash)
+        if: matrix.shell == 'bash'
+        run: |
+          mkdir -p /tmp/mlir-install
+          bash installation/${{ matrix.script }} -v ${{ matrix.version }} -p /tmp/mlir-install -t ${{ secrets.GITHUB_TOKEN }}
+          
+          # Verify installation
+          if [ ! -d "/tmp/mlir-install/bin" ]; then
+            echo "Error: bin directory not found"
+            exit 1
+          fi
+          
+          if [ ! -d "/tmp/mlir-install/lib/cmake/llvm" ]; then
+            echo "Error: LLVM cmake directory not found"
+            exit 1
+          fi
+          
+          if [ ! -d "/tmp/mlir-install/lib/cmake/mlir" ]; then
+            echo "Error: MLIR cmake directory not found"
+            exit 1
+          fi
+          
+          # Verify binaries exist
+          export PATH="/tmp/mlir-install/bin:$PATH"
+          if ! command -v mlir-opt &> /dev/null; then
+            echo "Error: mlir-opt not found in PATH"
+            exit 1
+          fi
+          
+          # Test that mlir-opt runs
+          mlir-opt --version
+          
+          echo "Installation test passed!"
+
+      - name: Test installer script (PowerShell)
+        if: matrix.shell == 'pwsh'
+        shell: pwsh
+        run: |
+          $install_dir = Join-Path $env:TEMP "mlir-install"
+          New-Item -ItemType Directory -Path $install_dir -Force | Out-Null
+          
+          & installation/${{ matrix.script }} -llvm_version ${{ matrix.version }} -install_prefix $install_dir -token ${{ secrets.GITHUB_TOKEN }}
+          
+          # Verify installation
+          if (-not (Test-Path "$install_dir\bin")) {
+            Write-Error "bin directory not found"
+            exit 1
+          }
+          
+          if (-not (Test-Path "$install_dir\lib\cmake\llvm")) {
+            Write-Error "LLVM cmake directory not found"
+            exit 1
+          }
+          
+          if (-not (Test-Path "$install_dir\lib\cmake\mlir")) {
+            Write-Error "MLIR cmake directory not found"
+            exit 1
+          }
+          
+          # Verify binaries exist
+          $env:Path = "$install_dir\bin;$env:Path"
+          if (-not (Get-Command mlir-opt -ErrorAction SilentlyContinue)) {
+            Write-Error "mlir-opt not found in PATH"
+            exit 1
+          }
+          
+          # Test that mlir-opt runs
+          mlir-opt --version
+          
+          Write-Host "Installation test passed!"
+
+  test-action:
+    name: Test action on ${{ matrix.os }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux X86
+          - os: ubuntu-24.04
+            arch: X86
+            platform: linux
+            version: "21.1.8"
+          # Linux ARM
+          - os: ubuntu-24.04-arm
+            arch: AArch64
+            platform: linux
+            version: "f8cb798"
+          # macOS ARM
+          - os: macos-14
+            arch: AArch64
+            platform: macOS
+            version: "21.1.8"
+          # macOS X86
+          - os: macos-15-large
+            arch: X86
+            platform: macOS
+            version: "f8cb798"
+          # Windows X86
+          - os: windows-2022
+            arch: X86
+            platform: windows
+            version: "21.1.8"
+          # Windows ARM
+          - os: windows-11-arm
+            arch: AArch64
+            platform: windows
+            version: "f8cb798"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Setup MLIR
+        uses: ./
+        with:
+          llvm-version: ${{ matrix.version }}
+          platform: ${{ matrix.platform }}
+          architecture: ${{ matrix.arch }}
+
+      - name: Verify environment variables (Bash)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          # Check LLVM_DIR is set
+          if [ -z "$LLVM_DIR" ]; then
+            echo "Error: LLVM_DIR not set"
+            exit 1
+          fi
+          echo "LLVM_DIR=$LLVM_DIR"
+          
+          # Check MLIR_DIR is set
+          if [ -z "$MLIR_DIR" ]; then
+            echo "Error: MLIR_DIR not set"
+            exit 1
+          fi
+          echo "MLIR_DIR=$MLIR_DIR"
+          
+          # Verify directories exist
+          if [ ! -d "$LLVM_DIR" ]; then
+            echo "Error: LLVM_DIR directory does not exist"
+            exit 1
+          fi
+          
+          if [ ! -d "$MLIR_DIR" ]; then
+            echo "Error: MLIR_DIR directory does not exist"
+            exit 1
+          fi
+          
+          echo "Environment variables verified!"
+
+      - name: Verify environment variables (PowerShell)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Check LLVM_DIR is set
+          if (-not $env:LLVM_DIR) {
+            Write-Error "LLVM_DIR not set"
+            exit 1
+          }
+          Write-Host "LLVM_DIR=$env:LLVM_DIR"
+          
+          # Check MLIR_DIR is set
+          if (-not $env:MLIR_DIR) {
+            Write-Error "MLIR_DIR not set"
+            exit 1
+          }
+          Write-Host "MLIR_DIR=$env:MLIR_DIR"
+          
+          # Verify directories exist
+          if (-not (Test-Path $env:LLVM_DIR)) {
+            Write-Error "LLVM_DIR directory does not exist"
+            exit 1
+          }
+          
+          if (-not (Test-Path $env:MLIR_DIR)) {
+            Write-Error "MLIR_DIR directory does not exist"
+            exit 1
+          }
+          
+          Write-Host "Environment variables verified!"
+
+      - name: Verify binaries in PATH (Bash)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          # Check if mlir-opt is in PATH
+          if ! command -v mlir-opt &> /dev/null; then
+            echo "Error: mlir-opt not found in PATH"
+            exit 1
+          fi
+          
+          # Test that mlir-opt runs
+          mlir-opt --version
+          
+          # Check if mlir-translate is in PATH
+          if ! command -v mlir-translate &> /dev/null; then
+            echo "Error: mlir-translate not found in PATH"
+            exit 1
+          fi
+          
+          mlir-translate --version
+          
+          echo "Binaries verified!"
+
+      - name: Verify binaries in PATH (PowerShell)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Check if mlir-opt is in PATH
+          if (-not (Get-Command mlir-opt -ErrorAction SilentlyContinue)) {
+            Write-Error "mlir-opt not found in PATH"
+            exit 1
+          }
+          
+          # Test that mlir-opt runs
+          mlir-opt --version
+          
+          # Check if mlir-translate is in PATH
+          if (-not (Get-Command mlir-translate -ErrorAction SilentlyContinue)) {
+            Write-Error "mlir-translate not found in PATH"
+            exit 1
+          }
+          
+          mlir-translate --version
+          
+          Write-Host "Binaries verified!"
+
+  test-failure-modes:
+    name: Test failure modes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Test invalid version format
+        id: invalid-version
+        continue-on-error: true
+        uses: ./
+        with:
+          llvm-version: "invalid-version-123"
+
+      - name: Verify invalid version failed
+        if: steps.invalid-version.outcome != 'failure'
+        run: |
+          echo "Error: Expected action to fail with invalid version"
+          exit 1
+
+      - name: Test non-existent version
+        id: nonexistent-version
+        continue-on-error: true
+        uses: ./
+        with:
+          llvm-version: "99.99.99"
+
+      - name: Verify non-existent version failed
+        if: steps.nonexistent-version.outcome != 'failure'
+        run: |
+          echo "Error: Expected action to fail with non-existent version"
+          exit 1
+
+      - name: All failure mode tests passed
+        run: echo "All failure mode tests passed successfully!"
