@@ -29,5 +29,5 @@ curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest
 On Windows, use the following PowerShell command:
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1 | iex; setup-mlir.ps1 -llvm_version 21.1.7 -install_prefix /path/to/installation"
+powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 21.1.8 -install_prefix /path/to/installation"
 ```
