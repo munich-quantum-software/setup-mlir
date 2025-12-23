@@ -87,14 +87,17 @@ RELEASES_JSON=$(curl -fL \
 
 # Parse JSON to find matching release and extract download URLs
 # Use grep and sed for JSON parsing without external dependencies
-# This approach assumes GitHub API JSON format with "name" field followed by "browser_download_url"
-# The pattern is designed to work with the standard GitHub releases API response format
+# This approach matches assets by name pattern and extracts their browser_download_url
+# from the same asset object (GitHub API includes intervening fields between these)
 # Compact JSON for easier processing
 RELEASES_JSON_COMPACT=$(echo "$RELEASES_JSON" | tr -d '\n' | sed 's/  */ /g')
 
+# Separate assets onto individual lines for proper matching (assets start with {"url")
+RELEASES_JSON_SEPARATED=$(echo "$RELEASES_JSON_COMPACT" | sed 's/},{"url"/}\n{"url"/g')
+
 # Escape special regex characters in the match pattern to prevent regex interpretation
 # Escape these chars: . [ ] \ * ^ $ ( ) + ? { | }
-MATCH_PATTERN_ESCAPED=$(echo "$MATCH_PATTERN" | sed 's/[].\[\*^$()+?{|\\]/\\&/g')
+MATCH_PATTERN_ESCAPED=$(echo "$MATCH_PATTERN" | sed 's/[][\\.*^$(){}|+?]/\\&/g')
 
 # Validate that we received valid JSON from the API
 if ! echo "$RELEASES_JSON" | grep -q '"assets"'; then
@@ -103,11 +106,11 @@ if ! echo "$RELEASES_JSON" | grep -q '"assets"'; then
 fi
 
 # Extract all assets that match the pattern along with their URLs
-# The regex matches: "name":"<pattern>...","browser_download_url":"<url>"
-# Account for optional spaces after colons and commas
-DOWNLOAD_URLS=$(echo "$RELEASES_JSON_COMPACT" | \
-  grep -o '"name": *"[^"]*'"$MATCH_PATTERN_ESCAPED"'[^"]*", *"browser_download_url": *"[^"]*"' | \
-  sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/')
+# First filter lines with matching names, then extract browser_download_url from each
+DOWNLOAD_URLS=$(echo "$RELEASES_JSON_SEPARATED" | \
+  grep "$MATCH_PATTERN_ESCAPED" | \
+  grep -oE '"browser_download_url": *"[^"]*"' | \
+  sed 's/"browser_download_url": *"\([^"]*\)"/\1/')
 
 if [ -z "$DOWNLOAD_URLS" ]; then
   echo "Error: No release with LLVM $LLVM_VERSION found." >&2
