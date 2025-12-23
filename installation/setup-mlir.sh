@@ -147,11 +147,20 @@ fi
 # Unpack archive
 echo "Extracting archive..."
 if [ "$USE_TAR_ZSTD" = true ]; then
-  tar --zstd -xf "asset.tar.zst"
+  if ! tar --zstd -xf "asset.tar.zst"; then
+    echo "Error: Failed to extract archive." >&2
+    exit 1
+  fi
   rm -f "asset.tar.zst"
 else
-  zstd -d "asset.tar.zst" --output-dir-flat .
-  tar -xf "asset.tar"
+  if ! zstd -d "asset.tar.zst" --output-dir-flat .; then
+    echo "Error: Failed to decompress archive." >&2
+    exit 1
+  fi
+  if ! tar -xf "asset.tar"; then
+    echo "Error: Failed to extract archive." >&2
+    exit 1
+  fi
   rm -f "asset.tar.zst"
   rm -f "asset.tar"
 fi
