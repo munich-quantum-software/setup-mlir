@@ -19,7 +19,7 @@ This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and d
 
 If you want to use the pre-built MLIR installations locally, we also provide installation scripts.
 The scripts require the LLVM version (e.g., `21.1.8`) and the desired installation directory to be passed.
-Furthermore, `python3` and `zstd` need to be installed on the host system.
+Furthermore, `zstd` needs to be installed on the host system.
 
 On Linux and macOS, use the following Bash command:
 

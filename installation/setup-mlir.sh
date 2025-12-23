@@ -87,6 +87,8 @@ RELEASES_JSON=$(curl -fL \
 
 # Parse JSON to find matching release and extract download URLs
 # Use grep and sed for JSON parsing without external dependencies
+# This approach assumes GitHub API JSON format with "name" field followed by "browser_download_url"
+# The pattern is designed to work with the standard GitHub releases API response format
 # Compact JSON for easier processing
 RELEASES_JSON_COMPACT=$(echo "$RELEASES_JSON" | tr -d '\n' | sed 's/  */ /g')
 
