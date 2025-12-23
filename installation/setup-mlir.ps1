@@ -25,16 +25,23 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Check if zstd is installed
-if (-not (Get-Command zstd -ErrorAction SilentlyContinue)) {
-    Write-Error "zstd not found. Please install zstd (e.g., via Chocolatey: choco install zstd)."
-    exit 1
-}
-
 # Check if tar is installed
 if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
     Write-Error "tar not found. Please install tar (e.g., via Chocolatey: choco install tar)."
     exit 1
+}
+
+# Check if we can extract zstd archives
+# Try to determine if tar supports --zstd by checking help output
+$tarHelp = & tar --help 2>&1 | Out-String
+$useTarZstd = $tarHelp -match '--zstd'
+
+if (-not $useTarZstd) {
+    # Check if zstd is installed as fallback
+    if (-not (Get-Command zstd -ErrorAction SilentlyContinue)) {
+        Write-Error "tar does not support --zstd and zstd command not found. Please install zstd or upgrade tar to a version with zstd support."
+        exit 1
+    }
 }
 
 # Create installation directory if it does not exist
@@ -99,21 +106,29 @@ Invoke-WebRequest -Uri $download_url -OutFile "asset.tar.zst"
 # Unpack archive
 Write-Host "Extracting archive..."
 
-& zstd -d "asset.tar.zst" --output-dir-flat .
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to decompress archive."
-    exit 1
-}
+if ($useTarZstd) {
+    & tar --zstd -xf "asset.tar.zst"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to extract archive."
+        exit 1
+    }
+    Remove-Item "asset.tar.zst" -Force
+} else {
+    & zstd -d "asset.tar.zst" --output-dir-flat .
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to decompress archive."
+        exit 1
+    }
 
-& tar -xf "asset.tar"
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to extract archive."
-    exit 1
-}
+    & tar -xf "asset.tar"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to extract archive."
+        exit 1
+    }
 
-# Clean up
-Remove-Item "asset.tar.zst" -Force
-Remove-Item "asset.tar" -Force
+    Remove-Item "asset.tar.zst" -Force
+    Remove-Item "asset.tar" -Force
+}
 
 # Return to original directory
 popd > $null
