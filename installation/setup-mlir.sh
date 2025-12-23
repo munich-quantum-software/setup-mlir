@@ -40,9 +40,20 @@ if [ -z "${INSTALL_PREFIX:-}" ]; then
   exit 1
 fi
 
-# Check if zstd is installed
-if ! command -v zstd >/dev/null 2>&1; then
-  echo "Error: zstd not found. Please install zstd." >&2
+# Check if tar is installed
+if ! command -v tar >/dev/null 2>&1; then
+  echo "Error: tar not found. Please install tar." >&2
+  exit 1
+fi
+
+# Check if we can extract zstd archives
+# Prefer tar with native zstd support, fallback to separate zstd command
+USE_TAR_ZSTD=false
+if tar --help 2>&1 | grep -q -- '--zstd'; then
+  USE_TAR_ZSTD=true
+elif ! command -v zstd >/dev/null 2>&1; then
+  echo "Error: tar does not support --zstd and zstd command not found." >&2
+  echo "Please install zstd or upgrade tar to a version with zstd support." >&2
   exit 1
 fi
 
@@ -178,12 +189,24 @@ fi
 
 # Unpack archive
 echo "Extracting archive..."
-zstd -d "asset.tar.zst" --output-dir-flat .
-tar -xf "asset.tar"
-
-# Clean up
-rm -f "asset.tar.zst"
-rm -f "asset.tar"
+if [ "$USE_TAR_ZSTD" = true ]; then
+  if ! tar --zstd -xf "asset.tar.zst"; then
+    echo "Error: Failed to extract archive." >&2
+    exit 1
+  fi
+  rm -f "asset.tar.zst"
+else
+  if ! zstd -d "asset.tar.zst" --output-dir-flat .; then
+    echo "Error: Failed to decompress archive." >&2
+    exit 1
+  fi
+  if ! tar -xf "asset.tar"; then
+    echo "Error: Failed to extract archive." >&2
+    exit 1
+  fi
+  rm -f "asset.tar.zst"
+  rm -f "asset.tar"
+fi
 
 # Return to original directory
 popd > /dev/null
