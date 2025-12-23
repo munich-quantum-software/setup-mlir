@@ -1,6 +1,6 @@
 {
   "name": "setup-mlir",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "GitHub Action that sets up a specific version of the MLIR toolchain",
   "main": "./dist/index.js",
   "scripts": {
