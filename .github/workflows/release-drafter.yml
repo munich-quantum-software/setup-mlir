@@ -22,6 +22,7 @@ jobs:
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Upload installation scripts
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: gh release upload "v${{ steps.release-drafter.outputs.new_release_version }}" installation/setup-mlir.sh installation/setup-mlir.ps1 --clobber
