@@ -24,6 +24,10 @@ _This is the initial release of the `setup-mlir` project._
 - ✨ Restructure installation scripts and Action to accept LLVM version instead of `setup-mlir` tag ([#25]) ([**@denialhaag**])
 - 📌 Pin `manylinux` images used for Linux builds ([#23]) ([**@denialhaag**])
 
+### Removed
+
+- 🔥 Remove build-reated files, as building will be handled by [munich-quantum-software/portable-mlir-toolchain] in the future ([#41]) ([**@denialhaag**])
+
 ### Fixed
 
 - 🚑 Fix commit-hash handling in Action ([#32]) ([**@flowerthrower**])
@@ -57,3 +61,4 @@ _This is the initial release of the `setup-mlir` project._
 [Keep a Changelog]: https://keepachangelog.com/en/1.1.0/
 [Common Changelog]: https://common-changelog.org
 [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
+[munich-quantum-software/portable-mlir-toolchain]: https://github.com/munich-quantum-software/portable-mlir-toolchain
