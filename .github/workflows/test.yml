@@ -41,51 +41,24 @@ jobs:
           files: ./coverage/lcov.info
           flags: unittests
           name: unit-tests
-          fail_ci_if_error: false
+          use_oidc: true
 
   test-installer-scripts:
-    name: Test installer script on ${{ matrix.os }} (${{ matrix.arch }})
+    name: Test installer script for version ${{ matrix.version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Linux X86
-          - os: ubuntu-24.04
-            arch: X86
-            version: "21.1.8"
-            script: setup-mlir.sh
-            shell: bash
-          # Linux ARM
-          - os: ubuntu-24.04-arm
-            arch: AArch64
-            version: "f8cb798"
-            script: setup-mlir.sh
-            shell: bash
-          # macOS ARM
-          - os: macos-14
-            arch: AArch64
-            version: "21.1.8"
-            script: setup-mlir.sh
-            shell: bash
-          # macOS X86
-          - os: macos-15-intel
-            arch: X86
-            version: "f8cb798"
-            script: setup-mlir.sh
-            shell: bash
-          # Windows X86
-          - os: windows-2022
-            arch: X86
-            version: "21.1.8"
-            script: setup-mlir.ps1
-            shell: pwsh
-          # Windows ARM
-          - os: windows-11-arm
-            arch: AArch64
-            version: "f8cb798"
-            script: setup-mlir.ps1
-            shell: pwsh
+        os:
+          [
+            ubuntu-24.04,
+            ubuntu-24.04-arm,
+            macos-14,
+            macos-15-intel,
+            windows-2022,
+            windows-11-arm,
+          ]
+        version: ["21.1.8", "f8cb798"]
 
     steps:
       - name: Checkout repository
@@ -97,9 +70,10 @@ jobs:
           choco install zstandard -y
 
       - name: Test installer script (Bash)
-        if: matrix.shell == 'bash'
+        if: runner.os != 'Windows'
+        shell: bash
         run: |
-          bash installation/${{ matrix.script }} -v ${{ matrix.version }} -p /tmp/mlir-install -t ${{ github.token }}
+          installation/setup-mlir.sh -v ${{ matrix.version }} -p /tmp/mlir-install -t ${{ github.token }}
 
           # Verify installation
           if [ ! -d "/tmp/mlir-install/bin" ]; then
@@ -130,12 +104,12 @@ jobs:
           echo "Installation test passed!"
 
       - name: Test installer script (PowerShell)
-        if: matrix.shell == 'pwsh'
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $install_dir = Join-Path $env:TEMP "mlir-install"
 
-          & installation/${{ matrix.script }} -llvm_version ${{ matrix.version }} -install_prefix $install_dir -token ${{ github.token }}
+          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir -token ${{ github.token }}
 
           # Verify installation
           if (-not (Test-Path "$install_dir\bin")) {
@@ -166,43 +140,21 @@ jobs:
           Write-Host "Installation test passed!"
 
   test-action:
-    name: Test action on ${{ matrix.os }} (${{ matrix.arch }})
+    name: Test action for version ${{ matrix.version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Linux X86
-          - os: ubuntu-24.04
-            arch: X86
-            platform: linux
-            version: "21.1.8"
-          # Linux ARM
-          - os: ubuntu-24.04-arm
-            arch: AArch64
-            platform: linux
-            version: "f8cb798"
-          # macOS ARM
-          - os: macos-14
-            arch: AArch64
-            platform: macOS
-            version: "21.1.8"
-          # macOS X86
-          - os: macos-15-intel
-            arch: X86
-            platform: macOS
-            version: "f8cb798"
-          # Windows X86
-          - os: windows-2022
-            arch: X86
-            platform: windows
-            version: "21.1.8"
-          # Windows ARM
-          - os: windows-11-arm
-            arch: AArch64
-            platform: windows
-            version: "f8cb798"
-
+        os:
+          [
+            ubuntu-24.04,
+            ubuntu-24.04-arm,
+            macos-14,
+            macos-15-intel,
+            windows-2022,
+            windows-11-arm,
+          ]
+        version: ["21.1.8", "f8cb798"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -211,8 +163,6 @@ jobs:
         uses: ./
         with:
           llvm-version: ${{ matrix.version }}
-          platform: ${{ matrix.platform }}
-          architecture: ${{ matrix.arch }}
 
       - name: Verify environment variables (Bash)
         if: runner.os != 'Windows'
