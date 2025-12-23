@@ -40,12 +40,6 @@ if [ -z "${INSTALL_PREFIX:-}" ]; then
   exit 1
 fi
 
-# Check if jq is installed
-if ! command -v jq >/dev/null 2>&1; then
-  echo "Error: jq not found. Please install jq." >&2
-  exit 1
-fi
-
 # Check if zstd is installed
 if ! command -v zstd >/dev/null 2>&1; then
   echo "Error: zstd not found. Please install zstd." >&2
@@ -91,22 +85,20 @@ RELEASES_JSON=$(curl -fL \
                      -H "X-GitHub-Api-Version: 2022-11-28" \
                      "$RELEASES_URL")
 
-ASSETS_JSON=$(echo "$RELEASES_JSON" | jq --arg m "$MATCH_PATTERN" '
-  map(
-    select(
-      (.assets | type == "array") and
-      (.assets | length > 0) and
-      (.assets | any(.name? // empty | contains($m)))
-    )
-  ) | sort_by(.published_at) | reverse | .[0].assets // empty
-')
+# Parse JSON to find matching release and extract download URLs
+# Use grep and sed for JSON parsing without external dependencies
+# Compact JSON for easier processing
+RELEASES_JSON_COMPACT=$(echo "$RELEASES_JSON" | tr -d '\n' | sed 's/  */ /g')
 
-if [ -z "$ASSETS_JSON" ] || [ "$ASSETS_JSON" = "null" ] || [ "$ASSETS_JSON" = "[]" ]; then
+# Extract all assets that match the pattern along with their URLs
+# The regex matches: "name":"<pattern>...","browser_download_url":"<url>"
+# Account for optional spaces after colons and commas
+DOWNLOAD_URLS=$(echo "$RELEASES_JSON_COMPACT" | grep -o '"name": *"[^"]*'"$MATCH_PATTERN"'[^"]*", *"browser_download_url": *"[^"]*"' | sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/')
+
+if [ -z "$DOWNLOAD_URLS" ]; then
   echo "Error: No release with LLVM $LLVM_VERSION found." >&2
   exit 1
 fi
-
-DOWNLOAD_URLS=$(echo "$ASSETS_JSON" | jq -r '.[].browser_download_url')
 
 if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
   DOWNLOAD_URL=$(echo "$DOWNLOAD_URLS" | grep '.*_linux_.*_X86.tar.zst')
