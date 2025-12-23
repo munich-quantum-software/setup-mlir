@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 
 describe('Version Validation', () => {
   it('should recognize valid version tags', () => {
