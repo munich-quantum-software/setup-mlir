@@ -79,11 +79,15 @@ fi
 
 # Determine download URL
 RELEASES_URL="https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases?per_page=100"
-RELEASES_JSON=$(curl -fL \
+if ! RELEASES_JSON=$(curl -fsSL \
                      -H "Accept: application/vnd.github+json" \
                      ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
                      -H "X-GitHub-Api-Version: 2022-11-28" \
-                     "$RELEASES_URL")
+                     "$RELEASES_URL" 2>&1); then
+  echo "Error: Failed to fetch releases from GitHub API." >&2
+  echo "This is likely due to rate limiting. Please provide a GitHub token using the -t flag." >&2
+  exit 1
+fi
 
 # Parse JSON to find matching release and extract download URLs
 # Use grep and sed for JSON parsing without external dependencies
@@ -102,6 +106,13 @@ MATCH_PATTERN_ESCAPED=$(echo "$MATCH_PATTERN" | sed 's/[][\\.*^$(){}|+?]/\\&/g')
 # Validate that we received valid JSON from the API
 if ! echo "$RELEASES_JSON" | grep -q '"assets"'; then
   echo "Error: Invalid response from GitHub API. Expected JSON with 'assets' field." >&2
+  echo "This is likely due to rate limiting or an API error." >&2
+  echo "Please provide a GitHub token using the -t flag to avoid rate limits." >&2
+  if [ ${#RELEASES_JSON} -lt 1000 ]; then
+    echo "Response received: $RELEASES_JSON" >&2
+  else
+    echo "Response preview (first 500 chars): ${RELEASES_JSON:0:500}" >&2
+  fi
   exit 1
 fi
 
