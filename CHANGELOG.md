@@ -46,4 +46,3 @@ _This is the initial release of the `setup-mlir` project._
 [Keep a Changelog]: https://keepachangelog.com/en/1.1.0/
 [Common Changelog]: https://common-changelog.org
 [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
-[munich-quantum-software/portable-mlir-toolchain]: https://github.com/munich-quantum-software/portable-mlir-toolchain
