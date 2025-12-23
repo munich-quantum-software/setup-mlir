@@ -15,23 +15,7 @@ _This is the initial release of the `setup-mlir` project._
 
 ### Added
 
-- 🔧 Enable (short- and long-form) commit hash values as an alternative to version tags ([#30]) ([**@flowerthrower**])
-- ✨ Add build and installation scripts as well as Action ([#1], [#3], [#6], [#14]) ([**@burgholzer**], [**@denialhaag**])
-
-### Changed
-
-- 🔧🍎 Disable LTO on macOS arm64 builds ([#29]) ([**@burgholzer**])
-- ✨ Restructure installation scripts and Action to accept LLVM version instead of `setup-mlir` tag ([#25]) ([**@denialhaag**])
-- 📌 Pin `manylinux` images used for Linux builds ([#23]) ([**@denialhaag**])
-
-### Removed
-
-- 🔥 Remove build-related files, as building will be handled by [munich-quantum-software/portable-mlir-toolchain] in the future ([#41]) ([**@denialhaag**])
-
-### Fixed
-
-- 🚑 Fix commit-hash handling in Action ([#32]) ([**@flowerthrower**])
-- 👷 Fix workflow that checks Action distribution ([#32]) ([**@denialhaag**])
+- ✨ Add action and installation scripts ([#1], [#3], [#6], [#14], [#23], [#25], [#29], [#30], [#32], [#41]) ([**@burgholzer**], [**@denialhaag**], [**@flowerthrower**])
 
 <!-- Version links -->
 
@@ -40,6 +24,7 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#41]: https://github.com/munich-quantum-software/setup-mlir/pull/41
 [#32]: https://github.com/munich-quantum-software/setup-mlir/pull/32
 [#30]: https://github.com/munich-quantum-software/setup-mlir/pull/30
 [#29]: https://github.com/munich-quantum-software/setup-mlir/pull/29
