@@ -94,12 +94,14 @@ RELEASES_JSON_COMPACT=$(echo "$RELEASES_JSON" | tr -d '\n' | sed 's/  */ /g')
 
 # Escape special regex characters in the match pattern to prevent regex interpretation
 # Escape these chars: . [ ] \ * ^ $ ( ) + ? { | }
-MATCH_PATTERN_ESCAPED=$(echo "$MATCH_PATTERN" | sed 's/[].[\*^$()+?{|\\]/\\&/g')
+MATCH_PATTERN_ESCAPED=$(echo "$MATCH_PATTERN" | sed 's/[].\[\*^$()+?{|\\]/\\&/g')
 
 # Extract all assets that match the pattern along with their URLs
 # The regex matches: "name":"<pattern>...","browser_download_url":"<url>"
 # Account for optional spaces after colons and commas
-DOWNLOAD_URLS=$(echo "$RELEASES_JSON_COMPACT" | grep -o '"name": *"[^"]*'"$MATCH_PATTERN_ESCAPED"'[^"]*", *"browser_download_url": *"[^"]*"' | sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/')
+DOWNLOAD_URLS=$(echo "$RELEASES_JSON_COMPACT" | \
+  grep -o '"name": *"[^"]*'"$MATCH_PATTERN_ESCAPED"'[^"]*", *"browser_download_url": *"[^"]*"' | \
+  sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/')
 
 if [ -z "$DOWNLOAD_URLS" ]; then
   echo "Error: No release with LLVM $LLVM_VERSION found." >&2
