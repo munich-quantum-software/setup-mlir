@@ -17,8 +17,12 @@
 
 import * as core from "@actions/core";
 import * as tc from "@actions/tool-cache";
-import getDownloadLink from "./get-download-link.js";
+import * as exec from "@actions/exec";
+import * as io from "@actions/io";
+import getDownloadLink, { getZstdLink } from "./get-download-link.js";
 import path from "node:path";
+import * as fs from "node:fs";
+import process from "node:process";
 
 /**
  * Setup MLIR toolchain
@@ -29,6 +33,15 @@ async function run(): Promise<void> {
   const platform = core.getInput("platform", { required: true });
   const architecture = core.getInput("architecture", { required: true });
   const token = core.getInput("token", { required: true });
+  const debug = core.getBooleanInput("debug", { required: false });
+
+  // Validate debug flag is only used on Windows
+  if (debug && platform !== "windows" && platform !== "host") {
+    throw new Error("Debug builds are only available on Windows.");
+  }
+  if (debug && platform === "host" && process.platform !== "win32") {
+    throw new Error("Debug builds are only available on Windows.");
+  }
 
   // Validate LLVM version (either X.Y.Z format or commit hash)
   const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
@@ -39,20 +52,79 @@ async function run(): Promise<void> {
     );
   }
 
-  core.debug("==> Determining asset URL");
-  const asset = await getDownloadLink(
+  core.debug("==> Determining zstd binary URL");
+  const zstdAsset = await getZstdLink(
     token,
     llvm_version,
     platform,
     architecture,
   );
-  core.debug(`==> Downloading asset: ${asset.url}`);
+  core.debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
+  const zstdFile = await tc.downloadTool(zstdAsset.url);
+
+  core.debug("==> Extracting zstd binary");
+  let zstdDir: string;
+  if (zstdAsset.name.endsWith(".zip")) {
+    zstdDir = await tc.extractZip(zstdFile);
+  } else {
+    zstdDir = await tc.extractTar(zstdFile);
+  }
+
+  // Find zstd executable
+  const zstdExeName = process.platform === "win32" ? "zstd.exe" : "zstd";
+  let zstdPath: string | undefined;
+  const findZstd = (dir: string): string | undefined => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        const found = findZstd(fullPath);
+        if (found) return found;
+      } else if (entry.isFile() && entry.name === zstdExeName) {
+        return fullPath;
+      }
+    }
+    return undefined;
+  };
+  zstdPath = findZstd(zstdDir);
+
+  if (!zstdPath) {
+    throw new Error(`zstd executable not found in ${zstdDir}`);
+  }
+
+  // Make sure zstd is executable on Unix
+  if (process.platform !== "win32") {
+    await exec.exec("chmod", ["+x", zstdPath]);
+  }
+
+  core.debug("==> Determining LLVM asset URL");
+  const asset = await getDownloadLink(
+    token,
+    llvm_version,
+    platform,
+    architecture,
+    debug,
+  );
+  core.debug(`==> Downloading LLVM asset: ${asset.url}`);
   const file = await tc.downloadTool(asset.url);
-  core.debug("==> Extracting asset");
-  const dir = await tc.extractTar(path.resolve(file), undefined, [
-    "--zstd",
-    "-xv",
-  ]);
+
+  core.debug("==> Decompressing and extracting LLVM distribution");
+  const extractDir = path.join(
+    process.env.RUNNER_TEMP || "/tmp",
+    `mlir-extract-${Date.now()}`,
+  );
+  await io.mkdirP(extractDir);
+
+  // Decompress with zstd and extract with tar
+  const tarFile = path.join(extractDir, "llvm.tar");
+  await exec.exec(zstdPath, ["-d", file, "--long=30", "-o", tarFile]);
+
+  const dir = await tc.extractTar(tarFile);
+
+  // Cleanup
+  await io.rmRF(extractDir);
+  await io.rmRF(zstdDir);
+
   core.debug("==> Adding MLIR toolchain to tool cache");
   const cachedPath = await tc.cacheDir(dir, "mlir-toolchain", llvm_version);
 

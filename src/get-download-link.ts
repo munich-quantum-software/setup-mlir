@@ -28,9 +28,47 @@ type ReleaseAsset = components["schemas"]["release-asset"];
  * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
+ * @param {boolean} debug - whether to download debug build (Windows only)
  * @returns {{url: string, name: string}} - download URL for the release asset and the asset name
  */
 export default async function getDownloadLink(
+  token: string,
+  llvm_version: string,
+  platform = "host",
+  architecture = "host",
+  debug = false,
+): Promise<{ url: string; name: string }> {
+  const assets = await getAssets(token, llvm_version);
+
+  if (platform === "host") {
+    platform = determinePlatform();
+  }
+
+  if (architecture === "host") {
+    architecture = determineArchitecture();
+  }
+
+  // Determine the file name of the asset
+  const asset = findAsset(assets, platform, architecture, debug);
+
+  if (asset) {
+    return { url: asset.browser_download_url, name: asset.name };
+  } else {
+    throw new Error(
+      `No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${llvm_version}.`,
+    );
+  }
+}
+
+/**
+ * Get the URL and name of the zstd binary for the given platform and architecture.
+ * @param {string} token - GitHub token
+ * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
+ * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
+ * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
+ * @returns {{url: string, name: string}} - download URL for the zstd binary and the asset name
+ */
+export async function getZstdLink(
   token: string,
   llvm_version: string,
   platform = "host",
@@ -46,15 +84,13 @@ export default async function getDownloadLink(
     architecture = determineArchitecture();
   }
 
-  // Determine the file name of the asset
-  const asset = findAsset(assets, platform, architecture);
+  // Determine the file name of the zstd asset
+  const asset = findZstdAsset(assets, platform, architecture);
 
   if (asset) {
     return { url: asset.browser_download_url, name: asset.name };
   } else {
-    throw new Error(
-      `No ${architecture} ${platform} archive found for LLVM ${llvm_version}.`,
-    );
+    throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
   }
 }
 
@@ -148,28 +184,74 @@ async function getAssets(
  * @param {ReleaseAsset[]} assets - list of release assets
  * @param {string} platform - platform to look for (either linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either X86 or AArch64)
+ * @param {boolean} debug - whether to download debug build (Windows only)
  * @returns {(ReleaseAsset | undefined)} - release asset or undefined if not found
  */
 function findAsset(
   assets: ReleaseAsset[],
   platform: string,
   architecture: string,
+  debug = false,
 ): ReleaseAsset | undefined {
+  const debugSuffix = debug && platform === "windows" ? "_debug" : "";
+
   if (platform === "linux") {
     return assets.find((asset) =>
-      RegExp(`.*_linux_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
+      RegExp(`^llvm-mlir_.*_linux_.*_${architecture}\\.tar\\.zst$`, "i").exec(
+        asset.name,
+      ),
     );
   }
 
   if (platform === "macOS") {
     return assets.find((asset) =>
-      RegExp(`.*_macos_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
+      RegExp(`^llvm-mlir_.*_macos_.*_${architecture}\\.tar\\.zst$`, "i").exec(
+        asset.name,
+      ),
     );
   }
 
   if (platform === "windows") {
     return assets.find((asset) =>
-      RegExp(`.*_windows_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
+      RegExp(
+        `^llvm-mlir_.*_windows_.*_${architecture}${debugSuffix}\\.tar\\.zst$`,
+        "i",
+      ).exec(asset.name),
+    );
+  }
+
+  throw new Error(`Invalid platform: ${platform}`);
+}
+
+/**
+ * Find the zstd binary asset for the given platform and architecture.
+ * @param {ReleaseAsset[]} assets - list of release assets
+ * @param {string} platform - platform to look for (either linux, macOS, or windows)
+ * @param {string} architecture - architecture to look for (either X86 or AArch64)
+ * @returns {(ReleaseAsset | undefined)} - release asset or undefined if not found
+ */
+function findZstdAsset(
+  assets: ReleaseAsset[],
+  platform: string,
+  architecture: string,
+): ReleaseAsset | undefined {
+  if (platform === "linux") {
+    return assets.find((asset) =>
+      RegExp(`^zstd-.*_linux_.*_${architecture}\\.tar$`, "i").exec(asset.name),
+    );
+  }
+
+  if (platform === "macOS") {
+    return assets.find((asset) =>
+      RegExp(`^zstd-.*_macos_.*_${architecture}\\.tar$`, "i").exec(asset.name),
+    );
+  }
+
+  if (platform === "windows") {
+    return assets.find((asset) =>
+      RegExp(`^zstd-.*_windows_.*_${architecture}\\.zip$`, "i").exec(
+        asset.name,
+      ),
     );
   }
 
