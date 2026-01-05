@@ -13,14 +13,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory> [-token <GitHub token>]
+# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory> [-token <GitHub token>] [-debug]
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$llvm_version,
     [Parameter(Mandatory=$true)]
     [string]$install_prefix,
-    [string]$token
+    [string]$token,
+    [switch]$debug
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,17 +32,10 @@ if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# Check if we can extract zstd archives
-# Try to determine if tar supports --zstd by checking help output
-$tarHelp = & tar --help 2>&1 | Out-String
-$useTarZstd = $tarHelp -match '--zstd'
-
-if (-not $useTarZstd) {
-    # Check if zstd is installed as fallback
-    if (-not (Get-Command zstd -ErrorAction SilentlyContinue)) {
-        Write-Error "tar does not support --zstd and zstd command not found. Please install zstd or upgrade tar to a version with zstd support."
-        exit 1
-    }
+# Check for unzip on Windows (needed for extracting zstd binary)
+if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
+    Write-Error "tar is required but not found. Please install tar."
+    exit 1
 }
 
 # Create installation directory if it does not exist
@@ -63,7 +57,31 @@ if ($llvm_version -match '^\d+\.\d+\.\d+$') {
     exit 1
 }
 
-# Determine download URL
+# Helper function to download asset from GitHub releases
+function Download-Asset {
+    param(
+        [string]$Pattern,
+        [string]$OutputFile,
+        [object[]]$Assets
+    )
+
+    $asset = $Assets | Where-Object { $_.name -match $Pattern } | Select-Object -First 1
+
+    if (-not $asset) {
+        return $false
+    }
+
+    Write-Host "Downloading from $($asset.browser_download_url) ..."
+    try {
+        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $OutputFile
+        return $true
+    } catch {
+        Write-Error "Download failed: $_"
+        exit 1
+    }
+}
+
+# Fetch releases JSON
 $headers = @{
     "Accept" = "application/vnd.github+json"
     "X-GitHub-Api-Version" = "2022-11-28"
@@ -83,52 +101,63 @@ if (-not $matching_releases) {
     exit 1
 }
 $newest_release = $matching_releases | Sort-Object -Property published_at -Descending | Select-Object -First 1
-$assets_json = $newest_release.assets
+$assets = $newest_release.assets
 
-$download_urls = $assets_json | ForEach-Object { $_.browser_download_url }
+# Determine asset patterns based on architecture and debug flag
+$debugSuffix = if ($debug) { "_debug" } else { "" }
 
 switch ($arch) {
     x64 {
-        $download_url = $download_urls | Where-Object { $_ -match '.*_windows_.*_X86\.tar\.zst' }
+        $llvmPattern = "llvm-mlir_.*_windows_.*_X86${debugSuffix}\.tar\.zst$"
+        $zstdPattern = "^zstd-.*_windows_.*_X86\.zip$"
     }
     arm64 {
-        $download_url = $download_urls | Where-Object { $_ -match '.*_windows_.*_AArch64\.tar\.zst' }
+        $llvmPattern = "llvm-mlir_.*_windows_.*_AArch64${debugSuffix}\.tar\.zst$"
+        $zstdPattern = "^zstd-.*_windows_.*_AArch64\.zip$"
     }
     default {
-        Write-Error "Unsupported architecture: $arch"; exit 1
+        Write-Error "Unsupported architecture: $arch"
+        exit 1
     }
 }
 
-# Download asset
-Write-Host "Downloading asset from $download_url ..."
-Invoke-WebRequest -Uri $download_url -OutFile "asset.tar.zst"
-
-# Unpack archive
-Write-Host "Extracting archive..."
-
-if ($useTarZstd) {
-    & tar --zstd -xf "asset.tar.zst"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to extract archive."
-        exit 1
-    }
-    Remove-Item "asset.tar.zst" -Force
-} else {
-    & zstd -d "asset.tar.zst" --output-dir-flat .
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to decompress archive."
-        exit 1
-    }
-
-    & tar -xf "asset.tar"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to extract archive."
-        exit 1
-    }
-
-    Remove-Item "asset.tar.zst" -Force
-    Remove-Item "asset.tar" -Force
+# Download zstd binary
+Write-Host "Downloading zstd binary..."
+if (-not (Download-Asset -Pattern $zstdPattern -OutputFile "zstd.zip" -Assets $assets)) {
+    Write-Error "No zstd binary found for Windows/${arch}."
+    exit 1
 }
+
+# Extract zstd binary
+Write-Host "Extracting zstd binary..."
+Expand-Archive -Path "zstd.zip" -DestinationPath "zstd_temp" -Force
+Remove-Item "zstd.zip" -Force
+
+# Find the zstd executable
+$zstdBin = Get-ChildItem -Path "zstd_temp" -Filter "zstd.exe" -Recurse | Select-Object -First 1
+if (-not $zstdBin) {
+    Write-Error "zstd.exe not found in extracted archive."
+    exit 1
+}
+
+# Download LLVM distribution
+Write-Host "Downloading LLVM distribution..."
+if (-not (Download-Asset -Pattern $llvmPattern -OutputFile "llvm.tar.zst" -Assets $assets)) {
+    Write-Error "No release with LLVM $llvm_version found for Windows/${arch}$(if ($debug) { ' (debug)' } else { '' })."
+    exit 1
+}
+
+# Decompress and extract LLVM distribution
+Write-Host "Extracting LLVM distribution..."
+& $zstdBin.FullName -d "llvm.tar.zst" --long=30 --stdout | tar -x
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to extract LLVM distribution."
+    exit 1
+}
+
+# Cleanup
+Remove-Item "llvm.tar.zst" -Force
+Remove-Item "zstd_temp" -Recurse -Force
 
 # Return to original directory
 popd > $null

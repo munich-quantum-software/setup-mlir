@@ -46,17 +46,6 @@ if ! command -v tar >/dev/null 2>&1; then
   exit 1
 fi
 
-# Check if we can extract zstd archives
-# Prefer tar with native zstd support, fallback to separate zstd command
-USE_TAR_ZSTD=false
-if tar --help 2>&1 | grep -q -- '--zstd'; then
-  USE_TAR_ZSTD=true
-elif ! command -v zstd >/dev/null 2>&1; then
-  echo "Error: tar does not support --zstd and zstd command not found." >&2
-  echo "Please install zstd or upgrade tar to a version with zstd support." >&2
-  exit 1
-fi
-
 # Create installation directory if it does not exist
 mkdir -p "$INSTALL_PREFIX"
 
@@ -88,7 +77,32 @@ else
   exit 1
 fi
 
-# Determine download URL
+# Helper function to download asset from GitHub releases
+download_asset() {
+  local pattern=$1
+  local output_file=$2
+
+  local url=$(echo "$RELEASES_JSON" | \
+    grep -o '"browser_download_url": "[^"]*"' | \
+    grep -F "$MATCH_PATTERN" | \
+    grep "$pattern" | \
+    head -n 1 | \
+    sed 's/"browser_download_url": "//;s/"$//')
+
+  if [ -z "$url" ]; then
+    return 1
+  fi
+
+  echo "Downloading from $url..."
+  if ! curl -fL -o "$output_file" "$url"; then
+    echo "Error: Download failed." >&2
+    exit 1
+  fi
+
+  return 0
+}
+
+# Fetch releases JSON once
 RELEASES_URL="https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases?per_page=100"
 RELEASES_JSON=$(curl -fsSL \
                      -H "Accept: application/vnd.github+json" \
@@ -96,58 +110,66 @@ RELEASES_JSON=$(curl -fsSL \
                      -H "X-GitHub-Api-Version: 2022-11-28" \
                      "$RELEASES_URL")
 
+# Determine asset patterns based on platform/architecture
 if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  ASSET_SUFFIX="_linux_.*_X86.tar.zst"
+  LLVM_PATTERN="_linux_.*_X86\.tar\.zst"
+  ZSTD_PATTERN="zstd-.*_linux_.*_X86\.tar"
 elif [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  ASSET_SUFFIX="_linux_.*_AArch64.tar.zst"
+  LLVM_PATTERN="_linux_.*_AArch64\.tar\.zst"
+  ZSTD_PATTERN="zstd-.*_linux_.*_AArch64\.tar"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  ASSET_SUFFIX="_macos_.*_X86.tar.zst"
+  LLVM_PATTERN="_macos_.*_X86\.tar\.zst"
+  ZSTD_PATTERN="zstd-.*_macos_.*_X86\.tar"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  ASSET_SUFFIX="_macos_.*_AArch64.tar.zst"
+  LLVM_PATTERN="_macos_.*_AArch64\.tar\.zst"
+  ZSTD_PATTERN="zstd-.*_macos_.*_AArch64\.tar"
 else
   echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
   exit 1
 fi
 
-DOWNLOAD_URL=$(echo "$RELEASES_JSON" | \
-  grep -o '"browser_download_url": "[^"]*"' | \
-  grep -F "$MATCH_PATTERN" | \
-  grep "$ASSET_SUFFIX" | \
-  head -n 1 | \
-  sed 's/"browser_download_url": "//;s/"$//')
+# Download zstd binary
+echo "Downloading zstd binary..."
+if ! download_asset "$ZSTD_PATTERN" "zstd.tar"; then
+  echo "Error: No zstd binary found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
+  exit 1
+fi
 
-if [ -z "$DOWNLOAD_URL" ]; then
+# Extract zstd binary
+echo "Extracting zstd binary..."
+if ! tar -xf "zstd.tar"; then
+  echo "Error: Failed to extract zstd binary." >&2
+  exit 1
+fi
+rm -f "zstd.tar"
+
+# Find the zstd executable
+ZSTD_BIN=$(find . -name "zstd" -type f | head -n 1)
+if [ -z "$ZSTD_BIN" ]; then
+  echo "Error: zstd executable not found in extracted archive." >&2
+  exit 1
+fi
+
+# Ensure zstd is executable
+chmod +x "$ZSTD_BIN"
+
+# Download LLVM distribution
+echo "Downloading LLVM distribution..."
+if ! download_asset "$LLVM_PATTERN" "llvm.tar.zst"; then
   echo "Error: No release with LLVM $LLVM_VERSION found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
   exit 1
 fi
 
-# Download asset
-echo "Downloading asset from $DOWNLOAD_URL..."
-if ! curl -fL -o "asset.tar.zst" "$DOWNLOAD_URL"; then
-  echo "Error: Download failed." >&2
+# Decompress and extract LLVM distribution
+echo "Extracting LLVM distribution..."
+if ! "$ZSTD_BIN" -d "llvm.tar.zst" --long=30 --stdout | tar -x; then
+  echo "Error: Failed to extract LLVM distribution." >&2
   exit 1
 fi
 
-# Unpack archive
-echo "Extracting archive..."
-if [ "$USE_TAR_ZSTD" = true ]; then
-  if ! tar --zstd -xf "asset.tar.zst"; then
-    echo "Error: Failed to extract archive." >&2
-    exit 1
-  fi
-  rm -f "asset.tar.zst"
-else
-  if ! zstd -d "asset.tar.zst" --output-dir-flat .; then
-    echo "Error: Failed to decompress archive." >&2
-    exit 1
-  fi
-  if ! tar -xf "asset.tar"; then
-    echo "Error: Failed to extract archive." >&2
-    exit 1
-  fi
-  rm -f "asset.tar.zst"
-  rm -f "asset.tar"
-fi
+# Cleanup
+rm -f "llvm.tar.zst"
+rm -rf "$(dirname "$ZSTD_BIN")"
 
 # Return to original directory
 popd > /dev/null
