@@ -143,7 +143,7 @@ jobs:
           Write-Host "Installation test passed!"
 
   test-action:
-    name: Test action for version ${{ matrix.version }} on ${{ matrix.os }}
+    name: Test action for version ${{ matrix.version }} on ${{ matrix.os }}${{ matrix.debug && ' (debug)' || '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -158,6 +158,14 @@ jobs:
             windows-11-arm,
           ]
         version: ["21.1.8", "f8cb798"]
+        debug: [false]
+        include:
+          - os: windows-2022
+            version: "21.1.8"
+            debug: true
+          - os: windows-11-arm
+            version: "21.1.8"
+            debug: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -166,6 +174,7 @@ jobs:
         uses: ./
         with:
           llvm-version: ${{ matrix.version }}
+          debug: ${{ matrix.debug }}
 
       - name: Verify environment variables (Bash)
         if: runner.os != 'Windows'
