@@ -32616,6 +32616,8 @@ class Octokit {
 }
 
 
+// EXTERNAL MODULE: ./src/utils.ts + 1 modules
+var utils = __nccwpck_require__(5610);
 ;// CONCATENATED MODULE: ./src/get-download-link.ts
 /*
  * Copyright (c) 2025 Munich Quantum Software Company GmbH
@@ -32635,6 +32637,18 @@ class Octokit {
  */
 
 
+
+const REPO_OWNER = "munich-quantum-software";
+const REPO_NAME = "portable-mlir-toolchain";
+/**
+ * Create an Octokit instance with optional authentication
+ * @param token - GitHub token (optional)
+ * @returns Octokit instance
+ */
+function createOctokit(token) {
+    const options = token ? { auth: token } : {};
+    return new Octokit(options);
+}
 /**
  * Determine the URL of the release asset for the given platform and architecture.
  * @param {string} token - GitHub token
@@ -32689,22 +32703,16 @@ async function getZstdLink(token, llvm_version, platform = "host", architecture 
         // If the release doesn't exist or has no zstd, fall through to latest release
     }
     // Fall back to getting zstd from the latest release
-    const options = {};
-    if (token) {
-        options.auth = token;
-    }
-    const octokit = new Octokit(options);
+    const octokit = createOctokit(token);
     const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
-        owner: "munich-quantum-software",
-        repo: "portable-mlir-toolchain",
+        owner: REPO_OWNER,
+        repo: REPO_NAME,
     });
     const asset = findZstdAsset(latestRelease.data.assets, platform, architecture);
-    if (asset) {
-        return { url: asset.browser_download_url, name: asset.name };
-    }
-    else {
+    if (!asset) {
         throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
     }
+    return { url: asset.browser_download_url, name: asset.name };
 }
 /**
  * Determine the platform of the current host.
@@ -32746,14 +32754,10 @@ function determineArchitecture() {
  * @returns {Promise<ReleaseAsset[]>} - list of release assets
  */
 async function getAssets(token, llvm_version) {
-    const options = {};
-    if (token) {
-        options.auth = token;
-    }
-    const octokit = new Octokit(options);
+    const octokit = createOctokit(token);
     const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
-        owner: "munich-quantum-software",
-        repo: "portable-mlir-toolchain",
+        owner: REPO_OWNER,
+        repo: REPO_NAME,
         per_page: 100,
     });
     // Check if llvm_version is a version tag or commit hash
@@ -32799,20 +32803,11 @@ async function getAssets(token, llvm_version) {
  * @returns {(ReleaseAsset | undefined)} - release asset or undefined if not found
  */
 function findAsset(assets, platform, architecture, debug = false) {
+    const archStr = (0,utils/* getArchString */.A0)(platform, architecture);
+    const platformLower = platform.toLowerCase();
     const debugSuffix = debug && platform === "windows" ? "_debug" : "";
-    if (platform === "linux") {
-        const archStr = architecture === "X86" ? "x86_64" : "aarch64";
-        return assets.find((asset) => RegExp(`^llvm-mlir_.*_linux_${archStr}_${architecture}\\.tar\\.zst$`, "i").exec(asset.name));
-    }
-    if (platform === "macOS") {
-        const archStr = architecture === "X86" ? "x86_64" : "arm64";
-        return assets.find((asset) => RegExp(`^llvm-mlir_.*_macos_${archStr}_${architecture}\\.tar\\.zst$`, "i").exec(asset.name));
-    }
-    if (platform === "windows") {
-        const archStr = architecture === "X86" ? "X64" : "Arm64";
-        return assets.find((asset) => RegExp(`^llvm-mlir_.*_windows_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`, "i").exec(asset.name));
-    }
-    throw new Error(`Invalid platform: ${platform}`);
+    const pattern = new RegExp(`^llvm-mlir_.*_${platformLower}_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`, "i");
+    return assets.find((asset) => pattern.test(asset.name));
 }
 /**
  * Find the zstd binary asset for the given platform and architecture.
@@ -32822,28 +32817,23 @@ function findAsset(assets, platform, architecture, debug = false) {
  * @returns {(ReleaseAsset | undefined)} - release asset or undefined if not found
  */
 function findZstdAsset(assets, platform, architecture) {
-    if (platform === "linux") {
-        const archStr = architecture === "X86" ? "x86_64" : "aarch64";
-        return assets.find((asset) => RegExp(`^zstd-.*_linux_${archStr}_${architecture}\\.tar$`, "i").exec(asset.name));
-    }
-    if (platform === "macOS") {
-        const archStr = architecture === "X86" ? "x86_64" : "arm64";
-        return assets.find((asset) => RegExp(`^zstd-.*_macos_${archStr}_${architecture}\\.tar$`, "i").exec(asset.name));
-    }
-    if (platform === "windows") {
-        const archStr = architecture === "X86" ? "X64" : "Arm64";
-        return assets.find((asset) => RegExp(`^zstd-.*_windows_${archStr}_${architecture}\\.zip$`, "i").exec(asset.name));
-    }
-    throw new Error(`Invalid platform: ${platform}`);
+    const archStr = (0,utils/* getArchString */.A0)(platform, architecture);
+    const platformLower = platform === "macOS" ? "macos" : platform.toLowerCase();
+    const extension = platform === "windows" ? "zip" : "tar";
+    const pattern = new RegExp(`^zstd-.*_${platformLower}_${archStr}_${architecture}\\.${extension}$`, "i");
+    return assets.find((asset) => pattern.test(asset.name));
 }
 
 
 /***/ }),
 
 /***/ 9407:
-/***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
+/***/ ((module, __webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   e: () => (/* binding */ run)
+/* harmony export */ });
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7484);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3472);
@@ -32853,10 +32843,9 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 /* harmony import */ var _actions_io__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4994);
 /* harmony import */ var _actions_io__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__nccwpck_require__.n(_actions_io__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var _get_download_link_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3595);
-/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(6760);
-/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__nccwpck_require__.n(node_path__WEBPACK_IMPORTED_MODULE_5__);
-/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(3024);
-/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__nccwpck_require__.n(node_fs__WEBPACK_IMPORTED_MODULE_6__);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(5610);
+/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(6760);
+/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__nccwpck_require__.n(node_path__WEBPACK_IMPORTED_MODULE_6__);
 /* harmony import */ var node_process__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(1708);
 /* harmony import */ var node_process__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__nccwpck_require__.n(node_process__WEBPACK_IMPORTED_MODULE_7__);
 /*
@@ -32919,24 +32908,7 @@ async function run() {
         zstdDir = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.extractTar(zstdFile);
     }
     // Find zstd executable
-    const zstdExeName = (node_process__WEBPACK_IMPORTED_MODULE_7___default().platform) === "win32" ? "zstd.exe" : "zstd";
-    let zstdPath;
-    const findZstd = (dir) => {
-        const entries = node_fs__WEBPACK_IMPORTED_MODULE_6__.readdirSync(dir, { withFileTypes: true });
-        for (const entry of entries) {
-            const fullPath = node_path__WEBPACK_IMPORTED_MODULE_5___default().join(dir, entry.name);
-            if (entry.isDirectory()) {
-                const found = findZstd(fullPath);
-                if (found)
-                    return found;
-            }
-            else if (entry.isFile() && entry.name === zstdExeName) {
-                return fullPath;
-            }
-        }
-        return undefined;
-    };
-    zstdPath = findZstd(zstdDir);
+    const zstdPath = (0,_utils_js__WEBPACK_IMPORTED_MODULE_5__/* .findExecutable */ .oq)(zstdDir, (0,_utils_js__WEBPACK_IMPORTED_MODULE_5__/* .getZstdExecutableName */ .tJ)());
     if (!zstdPath) {
         throw new Error(`zstd executable not found in ${zstdDir}`);
     }
@@ -32949,10 +32921,10 @@ async function run() {
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug(`==> Downloading LLVM asset: ${asset.url}`);
     const file = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.downloadTool(asset.url);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Decompressing and extracting LLVM distribution");
-    const extractDir = node_path__WEBPACK_IMPORTED_MODULE_5___default().join((node_process__WEBPACK_IMPORTED_MODULE_7___default().env).RUNNER_TEMP || "/tmp", `mlir-extract-${Date.now()}`);
+    const extractDir = node_path__WEBPACK_IMPORTED_MODULE_6___default().join((node_process__WEBPACK_IMPORTED_MODULE_7___default().env).RUNNER_TEMP || "/tmp", `mlir-extract-${Date.now()}`);
     await _actions_io__WEBPACK_IMPORTED_MODULE_3__.mkdirP(extractDir);
     // Decompress with zstd and extract with tar
-    const tarFile = node_path__WEBPACK_IMPORTED_MODULE_5___default().join(extractDir, "llvm.tar");
+    const tarFile = node_path__WEBPACK_IMPORTED_MODULE_6___default().join(extractDir, "llvm.tar");
     await _actions_exec__WEBPACK_IMPORTED_MODULE_2__.exec(zstdPath, ["-d", file, "--long=30", "-o", tarFile]);
     const dir = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.extractTar(tarFile);
     // Cleanup
@@ -32961,31 +32933,122 @@ async function run() {
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Adding MLIR toolchain to tool cache");
     const cachedPath = await _actions_tool_cache__WEBPACK_IMPORTED_MODULE_1__.cacheDir(dir, "mlir-toolchain", llvm_version);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Adding MLIR toolchain to PATH");
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.addPath(node_path__WEBPACK_IMPORTED_MODULE_5___default().join(cachedPath, "bin"));
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.addPath(node_path__WEBPACK_IMPORTED_MODULE_6___default().join(cachedPath, "bin"));
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Exporting LLVM_DIR");
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("LLVM_DIR", node_path__WEBPACK_IMPORTED_MODULE_5___default().join(cachedPath, "lib", "cmake", "llvm"));
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("LLVM_DIR", node_path__WEBPACK_IMPORTED_MODULE_6___default().join(cachedPath, "lib", "cmake", "llvm"));
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Exporting MLIR_DIR");
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("MLIR_DIR", node_path__WEBPACK_IMPORTED_MODULE_5___default().join(cachedPath, "lib", "cmake", "mlir"));
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("MLIR_DIR", node_path__WEBPACK_IMPORTED_MODULE_6___default().join(cachedPath, "lib", "cmake", "mlir"));
 }
-try {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Starting MLIR toolchain setup");
-    await run();
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Finished MLIR toolchain setup");
-}
-catch (error) {
-    if (typeof error === "string") {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error);
+// Only run if this module is the main entry point (not imported for testing)
+if (import.meta.url === `file://${(node_process__WEBPACK_IMPORTED_MODULE_7___default().argv)[1]}`) {
+    try {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Starting MLIR toolchain setup");
+        await run();
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Finished MLIR toolchain setup");
     }
-    else if (error instanceof Error) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error.message);
-    }
-    else {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Unknown error: ${JSON.stringify(error)}`);
+    catch (error) {
+        if (typeof error === "string") {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error);
+        }
+        else if (error instanceof Error) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error.message);
+        }
+        else {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Unknown error: ${JSON.stringify(error)}`);
+        }
     }
 }
 
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } }, 1);
+
+/***/ }),
+
+/***/ 5610:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  oq: () => (/* binding */ findExecutable),
+  A0: () => (/* binding */ getArchString),
+  tJ: () => (/* binding */ getZstdExecutableName)
+});
+
+;// CONCATENATED MODULE: external "node:fs"
+const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
+// EXTERNAL MODULE: external "node:path"
+var external_node_path_ = __nccwpck_require__(6760);
+// EXTERNAL MODULE: external "node:process"
+var external_node_process_ = __nccwpck_require__(1708);
+var external_node_process_default = /*#__PURE__*/__nccwpck_require__.n(external_node_process_);
+;// CONCATENATED MODULE: ./src/utils.ts
+/*
+ * Copyright (c) 2025 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
+ * may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+
+
+
+/**
+ * Find an executable file recursively in a directory
+ * @param dir - Directory to search in
+ * @param executableName - Name of the executable to find
+ * @returns Path to the executable or undefined if not found
+ */
+function findExecutable(dir, executableName) {
+    const entries = external_node_fs_namespaceObject.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+        const fullPath = external_node_path_.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            const found = findExecutable(fullPath, executableName);
+            if (found)
+                return found;
+        }
+        else if (entry.isFile() && entry.name === executableName) {
+            return fullPath;
+        }
+    }
+    return undefined;
+}
+/**
+ * Get the platform-specific architecture string for asset names
+ * @param platform - Platform (linux, macOS, windows)
+ * @param architecture - Architecture (X86, AArch64)
+ * @returns Platform-specific architecture string
+ */
+function getArchString(platform, architecture) {
+    if (platform === "linux") {
+        return architecture === "X86" ? "x86_64" : "aarch64";
+    }
+    if (platform === "macOS") {
+        return architecture === "X86" ? "x86_64" : "arm64";
+    }
+    if (platform === "windows") {
+        return architecture === "X86" ? "X64" : "Arm64";
+    }
+    throw new Error(`Invalid platform: ${platform}`);
+}
+/**
+ * Get the zstd executable name for the current platform
+ * @returns zstd executable name
+ */
+function getZstdExecutableName() {
+    return (external_node_process_default()).platform === "win32" ? "zstd.exe" : "zstd";
+}
+
 
 /***/ }),
 
@@ -33091,13 +33154,6 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:crypto"
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:events");
-
-/***/ }),
-
-/***/ 3024:
-/***/ ((module) => {
-
-module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
 
 /***/ }),
 
@@ -35159,6 +35215,8 @@ __webpack_unused_export__ = defaultContentType
 /******/ // This entry module used 'module' so it can't be inlined
 /******/ var __webpack_exports__ = __nccwpck_require__(9407);
 /******/ __webpack_exports__ = await __webpack_exports__;
+/******/ var __webpack_exports__run = __webpack_exports__.e;
+/******/ export { __webpack_exports__run as run };
 /******/ 
 
 //# sourceMappingURL=index.js.map

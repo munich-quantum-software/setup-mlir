@@ -20,15 +20,15 @@ import * as tc from "@actions/tool-cache";
 import * as exec from "@actions/exec";
 import * as io from "@actions/io";
 import getDownloadLink, { getZstdLink } from "./get-download-link.js";
+import { findExecutable, getZstdExecutableName } from "./utils.js";
 import path from "node:path";
-import * as fs from "node:fs";
 import process from "node:process";
 
 /**
  * Setup MLIR toolchain
  * @returns {Promise<void>}
  */
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   const llvm_version = core.getInput("llvm-version", { required: true });
   const platform = core.getInput("platform", { required: true });
   const architecture = core.getInput("architecture", { required: true });
@@ -71,22 +71,7 @@ async function run(): Promise<void> {
   }
 
   // Find zstd executable
-  const zstdExeName = process.platform === "win32" ? "zstd.exe" : "zstd";
-  let zstdPath: string | undefined;
-  const findZstd = (dir: string): string | undefined => {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        const found = findZstd(fullPath);
-        if (found) return found;
-      } else if (entry.isFile() && entry.name === zstdExeName) {
-        return fullPath;
-      }
-    }
-    return undefined;
-  };
-  zstdPath = findZstd(zstdDir);
+  const zstdPath = findExecutable(zstdDir, getZstdExecutableName());
 
   if (!zstdPath) {
     throw new Error(`zstd executable not found in ${zstdDir}`);
@@ -142,16 +127,19 @@ async function run(): Promise<void> {
   );
 }
 
-try {
-  core.debug("==> Starting MLIR toolchain setup");
-  await run();
-  core.debug("==> Finished MLIR toolchain setup");
-} catch (error) {
-  if (typeof error === "string") {
-    core.setFailed(error);
-  } else if (error instanceof Error) {
-    core.setFailed(error.message);
-  } else {
-    core.setFailed(`Unknown error: ${JSON.stringify(error)}`);
+// Only run if this module is the main entry point (not imported for testing)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  try {
+    core.debug("==> Starting MLIR toolchain setup");
+    await run();
+    core.debug("==> Finished MLIR toolchain setup");
+  } catch (error) {
+    if (typeof error === "string") {
+      core.setFailed(error);
+    } else if (error instanceof Error) {
+      core.setFailed(error.message);
+    } else {
+      core.setFailed(`Unknown error: ${JSON.stringify(error)}`);
+    }
   }
 }

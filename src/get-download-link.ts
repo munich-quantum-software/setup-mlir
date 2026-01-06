@@ -18,9 +18,23 @@
 import process from "node:process";
 import { Octokit, OctokitOptions } from "@octokit/core";
 import type { components } from "@octokit/openapi-types";
+import { getArchString } from "./utils.js";
 
 type Release = components["schemas"]["release"];
 type ReleaseAsset = components["schemas"]["release-asset"];
+
+const REPO_OWNER = "munich-quantum-software";
+const REPO_NAME = "portable-mlir-toolchain";
+
+/**
+ * Create an Octokit instance with optional authentication
+ * @param token - GitHub token (optional)
+ * @returns Octokit instance
+ */
+function createOctokit(token: string): Octokit {
+  const options: OctokitOptions = token ? { auth: token } : {};
+  return new Octokit(options);
+}
 
 /**
  * Determine the URL of the release asset for the given platform and architecture.
@@ -95,16 +109,12 @@ export async function getZstdLink(
   }
 
   // Fall back to getting zstd from the latest release
-  const options: OctokitOptions = {};
-  if (token) {
-    options.auth = token;
-  }
-  const octokit = new Octokit(options);
+  const octokit = createOctokit(token);
   const latestRelease = await octokit.request(
     "GET /repos/{owner}/{repo}/releases/latest",
     {
-      owner: "munich-quantum-software",
-      repo: "portable-mlir-toolchain",
+      owner: REPO_OWNER,
+      repo: REPO_NAME,
     },
   );
 
@@ -114,11 +124,11 @@ export async function getZstdLink(
     architecture,
   );
 
-  if (asset) {
-    return { url: asset.browser_download_url, name: asset.name };
-  } else {
+  if (!asset) {
     throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
   }
+
+  return { url: asset.browser_download_url, name: asset.name };
 }
 
 /**
@@ -161,14 +171,10 @@ async function getAssets(
   token: string,
   llvm_version: string,
 ): Promise<ReleaseAsset[]> {
-  const options: OctokitOptions = {};
-  if (token) {
-    options.auth = token;
-  }
-  const octokit = new Octokit(options);
+  const octokit = createOctokit(token);
   const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
-    owner: "munich-quantum-software",
-    repo: "portable-mlir-toolchain",
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
     per_page: 100,
   });
 
@@ -218,41 +224,18 @@ function findAsset(
   assets: ReleaseAsset[],
   platform: string,
   architecture: string,
-  debug = false,
+  debug: boolean = false,
 ): ReleaseAsset | undefined {
+  const archStr = getArchString(platform, architecture);
+  const platformLower = platform.toLowerCase();
   const debugSuffix = debug && platform === "windows" ? "_debug" : "";
 
-  if (platform === "linux") {
-    const archStr = architecture === "X86" ? "x86_64" : "aarch64";
-    return assets.find((asset) =>
-      RegExp(
-        `^llvm-mlir_.*_linux_${archStr}_${architecture}\\.tar\\.zst$`,
-        "i",
-      ).exec(asset.name),
-    );
-  }
+  const pattern = new RegExp(
+    `^llvm-mlir_.*_${platformLower}_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`,
+    "i",
+  );
 
-  if (platform === "macOS") {
-    const archStr = architecture === "X86" ? "x86_64" : "arm64";
-    return assets.find((asset) =>
-      RegExp(
-        `^llvm-mlir_.*_macos_${archStr}_${architecture}\\.tar\\.zst$`,
-        "i",
-      ).exec(asset.name),
-    );
-  }
-
-  if (platform === "windows") {
-    const archStr = architecture === "X86" ? "X64" : "Arm64";
-    return assets.find((asset) =>
-      RegExp(
-        `^llvm-mlir_.*_windows_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`,
-        "i",
-      ).exec(asset.name),
-    );
-  }
-
-  throw new Error(`Invalid platform: ${platform}`);
+  return assets.find((asset) => pattern.test(asset.name));
 }
 
 /**
@@ -267,32 +250,14 @@ function findZstdAsset(
   platform: string,
   architecture: string,
 ): ReleaseAsset | undefined {
-  if (platform === "linux") {
-    const archStr = architecture === "X86" ? "x86_64" : "aarch64";
-    return assets.find((asset) =>
-      RegExp(`^zstd-.*_linux_${archStr}_${architecture}\\.tar$`, "i").exec(
-        asset.name,
-      ),
-    );
-  }
+  const archStr = getArchString(platform, architecture);
+  const platformLower = platform.toLowerCase();
+  const extension = platform === "windows" ? "zip" : "tar";
 
-  if (platform === "macOS") {
-    const archStr = architecture === "X86" ? "x86_64" : "arm64";
-    return assets.find((asset) =>
-      RegExp(`^zstd-.*_macos_${archStr}_${architecture}\\.tar$`, "i").exec(
-        asset.name,
-      ),
-    );
-  }
+  const pattern = new RegExp(
+    `^zstd-.*_${platformLower}_${archStr}_${architecture}\\.${extension}$`,
+    "i",
+  );
 
-  if (platform === "windows") {
-    const archStr = architecture === "X86" ? "X64" : "Arm64";
-    return assets.find((asset) =>
-      RegExp(`^zstd-.*_windows_${archStr}_${architecture}\\.zip$`, "i").exec(
-        asset.name,
-      ),
-    );
-  }
-
-  throw new Error(`Invalid platform: ${platform}`);
+  return assets.find((asset) => pattern.test(asset.name));
 }
