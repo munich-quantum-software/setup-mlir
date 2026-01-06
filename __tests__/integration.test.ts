@@ -166,7 +166,7 @@ describe("MLIR Setup Integration Tests", () => {
       );
 
       expect(zstdAsset.url).toBeTruthy();
-      expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar|zip)$/);
+      expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
     });
 
     it("should fall back to latest release for zstd when version release doesn't have it", async () => {
@@ -180,7 +180,7 @@ describe("MLIR Setup Integration Tests", () => {
       );
 
       expect(zstdAsset.url).toBeTruthy();
-      expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar|zip)$/);
+      expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
     });
   });
 
@@ -334,7 +334,7 @@ describe("MLIR Setup Integration Tests", () => {
       if (process.platform === "win32") {
         expect(zstdAsset.name).toMatch(/\.zip$/);
       } else {
-        expect(zstdAsset.name).toMatch(/\.tar$/);
+        expect(zstdAsset.name).toMatch(/\.tar\.gz$/);
       }
     });
   });

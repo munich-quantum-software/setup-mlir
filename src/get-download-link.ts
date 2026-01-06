@@ -252,7 +252,7 @@ function findZstdAsset(
 ): ReleaseAsset | undefined {
   const archStr = getArchString(platform, architecture);
   const platformLower = platform.toLowerCase();
-  const extension = platform === "windows" ? "zip" : "tar";
+  const extension = platform === "windows" ? "zip" : "tar.gz";
 
   const pattern = new RegExp(
     `^zstd-.*_${platformLower}_${archStr}_${architecture}\\.${extension}$`,

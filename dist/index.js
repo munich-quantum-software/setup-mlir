@@ -34969,7 +34969,7 @@ function findAsset(assets, platform, architecture, debug = false) {
 function findZstdAsset(assets, platform, architecture) {
     const archStr = getArchString(platform, architecture);
     const platformLower = platform.toLowerCase();
-    const extension = platform === "windows" ? "zip" : "tar";
+    const extension = platform === "windows" ? "zip" : "tar.gz";
     const pattern = new RegExp(`^zstd-.*_${platformLower}_${archStr}_${architecture}\\.${extension}$`, "i");
     return assets.find((asset) => pattern.test(asset.name));
 }
@@ -35064,14 +35064,15 @@ async function run() {
     await exec.exec("tar", ["-xf", tarFile, "-C", extractedDir]);
     // Find the actual LLVM directory (might be nested)
     const entries = external_node_fs_default().readdirSync(extractedDir);
-    const dir = entries.length === 1 && external_node_fs_default().statSync(external_node_path_default().join(extractedDir, entries[0])).isDirectory()
+    const dir = entries.length === 1 &&
+        external_node_fs_default().statSync(external_node_path_default().join(extractedDir, entries[0])).isDirectory()
         ? external_node_path_default().join(extractedDir, entries[0])
         : extractedDir;
-    // Cleanup
-    await io.rmRF(extractDir);
-    await io.rmRF(zstdDir);
     core.debug("==> Adding MLIR toolchain to tool cache");
     const cachedPath = await tool_cache.cacheDir(dir, "mlir-toolchain", llvm_version);
+    // Cleanup (after caching)
+    await io.rmRF(extractDir);
+    await io.rmRF(zstdDir);
     core.debug("==> Adding MLIR toolchain to PATH");
     core.addPath(external_node_path_default().join(cachedPath, "bin"));
     core.debug("==> Exporting LLVM_DIR");

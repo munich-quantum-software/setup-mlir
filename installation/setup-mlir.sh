@@ -130,16 +130,16 @@ RELEASES_JSON=$(fetch_releases_json "$RELEASES_URL")
 # Determine asset patterns based on platform/architecture
 if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
   LLVM_PATTERN="_linux_x86_64_X86\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_linux_x86_64_X86\.tar$"
+  ZSTD_PATTERN="zstd-[^/]*_linux_x86_64_X86\.tar\.gz$"
 elif [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "arm64" ]]; then
   LLVM_PATTERN="_linux_aarch64_AArch64\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_linux_aarch64_AArch64\.tar$"
+  ZSTD_PATTERN="zstd-[^/]*_linux_aarch64_AArch64\.tar\.gz$"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "x86_64" ]]; then
   LLVM_PATTERN="_macos_x86_64_X86\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_macos_x86_64_X86\.tar$"
+  ZSTD_PATTERN="zstd-[^/]*_macos_x86_64_X86\.tar\.gz$"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "arm64" ]]; then
   LLVM_PATTERN="_macos_arm64_AArch64\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_macos_arm64_AArch64\.tar$"
+  ZSTD_PATTERN="zstd-[^/]*_macos_arm64_AArch64\.tar\.gz$"
 else
   echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
   exit 1
@@ -162,15 +162,15 @@ if [ -z "$ZSTD_URL" ]; then
   fi
 fi
 
-download_file "$ZSTD_URL" "zstd.tar"
+download_file "$ZSTD_URL" "zstd.tar.gz"
 
 # Extract zstd binary
 echo "Extracting zstd binary..."
-if ! tar -xf "zstd.tar"; then
+if ! tar -xzf "zstd.tar.gz"; then
   echo "Error: Failed to extract zstd binary." >&2
   exit 1
 fi
-rm -f "zstd.tar"
+rm -f "zstd.tar.gz"
 
 # Find the zstd executable and get absolute path
 ZSTD_BIN=$(find . -name "zstd" -type f | head -n 1)
