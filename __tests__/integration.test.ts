@@ -43,6 +43,11 @@ describe("MLIR Setup Integration Tests", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // Setup environment for tests
+    if (!process.env.RUNNER_TEMP) {
+      process.env.RUNNER_TEMP = "/tmp";
+    }
+
     // Setup default mock implementations
     mockCore.getInput.mockImplementation((name: string) => {
       if (name === "llvm-version") return testVersion;
@@ -58,7 +63,12 @@ describe("MLIR Setup Integration Tests", () => {
     });
 
     mockCore.debug.mockImplementation(() => {});
-    mockCore.addPath.mockImplementation(() => {});
+    mockCore.addPath.mockImplementation((pathToAdd: string) => {
+      // Capture the cached path for cleanup
+      if (pathToAdd.includes("mlir-toolchain")) {
+        cachedPath = path.dirname(pathToAdd);
+      }
+    });
     mockCore.exportVariable.mockImplementation(() => {});
     mockCore.setFailed.mockImplementation(() => {});
   });
