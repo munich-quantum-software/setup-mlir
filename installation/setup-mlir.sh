@@ -112,17 +112,17 @@ RELEASES_JSON=$(curl -fsSL \
 
 # Determine asset patterns based on platform/architecture
 if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  LLVM_PATTERN="_linux_.*_X86\.tar\.zst"
-  ZSTD_PATTERN="zstd-.*_linux_.*_X86\.tar"
+  LLVM_PATTERN="_linux_x86_64_X86\.tar\.zst"
+  ZSTD_PATTERN="^zstd-.*_linux_x86_64_X86\.tar$"
 elif [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  LLVM_PATTERN="_linux_.*_AArch64\.tar\.zst"
-  ZSTD_PATTERN="zstd-.*_linux_.*_AArch64\.tar"
+  LLVM_PATTERN="_linux_aarch64_AArch64\.tar\.zst"
+  ZSTD_PATTERN="^zstd-.*_linux_aarch64_AArch64\.tar$"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  LLVM_PATTERN="_macos_.*_X86\.tar\.zst"
-  ZSTD_PATTERN="zstd-.*_macos_.*_X86\.tar"
+  LLVM_PATTERN="_macos_x86_64_X86\.tar\.zst"
+  ZSTD_PATTERN="^zstd-.*_macos_x86_64_X86\.tar$"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  LLVM_PATTERN="_macos_.*_AArch64\.tar\.zst"
-  ZSTD_PATTERN="zstd-.*_macos_.*_AArch64\.tar"
+  LLVM_PATTERN="_macos_arm64_AArch64\.tar\.zst"
+  ZSTD_PATTERN="^zstd-.*_macos_arm64_AArch64\.tar$"
 else
   echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
   exit 1
@@ -131,8 +131,30 @@ fi
 # Download zstd binary
 echo "Downloading zstd binary..."
 if ! download_asset "$ZSTD_PATTERN" "zstd.tar"; then
-  echo "Error: No zstd binary found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
-  exit 1
+  # If zstd is not found in the LLVM version release, try the latest release
+  echo "zstd not found in LLVM version release, trying latest release..."
+  RELEASES_JSON=$(curl -fsSL \
+                       -H "Accept: application/vnd.github+json" \
+                       ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
+                       -H "X-GitHub-Api-Version: 2022-11-28" \
+                       "https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases/latest")
+
+  ZSTD_URL=$(echo "$RELEASES_JSON" | \
+    grep -o '"browser_download_url": "[^"]*"' | \
+    grep "$ZSTD_PATTERN" | \
+    head -n 1 | \
+    sed 's/"browser_download_url": "//;s/"$//')
+
+  if [ -z "$ZSTD_URL" ]; then
+    echo "Error: No zstd binary found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
+    exit 1
+  fi
+
+  echo "Downloading from $ZSTD_URL..."
+  if ! curl -fL -o "zstd.tar" "$ZSTD_URL"; then
+    echo "Error: Download failed." >&2
+    exit 1
+  fi
 fi
 
 # Extract zstd binary

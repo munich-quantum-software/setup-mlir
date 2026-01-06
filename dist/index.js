@@ -32663,6 +32663,7 @@ async function getDownloadLink(token, llvm_version, platform = "host", architect
 }
 /**
  * Get the URL and name of the zstd binary for the given platform and architecture.
+ * Tries to get zstd from the specified LLVM version release, and if not found, from the latest release.
  * @param {string} token - GitHub token
  * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
@@ -32670,15 +32671,34 @@ async function getDownloadLink(token, llvm_version, platform = "host", architect
  * @returns {{url: string, name: string}} - download URL for the zstd binary and the asset name
  */
 async function getZstdLink(token, llvm_version, platform = "host", architecture = "host") {
-    const assets = await getAssets(token, llvm_version);
     if (platform === "host") {
         platform = determinePlatform();
     }
     if (architecture === "host") {
         architecture = determineArchitecture();
     }
-    // Determine the file name of the zstd asset
-    const asset = findZstdAsset(assets, platform, architecture);
+    // Try to get zstd from the same release as the LLVM distribution
+    try {
+        const assets = await getAssets(token, llvm_version);
+        const asset = findZstdAsset(assets, platform, architecture);
+        if (asset) {
+            return { url: asset.browser_download_url, name: asset.name };
+        }
+    }
+    catch (error) {
+        // If the release doesn't exist or has no zstd, fall through to latest release
+    }
+    // Fall back to getting zstd from the latest release
+    const options = {};
+    if (token) {
+        options.auth = token;
+    }
+    const octokit = new Octokit(options);
+    const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
+        owner: "munich-quantum-software",
+        repo: "portable-mlir-toolchain",
+    });
+    const asset = findZstdAsset(latestRelease.data.assets, platform, architecture);
     if (asset) {
         return { url: asset.browser_download_url, name: asset.name };
     }
@@ -32781,13 +32801,16 @@ async function getAssets(token, llvm_version) {
 function findAsset(assets, platform, architecture, debug = false) {
     const debugSuffix = debug && platform === "windows" ? "_debug" : "";
     if (platform === "linux") {
-        return assets.find((asset) => RegExp(`^llvm-mlir_.*_linux_.*_${architecture}\\.tar\\.zst$`, "i").exec(asset.name));
+        const archStr = architecture === "X86" ? "x86_64" : "aarch64";
+        return assets.find((asset) => RegExp(`^llvm-mlir_.*_linux_${archStr}_${architecture}\\.tar\\.zst$`, "i").exec(asset.name));
     }
     if (platform === "macOS") {
-        return assets.find((asset) => RegExp(`^llvm-mlir_.*_macos_.*_${architecture}\\.tar\\.zst$`, "i").exec(asset.name));
+        const archStr = architecture === "X86" ? "x86_64" : "arm64";
+        return assets.find((asset) => RegExp(`^llvm-mlir_.*_macos_${archStr}_${architecture}\\.tar\\.zst$`, "i").exec(asset.name));
     }
     if (platform === "windows") {
-        return assets.find((asset) => RegExp(`^llvm-mlir_.*_windows_.*_${architecture}${debugSuffix}\\.tar\\.zst$`, "i").exec(asset.name));
+        const archStr = architecture === "X86" ? "X64" : "Arm64";
+        return assets.find((asset) => RegExp(`^llvm-mlir_.*_windows_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`, "i").exec(asset.name));
     }
     throw new Error(`Invalid platform: ${platform}`);
 }
@@ -32800,13 +32823,16 @@ function findAsset(assets, platform, architecture, debug = false) {
  */
 function findZstdAsset(assets, platform, architecture) {
     if (platform === "linux") {
-        return assets.find((asset) => RegExp(`^zstd-.*_linux_.*_${architecture}\\.tar$`, "i").exec(asset.name));
+        const archStr = architecture === "X86" ? "x86_64" : "aarch64";
+        return assets.find((asset) => RegExp(`^zstd-.*_linux_${archStr}_${architecture}\\.tar$`, "i").exec(asset.name));
     }
     if (platform === "macOS") {
-        return assets.find((asset) => RegExp(`^zstd-.*_macos_.*_${architecture}\\.tar$`, "i").exec(asset.name));
+        const archStr = architecture === "X86" ? "x86_64" : "arm64";
+        return assets.find((asset) => RegExp(`^zstd-.*_macos_${archStr}_${architecture}\\.tar$`, "i").exec(asset.name));
     }
     if (platform === "windows") {
-        return assets.find((asset) => RegExp(`^zstd-.*_windows_.*_${architecture}\\.zip$`, "i").exec(asset.name));
+        const archStr = architecture === "X86" ? "X64" : "Arm64";
+        return assets.find((asset) => RegExp(`^zstd-.*_windows_${archStr}_${architecture}\\.zip$`, "i").exec(asset.name));
     }
     throw new Error(`Invalid platform: ${platform}`);
 }

@@ -13,7 +13,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory> [-token <GitHub token>] [-debug]
+# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory> [-token <GitHub token>] [-use_debug]
 
 param(
     [Parameter(Mandatory=$true)]
@@ -21,7 +21,7 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$install_prefix,
     [string]$token,
-    [switch]$debug
+    [switch]$use_debug
 )
 
 $ErrorActionPreference = "Stop"
@@ -104,16 +104,16 @@ $newest_release = $matching_releases | Sort-Object -Property published_at -Desce
 $assets = $newest_release.assets
 
 # Determine asset patterns based on architecture and debug flag
-$debugSuffix = if ($debug) { "_debug" } else { "" }
+$debugSuffix = if ($use_debug) { "_debug" } else { "" }
 
 switch ($arch) {
     x64 {
-        $llvmPattern = "llvm-mlir_.*_windows_.*_X86${debugSuffix}\.tar\.zst$"
-        $zstdPattern = "^zstd-.*_windows_.*_X86\.zip$"
+        $llvmPattern = "llvm-mlir_.*_windows_X64_X86${debugSuffix}\.tar\.zst$"
+        $zstdPattern = "^zstd-.*_windows_X64_X86\.zip$"
     }
     arm64 {
-        $llvmPattern = "llvm-mlir_.*_windows_.*_AArch64${debugSuffix}\.tar\.zst$"
-        $zstdPattern = "^zstd-.*_windows_.*_AArch64\.zip$"
+        $llvmPattern = "llvm-mlir_.*_windows_Arm64_AArch64${debugSuffix}\.tar\.zst$"
+        $zstdPattern = "^zstd-.*_windows_Arm64_AArch64\.zip$"
     }
     default {
         Write-Error "Unsupported architecture: $arch"
@@ -124,8 +124,15 @@ switch ($arch) {
 # Download zstd binary
 Write-Host "Downloading zstd binary..."
 if (-not (Download-Asset -Pattern $zstdPattern -OutputFile "zstd.zip" -Assets $assets)) {
-    Write-Error "No zstd binary found for Windows/${arch}."
-    exit 1
+    # If zstd is not found in the LLVM version release, try the latest release
+    Write-Host "zstd not found in LLVM version release, trying latest release..."
+    $latest_url = "https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases/latest"
+    $latest_release = Invoke-RestMethod -Uri $latest_url -Headers $headers
+
+    if (-not (Download-Asset -Pattern $zstdPattern -OutputFile "zstd.zip" -Assets $latest_release.assets)) {
+        Write-Error "No zstd binary found for Windows/${arch}."
+        exit 1
+    }
 }
 
 # Extract zstd binary
@@ -143,7 +150,7 @@ if (-not $zstdBin) {
 # Download LLVM distribution
 Write-Host "Downloading LLVM distribution..."
 if (-not (Download-Asset -Pattern $llvmPattern -OutputFile "llvm.tar.zst" -Assets $assets)) {
-    Write-Error "No release with LLVM $llvm_version found for Windows/${arch}$(if ($debug) { ' (debug)' } else { '' })."
+    Write-Error "No release with LLVM $llvm_version found for Windows/${arch}$(if ($use_debug) { ' (debug)' } else { '' })."
     exit 1
 }
 

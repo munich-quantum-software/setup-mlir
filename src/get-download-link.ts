@@ -62,6 +62,7 @@ export default async function getDownloadLink(
 
 /**
  * Get the URL and name of the zstd binary for the given platform and architecture.
+ * Tries to get zstd from the specified LLVM version release, and if not found, from the latest release.
  * @param {string} token - GitHub token
  * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
@@ -74,8 +75,6 @@ export async function getZstdLink(
   platform = "host",
   architecture = "host",
 ): Promise<{ url: string; name: string }> {
-  const assets = await getAssets(token, llvm_version);
-
   if (platform === "host") {
     platform = determinePlatform();
   }
@@ -84,8 +83,36 @@ export async function getZstdLink(
     architecture = determineArchitecture();
   }
 
-  // Determine the file name of the zstd asset
-  const asset = findZstdAsset(assets, platform, architecture);
+  // Try to get zstd from the same release as the LLVM distribution
+  try {
+    const assets = await getAssets(token, llvm_version);
+    const asset = findZstdAsset(assets, platform, architecture);
+    if (asset) {
+      return { url: asset.browser_download_url, name: asset.name };
+    }
+  } catch (error) {
+    // If the release doesn't exist or has no zstd, fall through to latest release
+  }
+
+  // Fall back to getting zstd from the latest release
+  const options: OctokitOptions = {};
+  if (token) {
+    options.auth = token;
+  }
+  const octokit = new Octokit(options);
+  const latestRelease = await octokit.request(
+    "GET /repos/{owner}/{repo}/releases/latest",
+    {
+      owner: "munich-quantum-software",
+      repo: "portable-mlir-toolchain",
+    },
+  );
+
+  const asset = findZstdAsset(
+    latestRelease.data.assets,
+    platform,
+    architecture,
+  );
 
   if (asset) {
     return { url: asset.browser_download_url, name: asset.name };
@@ -196,25 +223,30 @@ function findAsset(
   const debugSuffix = debug && platform === "windows" ? "_debug" : "";
 
   if (platform === "linux") {
+    const archStr = architecture === "X86" ? "x86_64" : "aarch64";
     return assets.find((asset) =>
-      RegExp(`^llvm-mlir_.*_linux_.*_${architecture}\\.tar\\.zst$`, "i").exec(
-        asset.name,
-      ),
+      RegExp(
+        `^llvm-mlir_.*_linux_${archStr}_${architecture}\\.tar\\.zst$`,
+        "i",
+      ).exec(asset.name),
     );
   }
 
   if (platform === "macOS") {
+    const archStr = architecture === "X86" ? "x86_64" : "arm64";
     return assets.find((asset) =>
-      RegExp(`^llvm-mlir_.*_macos_.*_${architecture}\\.tar\\.zst$`, "i").exec(
-        asset.name,
-      ),
+      RegExp(
+        `^llvm-mlir_.*_macos_${archStr}_${architecture}\\.tar\\.zst$`,
+        "i",
+      ).exec(asset.name),
     );
   }
 
   if (platform === "windows") {
+    const archStr = architecture === "X86" ? "X64" : "Arm64";
     return assets.find((asset) =>
       RegExp(
-        `^llvm-mlir_.*_windows_.*_${architecture}${debugSuffix}\\.tar\\.zst$`,
+        `^llvm-mlir_.*_windows_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`,
         "i",
       ).exec(asset.name),
     );
@@ -236,20 +268,27 @@ function findZstdAsset(
   architecture: string,
 ): ReleaseAsset | undefined {
   if (platform === "linux") {
+    const archStr = architecture === "X86" ? "x86_64" : "aarch64";
     return assets.find((asset) =>
-      RegExp(`^zstd-.*_linux_.*_${architecture}\\.tar$`, "i").exec(asset.name),
+      RegExp(`^zstd-.*_linux_${archStr}_${architecture}\\.tar$`, "i").exec(
+        asset.name,
+      ),
     );
   }
 
   if (platform === "macOS") {
+    const archStr = architecture === "X86" ? "x86_64" : "arm64";
     return assets.find((asset) =>
-      RegExp(`^zstd-.*_macos_.*_${architecture}\\.tar$`, "i").exec(asset.name),
+      RegExp(`^zstd-.*_macos_${archStr}_${architecture}\\.tar$`, "i").exec(
+        asset.name,
+      ),
     );
   }
 
   if (platform === "windows") {
+    const archStr = architecture === "X86" ? "X64" : "Arm64";
     return assets.find((asset) =>
-      RegExp(`^zstd-.*_windows_.*_${architecture}\\.zip$`, "i").exec(
+      RegExp(`^zstd-.*_windows_${archStr}_${architecture}\\.zip$`, "i").exec(
         asset.name,
       ),
     );

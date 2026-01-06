@@ -47,8 +47,8 @@ powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://git
 
 ### Debug Builds (Windows Only)
 
-On Windows, you can optionally install debug builds by adding the `-debug` flag:
+On Windows, you can optionally install debug builds by adding the `-use_debug` flag:
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 21.1.8 -install_prefix /path/to/installation -debug"
+powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 21.1.8 -install_prefix /path/to/installation -use_debug"
 ```
