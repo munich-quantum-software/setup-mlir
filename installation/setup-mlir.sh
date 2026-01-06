@@ -172,12 +172,20 @@ if ! tar -xf "zstd.tar"; then
 fi
 rm -f "zstd.tar"
 
-# Find the zstd executable
+# Find the zstd executable and get absolute path
 ZSTD_BIN=$(find . -name "zstd" -type f | head -n 1)
 if [ -z "$ZSTD_BIN" ]; then
   echo "Error: zstd executable not found in extracted archive." >&2
   exit 1
 fi
+
+# Get the top-level extraction directory (relative to current dir)
+# The zstd archive extracts to something like ./zstd-1.5.7/bin/zstd
+# We want to store the top-level dir (zstd-1.5.7) for cleanup
+ZSTD_EXTRACT_DIR=$(echo "$ZSTD_BIN" | sed 's|^\./||' | cut -d/ -f1)
+
+# Convert to absolute path after storing the relative extract dir
+ZSTD_BIN=$(realpath "$ZSTD_BIN")
 
 # Ensure zstd is executable
 chmod +x "$ZSTD_BIN"
@@ -202,7 +210,10 @@ fi
 
 # Cleanup
 rm -f "llvm.tar.zst"
-rm -rf "$(dirname "$ZSTD_BIN")"
+# Remove zstd extraction directory (should be something like "zstd-1.5.7")
+if [ -n "$ZSTD_EXTRACT_DIR" ] && [ "$ZSTD_EXTRACT_DIR" != "/" ] && [ "$ZSTD_EXTRACT_DIR" != "." ] && [ "$ZSTD_EXTRACT_DIR" != ".." ]; then
+  rm -rf "$ZSTD_EXTRACT_DIR"
+fi
 
 # Return to original directory
 popd > /dev/null
