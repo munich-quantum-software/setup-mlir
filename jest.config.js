@@ -25,9 +25,16 @@ export default {
       "ts-jest",
       {
         useESM: true,
+        tsconfig: {
+          module: "ES2022",
+          target: "ES2022",
+        },
       },
     ],
   },
+  transformIgnorePatterns: [
+    "node_modules/(?!(@octokit|universal-user-agent|before-after-hook|@actions)/)",
+  ],
   testMatch: ["**/__tests__/**/*.test.ts"],
   collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts"],
   coverageDirectory: "coverage",

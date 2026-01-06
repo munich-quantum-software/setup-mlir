@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   test-installer-scripts:
-    name: Test installer script for version ${{ matrix.version }} on ${{ matrix.os }}
+    name: Test installer script for version ${{ matrix.version }} on ${{ matrix.os }}${{ matrix.debug && ' (debug)' || '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

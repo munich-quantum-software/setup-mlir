@@ -32939,8 +32939,9 @@ async function run() {
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Exporting MLIR_DIR");
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("MLIR_DIR", node_path__WEBPACK_IMPORTED_MODULE_6___default().join(cachedPath, "lib", "cmake", "mlir"));
 }
-// Only run if this module is the main entry point (not imported for testing)
-if (import.meta.url === `file://${(node_process__WEBPACK_IMPORTED_MODULE_7___default().argv)[1]}`) {
+// Run if this module is executed directly (not during tests)
+// Note: In production, this is bundled by ncc, so this check doesn't affect the action
+if ((node_process__WEBPACK_IMPORTED_MODULE_7___default().env).NODE_ENV !== "test") {
     try {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug("==> Starting MLIR toolchain setup");
         await run();

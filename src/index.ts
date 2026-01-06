@@ -127,8 +127,9 @@ export async function run(): Promise<void> {
   );
 }
 
-// Only run if this module is the main entry point (not imported for testing)
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Run if this module is executed directly (not during tests)
+// Note: In production, this is bundled by ncc, so this check doesn't affect the action
+if (process.env.NODE_ENV !== "test") {
   try {
     core.debug("==> Starting MLIR toolchain setup");
     await run();
