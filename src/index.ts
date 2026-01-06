@@ -130,17 +130,19 @@ export async function run(): Promise<void> {
 // Run if this module is executed directly (not during tests)
 // Note: In production, this is bundled by ncc, so this check doesn't affect the action
 if (process.env.NODE_ENV !== "test") {
-  try {
-    core.debug("==> Starting MLIR toolchain setup");
-    await run();
-    core.debug("==> Finished MLIR toolchain setup");
-  } catch (error) {
-    if (typeof error === "string") {
-      core.setFailed(error);
-    } else if (error instanceof Error) {
-      core.setFailed(error.message);
-    } else {
-      core.setFailed(`Unknown error: ${JSON.stringify(error)}`);
+  (async () => {
+    try {
+      core.debug("==> Starting MLIR toolchain setup");
+      await run();
+      core.debug("==> Finished MLIR toolchain setup");
+    } catch (error) {
+      if (typeof error === "string") {
+        core.setFailed(error);
+      } else if (error instanceof Error) {
+        core.setFailed(error.message);
+      } else {
+        core.setFailed(`Unknown error: ${JSON.stringify(error)}`);
+      }
     }
-  }
+  })();
 }

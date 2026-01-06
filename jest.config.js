@@ -21,7 +21,7 @@ export default {
     "^(\\.{1,2}/.*)\\.js$": "$1",
   },
   transform: {
-    "^.+\\.tsx?$": [
+    "^.+\\.(ts|tsx|js|jsx|mjs)$": [
       "ts-jest",
       {
         useESM: true,
@@ -32,9 +32,7 @@ export default {
       },
     ],
   },
-  transformIgnorePatterns: [
-    "node_modules/(?!(@octokit|universal-user-agent|before-after-hook|@actions)/)",
-  ],
+  transformIgnorePatterns: [],
   testMatch: ["**/__tests__/**/*.test.ts"],
   collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts"],
   coverageDirectory: "coverage",
