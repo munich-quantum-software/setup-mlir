@@ -23,6 +23,7 @@ import getDownloadLink, { getZstdLink } from "./get-download-link.js";
 import { findExecutable, getZstdExecutableName } from "./utils.js";
 import path from "node:path";
 import process from "node:process";
+import fs from "node:fs";
 
 /**
  * Setup MLIR toolchain
@@ -104,7 +105,23 @@ export async function run(): Promise<void> {
   const tarFile = path.join(extractDir, "llvm.tar");
   await exec.exec(zstdPath, ["-d", file, "--long=30", "-o", tarFile]);
 
-  const dir = await tc.extractTar(tarFile);
+  // Verify tar file was created
+  if (!fs.existsSync(tarFile)) {
+    throw new Error(`Failed to decompress LLVM archive: ${tarFile} not found`);
+  }
+
+  // Extract tar archive to a specific directory
+  const extractedDir = path.join(extractDir, "extracted");
+  await io.mkdirP(extractedDir);
+  await exec.exec("tar", ["-xf", tarFile, "-C", extractedDir]);
+
+  // Find the actual LLVM directory (might be nested)
+  const entries = fs.readdirSync(extractedDir);
+  const dir =
+    entries.length === 1 &&
+    fs.statSync(path.join(extractedDir, entries[0])).isDirectory()
+      ? path.join(extractedDir, entries[0])
+      : extractedDir;
 
   // Cleanup
   await io.rmRF(extractDir);

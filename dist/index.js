@@ -34697,6 +34697,7 @@ class Octokit {
 
 ;// CONCATENATED MODULE: external "node:fs"
 const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
+var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_namespaceObject);
 ;// CONCATENATED MODULE: external "node:path"
 const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
@@ -34998,6 +34999,7 @@ function findZstdAsset(assets, platform, architecture) {
 
 
 
+
 /**
  * Setup MLIR toolchain
  * @returns {Promise<void>}
@@ -35052,7 +35054,19 @@ async function run() {
     // Decompress with zstd and extract with tar
     const tarFile = external_node_path_default().join(extractDir, "llvm.tar");
     await exec.exec(zstdPath, ["-d", file, "--long=30", "-o", tarFile]);
-    const dir = await tool_cache.extractTar(tarFile);
+    // Verify tar file was created
+    if (!external_node_fs_default().existsSync(tarFile)) {
+        throw new Error(`Failed to decompress LLVM archive: ${tarFile} not found`);
+    }
+    // Extract tar archive to a specific directory
+    const extractedDir = external_node_path_default().join(extractDir, "extracted");
+    await io.mkdirP(extractedDir);
+    await exec.exec("tar", ["-xf", tarFile, "-C", extractedDir]);
+    // Find the actual LLVM directory (might be nested)
+    const entries = external_node_fs_default().readdirSync(extractedDir);
+    const dir = entries.length === 1 && external_node_fs_default().statSync(external_node_path_default().join(extractedDir, entries[0])).isDirectory()
+        ? external_node_path_default().join(extractedDir, entries[0])
+        : extractedDir;
     // Cleanup
     await io.rmRF(extractDir);
     await io.rmRF(zstdDir);

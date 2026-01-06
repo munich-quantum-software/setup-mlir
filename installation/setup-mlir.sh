@@ -97,17 +97,17 @@ find_asset_url() {
     # Filter by version pattern first (for LLVM assets)
     echo "$releases_json" | \
       grep -o '"browser_download_url": "[^"]*"' | \
+      sed 's/"browser_download_url": "//;s/"$//' | \
       grep -F "$version_pattern" | \
-      grep "$pattern" | \
-      head -n 1 | \
-      sed 's/"browser_download_url": "//;s/"$//'
+      grep -E "$pattern" | \
+      head -n 1
   else
     # No version filtering (for zstd assets)
     echo "$releases_json" | \
       grep -o '"browser_download_url": "[^"]*"' | \
-      grep "$pattern" | \
-      head -n 1 | \
-      sed 's/"browser_download_url": "//;s/"$//'
+      sed 's/"browser_download_url": "//;s/"$//' | \
+      grep -E "$pattern" | \
+      head -n 1
   fi
 }
 
@@ -130,16 +130,16 @@ RELEASES_JSON=$(fetch_releases_json "$RELEASES_URL")
 # Determine asset patterns based on platform/architecture
 if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
   LLVM_PATTERN="_linux_x86_64_X86\.tar\.zst"
-  ZSTD_PATTERN="^zstd-.*_linux_x86_64_X86\.tar$"
+  ZSTD_PATTERN="zstd-[^/]*_linux_x86_64_X86\.tar$"
 elif [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "arm64" ]]; then
   LLVM_PATTERN="_linux_aarch64_AArch64\.tar\.zst"
-  ZSTD_PATTERN="^zstd-.*_linux_aarch64_AArch64\.tar$"
+  ZSTD_PATTERN="zstd-[^/]*_linux_aarch64_AArch64\.tar$"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "x86_64" ]]; then
   LLVM_PATTERN="_macos_x86_64_X86\.tar\.zst"
-  ZSTD_PATTERN="^zstd-.*_macos_x86_64_X86\.tar$"
+  ZSTD_PATTERN="zstd-[^/]*_macos_x86_64_X86\.tar$"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "arm64" ]]; then
   LLVM_PATTERN="_macos_arm64_AArch64\.tar\.zst"
-  ZSTD_PATTERN="^zstd-.*_macos_arm64_AArch64\.tar$"
+  ZSTD_PATTERN="zstd-[^/]*_macos_arm64_AArch64\.tar$"
 else
   echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
   exit 1
