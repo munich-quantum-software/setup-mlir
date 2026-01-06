@@ -13,14 +13,16 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ### Added
 
-- ✨ Add support for distributed zstd binaries - installer scripts and GitHub Action now automatically download and use platform-specific zstd binaries for decompression ([#61]) ([**@burgholzer**])
-- ✨ Add support for debug builds on Windows - new `debug` option available in both installer scripts and GitHub Action (Windows only) ([#61]) ([**@burgholzer**])
+- ✨ Add support for distributed zstd binaries so that installer scripts and GitHub Action now automatically download and use platform-specific zstd binaries for decompression ([#61]) ([**@burgholzer**])
+- ✨ Add support for debug builds on Windows with new `use_debug` option available in both installer scripts and GitHub Action ([#61]) ([**@burgholzer**])
+- ✅ Add comprehensive integration tests that exercise actual download and extraction paths ([#61]) ([**@burgholzer**])
 
 ### Changed
 
-- 🚸 Remove dependency on system-installed `zstd` - only `tar` is now required on the host system ([#61]) ([**@burgholzer**])
+- 🚸 Remove dependency on system-installed `zstd` so that only `tar` is now required on the host system ([#61]) ([**@burgholzer**])
 - 🔧 Improve asset matching regex patterns to be more precise and avoid incorrect matches ([#61]) ([**@burgholzer**])
 - 🔧 Use `--long=30` flag for zstd decompression to ensure compatibility with LLVM distributions ([#61]) ([**@burgholzer**])
+- ♻️ Clean up code and improve readability ([#61]) ([**@burgholzer**])
 
 ## [1.0.1] - 2025-12-24
 
