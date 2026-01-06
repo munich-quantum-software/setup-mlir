@@ -32818,7 +32818,7 @@ function findAsset(assets, platform, architecture, debug = false) {
  */
 function findZstdAsset(assets, platform, architecture) {
     const archStr = (0,utils/* getArchString */.A0)(platform, architecture);
-    const platformLower = platform === "macOS" ? "macos" : platform.toLowerCase();
+    const platformLower = platform.toLowerCase();
     const extension = platform === "windows" ? "zip" : "tar";
     const pattern = new RegExp(`^zstd-.*_${platformLower}_${archStr}_${architecture}\\.${extension}$`, "i");
     return assets.find((asset) => pattern.test(asset.name));
