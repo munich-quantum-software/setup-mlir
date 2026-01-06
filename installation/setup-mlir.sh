@@ -77,38 +77,55 @@ else
   exit 1
 fi
 
-# Helper function to download asset from GitHub releases
-download_asset() {
-  local pattern=$1
-  local output_file=$2
+# Helper function to fetch GitHub releases JSON
+fetch_releases_json() {
+  local url=$1
+  curl -fsSL \
+    -H "Accept: application/vnd.github+json" \
+    ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "$url"
+}
 
-  local url=$(echo "$RELEASES_JSON" | \
-    grep -o '"browser_download_url": "[^"]*"' | \
-    grep -F "$MATCH_PATTERN" | \
-    grep "$pattern" | \
-    head -n 1 | \
-    sed 's/"browser_download_url": "//;s/"$//')
+# Helper function to find asset URL in releases JSON
+find_asset_url() {
+  local releases_json=$1
+  local pattern=$2
+  local version_pattern=$3
 
-  if [ -z "$url" ]; then
-    return 1
+  if [ -n "$version_pattern" ]; then
+    # Filter by version pattern first (for LLVM assets)
+    echo "$releases_json" | \
+      grep -o '"browser_download_url": "[^"]*"' | \
+      grep -F "$version_pattern" | \
+      grep "$pattern" | \
+      head -n 1 | \
+      sed 's/"browser_download_url": "//;s/"$//'
+  else
+    # No version filtering (for zstd assets)
+    echo "$releases_json" | \
+      grep -o '"browser_download_url": "[^"]*"' | \
+      grep "$pattern" | \
+      head -n 1 | \
+      sed 's/"browser_download_url": "//;s/"$//'
   fi
+}
+
+# Helper function to download file from URL
+download_file() {
+  local url=$1
+  local output_file=$2
 
   echo "Downloading from $url..."
   if ! curl -fL -o "$output_file" "$url"; then
     echo "Error: Download failed." >&2
     exit 1
   fi
-
-  return 0
 }
 
 # Fetch releases JSON once
 RELEASES_URL="https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases?per_page=100"
-RELEASES_JSON=$(curl -fsSL \
-                     -H "Accept: application/vnd.github+json" \
-                     ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
-                     -H "X-GitHub-Api-Version: 2022-11-28" \
-                     "$RELEASES_URL")
+RELEASES_JSON=$(fetch_releases_json "$RELEASES_URL")
 
 # Determine asset patterns based on platform/architecture
 if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
@@ -130,32 +147,22 @@ fi
 
 # Download zstd binary
 echo "Downloading zstd binary..."
-if ! download_asset "$ZSTD_PATTERN" "zstd.tar"; then
-  # If zstd is not found in the LLVM version release, try the latest release
-  echo "zstd not found in LLVM version release, trying latest release..."
-  RELEASES_JSON=$(curl -fsSL \
-                       -H "Accept: application/vnd.github+json" \
-                       ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
-                       -H "X-GitHub-Api-Version: 2022-11-28" \
-                       "https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases/latest")
+ZSTD_URL=$(find_asset_url "$RELEASES_JSON" "$ZSTD_PATTERN" "")
 
-  ZSTD_URL=$(echo "$RELEASES_JSON" | \
-    grep -o '"browser_download_url": "[^"]*"' | \
-    grep "$ZSTD_PATTERN" | \
-    head -n 1 | \
-    sed 's/"browser_download_url": "//;s/"$//')
+# If not found, try the latest release
+if [ -z "$ZSTD_URL" ]; then
+  echo "zstd not found in LLVM version release, trying latest release..."
+  LATEST_JSON=$(fetch_releases_json "https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases/latest")
+
+  ZSTD_URL=$(find_asset_url "$LATEST_JSON" "$ZSTD_PATTERN" "")
 
   if [ -z "$ZSTD_URL" ]; then
     echo "Error: No zstd binary found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
     exit 1
   fi
-
-  echo "Downloading from $ZSTD_URL..."
-  if ! curl -fL -o "zstd.tar" "$ZSTD_URL"; then
-    echo "Error: Download failed." >&2
-    exit 1
-  fi
 fi
+
+download_file "$ZSTD_URL" "zstd.tar"
 
 # Extract zstd binary
 echo "Extracting zstd binary..."
@@ -177,10 +184,14 @@ chmod +x "$ZSTD_BIN"
 
 # Download LLVM distribution
 echo "Downloading LLVM distribution..."
-if ! download_asset "$LLVM_PATTERN" "llvm.tar.zst"; then
+LLVM_URL=$(find_asset_url "$RELEASES_JSON" "$LLVM_PATTERN" "$MATCH_PATTERN")
+
+if [ -z "$LLVM_URL" ]; then
   echo "Error: No release with LLVM $LLVM_VERSION found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
   exit 1
 fi
+
+download_file "$LLVM_URL" "llvm.tar.zst"
 
 # Decompress and extract LLVM distribution
 echo "Extracting LLVM distribution..."

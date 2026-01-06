@@ -81,7 +81,7 @@ function Download-Asset {
     }
 }
 
-# Fetch releases JSON
+# Setup headers for GitHub API
 $headers = @{
     "Accept" = "application/vnd.github+json"
     "X-GitHub-Api-Version" = "2022-11-28"
@@ -156,13 +156,20 @@ if (-not (Download-Asset -Pattern $llvmPattern -OutputFile "llvm.tar.zst" -Asset
 
 # Decompress and extract LLVM distribution
 Write-Host "Extracting LLVM distribution..."
-& $zstdBin.FullName -d "llvm.tar.zst" --long=30 --stdout | tar -x
+& $zstdBin.FullName -d "llvm.tar.zst" --long=30 -o "llvm.tar"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to decompress LLVM distribution."
+    exit 1
+}
+
+& tar -xf "llvm.tar"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to extract LLVM distribution."
     exit 1
 }
 
 # Cleanup
+Remove-Item "llvm.tar" -Force
 Remove-Item "llvm.tar.zst" -Force
 Remove-Item "zstd_temp" -Recurse -Force
 
