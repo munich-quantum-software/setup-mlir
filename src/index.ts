@@ -123,12 +123,12 @@ export async function run(): Promise<void> {
       ? path.join(extractedDir, entries[0])
       : extractedDir;
 
-  // Cleanup
-  await io.rmRF(extractDir);
-  await io.rmRF(zstdDir);
-
   core.debug("==> Adding MLIR toolchain to tool cache");
   const cachedPath = await tc.cacheDir(dir, "mlir-toolchain", llvm_version);
+
+  // Cleanup (after caching)
+  await io.rmRF(extractDir);
+  await io.rmRF(zstdDir);
 
   core.debug("==> Adding MLIR toolchain to PATH");
   core.addPath(path.join(cachedPath, "bin"));
