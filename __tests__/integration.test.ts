@@ -82,7 +82,7 @@ describe("MLIR Setup Integration Tests", () => {
       await io.rmRF(cachedPath);
     }
     cachedPath = undefined;
-  });
+  }, 30000); // 30 second timeout for cleanup
 
   describe("Version Validation", () => {
     it("should validate version tag format", () => {
