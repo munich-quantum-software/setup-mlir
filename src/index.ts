@@ -110,7 +110,7 @@ export async function run(): Promise<void> {
   // This avoids creating an intermediate tar file on disk
   await new Promise<void>((resolve, reject) => {
     const zstd = spawn(zstdPath, ["-d", file, "--long=30", "--stdout"]);
-    const tar = spawn("tar", ["-x", "-C", "-f", "-", extractedDir]);
+    const tar = spawn("tar", ["-x", "-f", "-", "-C", extractedDir]);
 
     // Pipe zstd stdout to tar stdin
     zstd.stdout.pipe(tar.stdin);
