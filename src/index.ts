@@ -23,6 +23,7 @@ import getDownloadLink, { getZstdLink } from "./get-download-link.js";
 import path from "node:path";
 import process from "node:process";
 import fs from "node:fs";
+import os from "node:os";
 import { spawn } from "node:child_process";
 
 /**
@@ -97,7 +98,7 @@ export async function run(): Promise<void> {
 
   core.debug("==> Decompressing and extracting LLVM distribution");
   const extractDir = path.join(
-    process.env.RUNNER_TEMP || "/tmp",
+    process.env.RUNNER_TEMP || os.tmpdir(),
     `mlir-extract-${Date.now()}`,
   );
   await io.mkdirP(extractDir);

@@ -34930,6 +34930,9 @@ var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_nod
 ;// CONCATENATED MODULE: external "node:fs"
 const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
 var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_namespaceObject);
+;// CONCATENATED MODULE: external "node:os"
+const external_node_os_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:os");
+var external_node_os_default = /*#__PURE__*/__nccwpck_require__.n(external_node_os_namespaceObject);
 ;// CONCATENATED MODULE: external "node:child_process"
 const external_node_child_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:child_process");
 ;// CONCATENATED MODULE: ./src/index.ts
@@ -34949,6 +34952,7 @@ const external_node_child_process_namespaceObject = __WEBPACK_EXTERNAL_createReq
  *
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
+
 
 
 
@@ -35007,7 +35011,7 @@ async function run() {
     core.debug(`==> Downloading LLVM asset: ${asset.url}`);
     const file = await tool_cache.downloadTool(asset.url);
     core.debug("==> Decompressing and extracting LLVM distribution");
-    const extractDir = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || "/tmp", `mlir-extract-${Date.now()}`);
+    const extractDir = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || external_node_os_default().tmpdir(), `mlir-extract-${Date.now()}`);
     await io.mkdirP(extractDir);
     // Extract the archive to a specific directory
     const extractedDir = external_node_path_default().join(extractDir, "extracted");
