@@ -47,6 +47,9 @@ describe("MLIR Setup Integration Tests", () => {
     if (!process.env.RUNNER_TEMP) {
       process.env.RUNNER_TEMP = "/tmp";
     }
+    if (!process.env.RUNNER_TOOL_CACHE) {
+      process.env.RUNNER_TOOL_CACHE = "/tmp/tool-cache";
+    }
 
     // Setup default mock implementations
     mockCore.getInput.mockImplementation((name: string) => {
