@@ -139,6 +139,53 @@ describe("MLIR Setup Integration Tests", () => {
 
       expect(expectedArch).not.toBeNull();
     });
+
+    it("should handle explicit platform specification", async () => {
+      if (!testToken) {
+        return;
+      }
+
+      const { default: getDownloadLink } =
+        await import("../src/get-download-link.js");
+
+      // Test explicit linux platform
+      const linuxAsset = await getDownloadLink(
+        testToken,
+        testVersion,
+        "linux",
+        "X86",
+        false,
+      );
+      expect(linuxAsset.name).toContain("linux");
+      expect(linuxAsset.name).toContain("x86_64");
+    });
+
+    it("should handle explicit architecture specification", async () => {
+      if (!testToken) {
+        return;
+      }
+
+      const { default: getDownloadLink } =
+        await import("../src/get-download-link.js");
+
+      // Test with current platform but explicit architecture
+      const platform =
+        process.platform === "linux"
+          ? "linux"
+          : process.platform === "darwin"
+            ? "macOS"
+            : "windows";
+
+      const asset = await getDownloadLink(
+        testToken,
+        testVersion,
+        platform,
+        "X86",
+        false,
+      );
+      expect(asset.url).toBeTruthy();
+      expect(asset.name).toContain("X86");
+    });
   });
 
   describe("Asset Download", () => {
@@ -201,14 +248,20 @@ describe("MLIR Setup Integration Tests", () => {
 
       // Verify mocks were called correctly
       expect(mockCore.addPath).toHaveBeenCalled();
-      expect(mockCore.exportVariable).toHaveBeenCalledWith(
-        "LLVM_DIR",
-        expect.stringContaining("lib/cmake/llvm"),
+
+      // Check LLVM_DIR was set correctly (normalize paths for cross-platform)
+      const llvmDirCall = mockCore.exportVariable.mock.calls.find(
+        (call) => call[0] === "LLVM_DIR",
       );
-      expect(mockCore.exportVariable).toHaveBeenCalledWith(
-        "MLIR_DIR",
-        expect.stringContaining("lib/cmake/mlir"),
+      expect(llvmDirCall).toBeDefined();
+      expect(llvmDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]llvm$/);
+
+      // Check MLIR_DIR was set correctly
+      const mlirDirCall = mockCore.exportVariable.mock.calls.find(
+        (call) => call[0] === "MLIR_DIR",
       );
+      expect(mlirDirCall).toBeDefined();
+      expect(mlirDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]mlir$/);
       expect(mockCore.setFailed).not.toHaveBeenCalled();
 
       // Get the cached path from the addPath call
@@ -229,7 +282,16 @@ describe("MLIR Setup Integration Tests", () => {
         // Verify binaries exist
         const mlirOptName =
           process.platform === "win32" ? "mlir-opt.exe" : "mlir-opt";
-        expect(fs.existsSync(path.join(binPath, mlirOptName))).toBe(true);
+        const mlirOptPath = path.join(binPath, mlirOptName);
+        expect(fs.existsSync(mlirOptPath)).toBe(true);
+
+        // Verify mlir-opt can run and check version
+        const { execSync } = await import("node:child_process");
+        const versionOutput = execSync(`"${mlirOptPath}" --version`, {
+          encoding: "utf8",
+        });
+        expect(versionOutput).toContain("LLVM version");
+        expect(versionOutput).toContain(testVersion);
 
         cachedPath = cachedDir;
       }
