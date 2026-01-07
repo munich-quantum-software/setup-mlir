@@ -104,15 +104,13 @@ export async function run(): Promise<void> {
   // Extract the archive to a specific directory
   const extractedDir = path.join(extractDir, "extracted");
   await io.mkdirP(extractedDir);
-  await exec.exec("tar", [
-    "-x",
-    "-C",
-    extractedDir,
-    "--use-compress-program",
-    `${zstdPath} -d --long=30`,
-    "-f",
-    file,
-  ]);
+  if (process.platform === "win32") {
+    const command = `& "${zstdPath}" -d "${file}" --long=30 --stdout | tar -x -C "${extractedDir}"`;
+    await exec.exec("powershell", ["-Command", command]);
+  } else {
+    const command = `"${zstdPath}" -d "${file}" --long=30 --stdout | tar -x -C "${extractedDir}"`;
+    await exec.exec("sh", ["-c", command]);
+  }
 
   // Find the actual LLVM directory (might be nested)
   const entries = fs.readdirSync(extractedDir);

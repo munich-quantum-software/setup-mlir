@@ -131,13 +131,24 @@ if (-not (Download-Asset -Pattern $zstdPattern -OutputFile "zstd.zip" -Assets $a
 
 # Extract zstd binary
 Write-Host "Extracting zstd binary..."
-Expand-Archive -Path "zstd.zip" -DestinationPath "zstd_temp" -Force
-Remove-Item "zstd.zip" -Force
+try {
+    Expand-Archive -Path "zstd.zip" -DestinationPath "zstd_temp" -Force -ErrorAction Stop
+    Remove-Item "zstd.zip" -Force
+} catch {
+    Write-Error "Failed to extract zstd binary: $_"
+    exit 1
+}
+
+# Verify extraction directory exists
+if (-not (Test-Path "zstd_temp")) {
+    Write-Error "zstd extraction failed: zstd_temp directory not found"
+    exit 1
+}
 
 # zstd archive contains a single executable file
 $zstdBinPath = Join-Path "zstd_temp" "zstd.exe"
 if (-not (Test-Path $zstdBinPath)) {
-    Write-Error "zstd.exe not found at $zstdBinPath"
+    Write-Error "zstd.exe not found at $zstdBinPath (extraction succeeded but file is missing)"
     exit 1
 }
 
@@ -150,7 +161,7 @@ if (-not (Download-Asset -Pattern $llvmPattern -OutputFile "llvm.tar.zst" -Asset
 
 # Decompress and extract LLVM distribution
 Write-Host "Extracting LLVM distribution..."
-& tar -x --use-compress-program="$zstdBinPath -d --long=30" -f "llvm.tar.zst"
+& $zstdBinPath -d "llvm.tar.zst" --long=30 --stdout | tar -x -C "$install_prefix"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to extract LLVM distribution."
     exit 1
