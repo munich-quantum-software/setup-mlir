@@ -101,19 +101,18 @@ export async function run(): Promise<void> {
   );
   await io.mkdirP(extractDir);
 
-  // Decompress with zstd and extract with tar
-  const tarFile = path.join(extractDir, "llvm.tar");
-  await exec.exec(zstdPath, ["-d", file, "--long=30", "-o", tarFile]);
-
-  // Verify tar file was created
-  if (!fs.existsSync(tarFile)) {
-    throw new Error(`Failed to decompress LLVM archive: ${tarFile} not found`);
-  }
-
-  // Extract tar archive to a specific directory
+  // Extract the archive to a specific directory
   const extractedDir = path.join(extractDir, "extracted");
   await io.mkdirP(extractedDir);
-  await exec.exec("tar", ["-xf", tarFile, "-C", extractedDir]);
+  await exec.exec("tar", [
+    "-x",
+    "-C",
+    extractedDir,
+    "--use-compress-program",
+    `${zstdPath} -d --long=30`,
+    "-f",
+    file,
+  ]);
 
   // Find the actual LLVM directory (might be nested)
   const entries = fs.readdirSync(extractedDir);

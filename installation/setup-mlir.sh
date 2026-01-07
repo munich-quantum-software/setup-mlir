@@ -196,7 +196,7 @@ download_file "$LLVM_URL" "llvm.tar.zst"
 
 # Decompress and extract LLVM distribution
 echo "Extracting LLVM distribution..."
-if ! "$ZSTD_BIN" -d "llvm.tar.zst" --long=30 --stdout | tar -x; then
+if ! tar -x --use-compress-program="$ZSTD_BIN -d --long=30" -f "llvm.tar.zst"; then
   echo "Error: Failed to extract LLVM distribution." >&2
   exit 1
 fi

@@ -35006,17 +35006,18 @@ async function run() {
     core.debug("==> Decompressing and extracting LLVM distribution");
     const extractDir = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || "/tmp", `mlir-extract-${Date.now()}`);
     await io.mkdirP(extractDir);
-    // Decompress with zstd and extract with tar
-    const tarFile = external_node_path_default().join(extractDir, "llvm.tar");
-    await exec.exec(zstdPath, ["-d", file, "--long=30", "-o", tarFile]);
-    // Verify tar file was created
-    if (!external_node_fs_default().existsSync(tarFile)) {
-        throw new Error(`Failed to decompress LLVM archive: ${tarFile} not found`);
-    }
-    // Extract tar archive to a specific directory
+    // Extract the archive to a specific directory
     const extractedDir = external_node_path_default().join(extractDir, "extracted");
     await io.mkdirP(extractedDir);
-    await exec.exec("tar", ["-xf", tarFile, "-C", extractedDir]);
+    await exec.exec("tar", [
+        "-x",
+        "-C",
+        extractedDir,
+        "--use-compress-program",
+        `${zstdPath} -d --long=30`,
+        "-f",
+        file,
+    ]);
     // Find the actual LLVM directory (might be nested)
     const entries = external_node_fs_default().readdirSync(extractedDir);
     const dir = entries.length === 1 &&

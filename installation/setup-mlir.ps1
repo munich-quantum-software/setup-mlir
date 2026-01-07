@@ -150,20 +150,13 @@ if (-not (Download-Asset -Pattern $llvmPattern -OutputFile "llvm.tar.zst" -Asset
 
 # Decompress and extract LLVM distribution
 Write-Host "Extracting LLVM distribution..."
-& $zstdBinPath -d "llvm.tar.zst" --long=30 -o "llvm.tar"
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to decompress LLVM distribution."
-    exit 1
-}
-
-& tar -xf "llvm.tar"
+& tar -x --use-compress-program="$zstdBinPath -d --long=30" -f "llvm.tar.zst"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to extract LLVM distribution."
     exit 1
 }
 
 # Cleanup
-Remove-Item "llvm.tar" -Force
 Remove-Item "llvm.tar.zst" -Force
 Remove-Item "zstd_temp" -Recurse -Force
 
