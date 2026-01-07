@@ -172,9 +172,9 @@ if ! tar -xzf "zstd.tar.gz"; then
 fi
 rm -f "zstd.tar.gz"
 
-# Find the zstd executable and get absolute path
-ZSTD_BIN=$(find . -name "zstd" -type f | head -n 1)
-if [ -z "$ZSTD_BIN" ]; then
+# zstd archive contains a single executable file
+ZSTD_BIN="./zstd"
+if [ ! -f "$ZSTD_BIN" ]; then
   echo "Error: zstd executable not found in extracted archive." >&2
   exit 1
 fi

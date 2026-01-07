@@ -402,5 +402,25 @@ describe("MLIR Setup Integration Tests", () => {
         expect(zstdAsset.name).toMatch(/\.tar\.gz$/);
       }
     });
+
+    it("should reject invalid platform", async () => {
+      const { default: getDownloadLink } =
+        await import("../src/get-download-link.js");
+
+      await expect(
+        getDownloadLink(testToken, testVersion, "invalid", "X86", false),
+      ).rejects.toThrow("Invalid platform: invalid");
+    });
+
+    it("should reject invalid architecture", async () => {
+      const { default: getDownloadLink } =
+        await import("../src/get-download-link.js");
+
+      await expect(
+        getDownloadLink(testToken, testVersion, "linux", "invalid", false),
+      ).rejects.toThrow(
+        "Invalid architecture: invalid. Expected X86 or AArch64.",
+      );
+    });
   });
 });

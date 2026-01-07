@@ -20,7 +20,6 @@ import * as tc from "@actions/tool-cache";
 import * as exec from "@actions/exec";
 import * as io from "@actions/io";
 import getDownloadLink, { getZstdLink } from "./get-download-link.js";
-import { findExecutable, getZstdExecutableName } from "./utils.js";
 import path from "node:path";
 import process from "node:process";
 import fs from "node:fs";
@@ -71,11 +70,12 @@ export async function run(): Promise<void> {
     zstdDir = await tc.extractTar(zstdFile);
   }
 
-  // Find zstd executable
-  const zstdPath = findExecutable(zstdDir, getZstdExecutableName());
+  // zstd archive contains a single executable file
+  const zstdExecutableName = process.platform === "win32" ? "zstd.exe" : "zstd";
+  const zstdPath = path.join(zstdDir, zstdExecutableName);
 
-  if (!zstdPath) {
-    throw new Error(`zstd executable not found in ${zstdDir}`);
+  if (!fs.existsSync(zstdPath)) {
+    throw new Error(`zstd executable not found at ${zstdPath}`);
   }
 
   // Make sure zstd is executable on Unix

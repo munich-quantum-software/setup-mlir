@@ -16,16 +16,40 @@
  */
 
 import process from "node:process";
-import * as core from "@actions/core";
 import { Octokit, OctokitOptions } from "@octokit/core";
 import type { components } from "@octokit/openapi-types";
-import { getArchString } from "./utils.js";
 
 type Release = components["schemas"]["release"];
 type ReleaseAsset = components["schemas"]["release-asset"];
 
 const REPO_OWNER = "munich-quantum-software";
 const REPO_NAME = "portable-mlir-toolchain";
+
+/**
+ * Get the platform-specific architecture string for asset names
+ * @param platform - Platform (linux, macOS, windows)
+ * @param architecture - Architecture (X86, AArch64)
+ * @returns Platform-specific architecture string
+ */
+function getArchString(platform: string, architecture: string): string {
+  // Validate architecture
+  if (architecture !== "X86" && architecture !== "AArch64") {
+    throw new Error(
+      `Invalid architecture: ${architecture}. Expected X86 or AArch64.`,
+    );
+  }
+
+  if (platform === "linux") {
+    return architecture === "X86" ? "x86_64" : "aarch64";
+  }
+  if (platform === "macOS") {
+    return architecture === "X86" ? "x86_64" : "arm64";
+  }
+  if (platform === "windows") {
+    return architecture === "X86" ? "X64" : "Arm64";
+  }
+  throw new Error(`Invalid platform: ${platform}`);
+}
 
 /**
  * Create an Octokit instance with optional authentication
@@ -98,6 +122,8 @@ export async function getZstdLink(
     architecture = determineArchitecture();
   }
 
+  const octokit = createOctokit(token);
+
   // Try to get zstd from the same release as the LLVM distribution
   try {
     const assets = await getAssets(token, llvm_version);
@@ -108,13 +134,12 @@ export async function getZstdLink(
   } catch (error) {
     // If the release doesn't exist or has no zstd, fall through to latest release
     const errorMessage = error instanceof Error ? error.message : String(error);
-    core.info(
+    octokit.log.info(
       `zstd not found in LLVM ${llvm_version} release for ${platform}/${architecture} (${errorMessage}), falling back to latest release...`,
     );
   }
 
   // Fall back to getting zstd from the latest release
-  const octokit = createOctokit(token);
   const latestRelease = await octokit.request(
     "GET /repos/{owner}/{repo}/releases/latest",
     {

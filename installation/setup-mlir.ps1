@@ -134,10 +134,10 @@ Write-Host "Extracting zstd binary..."
 Expand-Archive -Path "zstd.zip" -DestinationPath "zstd_temp" -Force
 Remove-Item "zstd.zip" -Force
 
-# Find the zstd executable
-$zstdBin = Get-ChildItem -Path "zstd_temp" -Filter "zstd.exe" -Recurse | Select-Object -First 1
-if (-not $zstdBin) {
-    Write-Error "zstd.exe not found in extracted archive."
+# zstd archive contains a single executable file
+$zstdBinPath = Join-Path "zstd_temp" "zstd.exe"
+if (-not (Test-Path $zstdBinPath)) {
+    Write-Error "zstd.exe not found at $zstdBinPath"
     exit 1
 }
 
@@ -150,7 +150,7 @@ if (-not (Download-Asset -Pattern $llvmPattern -OutputFile "llvm.tar.zst" -Asset
 
 # Decompress and extract LLVM distribution
 Write-Host "Extracting LLVM distribution..."
-& $zstdBin.FullName -d "llvm.tar.zst" --long=30 -o "llvm.tar"
+& $zstdBinPath -d "llvm.tar.zst" --long=30 -o "llvm.tar"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to decompress LLVM distribution."
     exit 1

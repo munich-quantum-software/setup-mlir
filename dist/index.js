@@ -34695,13 +34695,7 @@ class Octokit {
 }
 
 
-;// CONCATENATED MODULE: external "node:fs"
-const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
-var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_namespaceObject);
-;// CONCATENATED MODULE: external "node:path"
-const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
-var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
-;// CONCATENATED MODULE: ./src/utils.ts
+;// CONCATENATED MODULE: ./src/get-download-link.ts
 /*
  * Copyright (c) 2025 Munich Quantum Software Company GmbH
  * Copyright (c) 2025 Chair for Design Automation, TUM
@@ -34720,36 +34714,8 @@ var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_nod
  */
 
 
-
-/**
- * Find an executable file recursively in a directory
- * @param dir - Directory to search in
- * @param executableName - Name of the executable to find
- * @param visited - Set of visited directories to prevent symlink cycles
- * @returns Path to the executable or undefined if not found
- */
-function findExecutable(dir, executableName, visited = new Set()) {
-    // Get real path to detect symlink cycles
-    const realDir = external_node_fs_namespaceObject.realpathSync(dir);
-    // Check if we've already visited this directory
-    if (visited.has(realDir)) {
-        return undefined;
-    }
-    visited.add(realDir);
-    const entries = external_node_fs_namespaceObject.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-        const fullPath = external_node_path_namespaceObject.join(dir, entry.name);
-        if (entry.isDirectory()) {
-            const found = findExecutable(fullPath, executableName, visited);
-            if (found)
-                return found;
-        }
-        else if (entry.isFile() && entry.name === executableName) {
-            return fullPath;
-        }
-    }
-    return undefined;
-}
+const REPO_OWNER = "munich-quantum-software";
+const REPO_NAME = "portable-mlir-toolchain";
 /**
  * Get the platform-specific architecture string for asset names
  * @param platform - Platform (linux, macOS, windows)
@@ -34772,36 +34738,6 @@ function getArchString(platform, architecture) {
     }
     throw new Error(`Invalid platform: ${platform}`);
 }
-/**
- * Get the zstd executable name for the current platform
- * @returns zstd executable name
- */
-function getZstdExecutableName() {
-    return (external_node_process_default()).platform === "win32" ? "zstd.exe" : "zstd";
-}
-
-;// CONCATENATED MODULE: ./src/get-download-link.ts
-/*
- * Copyright (c) 2025 Munich Quantum Software Company GmbH
- * Copyright (c) 2025 Chair for Design Automation, TUM
- * All rights reserved.
- *
- * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
- * may not use this file except in compliance with the License. You may obtain a
- * copy of the License at https://llvm.org/LICENSE.txt
- *
- * Unless required by applicable law or agreed to in writing, software distributed
- * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- */
-
-
-
-const REPO_OWNER = "munich-quantum-software";
-const REPO_NAME = "portable-mlir-toolchain";
 /**
  * Create an Octokit instance with optional authentication
  * @param token - GitHub token (optional)
@@ -34853,6 +34789,7 @@ async function getZstdLink(token, llvm_version, platform = "host", architecture 
     if (architecture === "host") {
         architecture = determineArchitecture();
     }
+    const octokit = createOctokit(token);
     // Try to get zstd from the same release as the LLVM distribution
     try {
         const assets = await getAssets(token, llvm_version);
@@ -34863,10 +34800,10 @@ async function getZstdLink(token, llvm_version, platform = "host", architecture 
     }
     catch (error) {
         // If the release doesn't exist or has no zstd, fall through to latest release
-        console.log(`zstd not found in portable-mlir-toolchain release for LLVM ${llvm_version}, trying latest release...`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        octokit.log.info(`zstd not found in LLVM ${llvm_version} release for ${platform}/${architecture} (${errorMessage}), falling back to latest release...`);
     }
     // Fall back to getting zstd from the latest release
-    const octokit = createOctokit(token);
     const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
         owner: REPO_OWNER,
         repo: REPO_NAME,
@@ -34969,7 +34906,7 @@ function findAsset(assets, platform, architecture, debug = false) {
     const archStr = getArchString(platform, architecture);
     const platformLower = platform.toLowerCase();
     const debugSuffix = debug && platform === "windows" ? "_debug" : "";
-    const pattern = new RegExp(`^llvm-mlir_.*_${platformLower}_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`, "i");
+    const pattern = new RegExp(`^llvm-mlir_[0-9A-Za-z._-]+_${platformLower}_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`, "i");
     return assets.find((asset) => pattern.test(asset.name));
 }
 /**
@@ -34983,10 +34920,16 @@ function findZstdAsset(assets, platform, architecture) {
     const archStr = getArchString(platform, architecture);
     const platformLower = platform.toLowerCase();
     const extension = platform === "windows" ? "zip" : "tar.gz";
-    const pattern = new RegExp(`^zstd-.*_${platformLower}_${archStr}_${architecture}\\.${extension}$`, "i");
+    const pattern = new RegExp(`^zstd-[A-Za-z0-9._-]+_${platformLower}_${archStr}_${architecture}\\.${extension}$`, "i");
     return assets.find((asset) => pattern.test(asset.name));
 }
 
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
+var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+;// CONCATENATED MODULE: external "node:fs"
+const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
+var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_namespaceObject);
 ;// CONCATENATED MODULE: ./src/index.ts
 /*
  * Copyright (c) 2025 Munich Quantum Software Company GmbH
@@ -35004,7 +34947,6 @@ function findZstdAsset(assets, platform, architecture) {
  *
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
-
 
 
 
@@ -35047,10 +34989,11 @@ async function run() {
     else {
         zstdDir = await tool_cache.extractTar(zstdFile);
     }
-    // Find zstd executable
-    const zstdPath = findExecutable(zstdDir, getZstdExecutableName());
-    if (!zstdPath) {
-        throw new Error(`zstd executable not found in ${zstdDir}`);
+    // zstd archive contains a single executable file
+    const zstdExecutableName = (external_node_process_default()).platform === "win32" ? "zstd.exe" : "zstd";
+    const zstdPath = external_node_path_default().join(zstdDir, zstdExecutableName);
+    if (!external_node_fs_default().existsSync(zstdPath)) {
+        throw new Error(`zstd executable not found at ${zstdPath}`);
     }
     // Make sure zstd is executable on Unix
     if ((external_node_process_default()).platform !== "win32") {
