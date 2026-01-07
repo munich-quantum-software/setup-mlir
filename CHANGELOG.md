@@ -9,6 +9,21 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-01-06
+
+### Added
+
+- ✨ Add support for distributed zstd binaries so that installer scripts and GitHub Action now automatically download and use platform-specific zstd binaries for decompression ([#61]) ([**@burgholzer**])
+- ✨ Add support for debug builds on Windows with new `use_debug` option available in both installer scripts and GitHub Action ([#61]) ([**@burgholzer**])
+- ✅ Add comprehensive integration tests that exercise actual download and extraction paths ([#61]) ([**@burgholzer**])
+
+### Changed
+
+- 🚸 Remove dependency on system-installed `zstd` so that only `tar` is now required on the host system ([#61]) ([**@burgholzer**])
+- 🔧 Improve asset matching regex patterns to be more precise and avoid incorrect matches ([#61]) ([**@burgholzer**])
+- 🔧 Use `--long=30` flag for zstd decompression to ensure compatibility with LLVM distributions ([#61]) ([**@burgholzer**])
+- ♻️ Clean up code and improve readability ([#61]) ([**@burgholzer**])
+
 ## [1.0.1] - 2025-12-24
 
 ### Added
@@ -35,12 +50,14 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- Version links -->
 
-[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.0.1...HEAD
+[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.1.0
 [1.0.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.0.1
 [1.0.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.0.0
 
 <!-- PR links -->
 
+[#61]: https://github.com/munich-quantum-software/setup-mlir/pull/61
 [#51]: https://github.com/munich-quantum-software/setup-mlir/pull/51
 [#49]: https://github.com/munich-quantum-software/setup-mlir/pull/49
 [#47]: https://github.com/munich-quantum-software/setup-mlir/pull/47

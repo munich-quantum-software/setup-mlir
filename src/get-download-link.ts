@@ -22,12 +22,52 @@ import type { components } from "@octokit/openapi-types";
 type Release = components["schemas"]["release"];
 type ReleaseAsset = components["schemas"]["release-asset"];
 
+const REPO_OWNER = "munich-quantum-software";
+const REPO_NAME = "portable-mlir-toolchain";
+
+/**
+ * Get the platform-specific architecture string for asset names
+ * @param platform - Platform (linux, macOS, windows)
+ * @param architecture - Architecture (X86, AArch64)
+ * @returns Platform-specific architecture string
+ */
+function getArchString(platform: string, architecture: string): string {
+  // Validate architecture
+  if (architecture !== "X86" && architecture !== "AArch64") {
+    throw new Error(
+      `Invalid architecture: ${architecture}. Expected X86 or AArch64.`,
+    );
+  }
+
+  if (platform === "linux") {
+    return architecture === "X86" ? "x86_64" : "aarch64";
+  }
+  if (platform === "macOS") {
+    return architecture === "X86" ? "x86_64" : "arm64";
+  }
+  if (platform === "windows") {
+    return architecture === "X86" ? "X64" : "Arm64";
+  }
+  throw new Error(`Invalid platform: ${platform}`);
+}
+
+/**
+ * Create an Octokit instance with optional authentication
+ * @param token - GitHub token (optional)
+ * @returns Octokit instance
+ */
+function createOctokit(token: string): Octokit {
+  const options: OctokitOptions = token ? { auth: token } : {};
+  return new Octokit(options);
+}
+
 /**
  * Determine the URL of the release asset for the given platform and architecture.
  * @param {string} token - GitHub token
  * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
  * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
+ * @param {boolean} debug - whether to download debug build (Windows only)
  * @returns {{url: string, name: string}} - download URL for the release asset and the asset name
  */
 export default async function getDownloadLink(
@@ -35,6 +75,7 @@ export default async function getDownloadLink(
   llvm_version: string,
   platform = "host",
   architecture = "host",
+  debug = false,
 ): Promise<{ url: string; name: string }> {
   const assets = await getAssets(token, llvm_version);
 
@@ -47,15 +88,77 @@ export default async function getDownloadLink(
   }
 
   // Determine the file name of the asset
-  const asset = findAsset(assets, platform, architecture);
+  const asset = findAsset(assets, platform, architecture, debug);
 
   if (asset) {
     return { url: asset.browser_download_url, name: asset.name };
   } else {
     throw new Error(
-      `No ${architecture} ${platform} archive found for LLVM ${llvm_version}.`,
+      `No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${llvm_version}.`,
     );
   }
+}
+
+/**
+ * Get the URL and name of the zstd binary for the given platform and architecture.
+ * Tries to get zstd from the specified LLVM version release, and if not found, from the latest release.
+ * @param {string} token - GitHub token
+ * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
+ * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
+ * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
+ * @returns {{url: string, name: string}} - download URL for the zstd binary and the asset name
+ */
+export async function getZstdLink(
+  token: string,
+  llvm_version: string,
+  platform = "host",
+  architecture = "host",
+): Promise<{ url: string; name: string }> {
+  if (platform === "host") {
+    platform = determinePlatform();
+  }
+
+  if (architecture === "host") {
+    architecture = determineArchitecture();
+  }
+
+  const octokit = createOctokit(token);
+
+  // Try to get zstd from the same release as the LLVM distribution
+  try {
+    const assets = await getAssets(token, llvm_version);
+    const asset = findZstdAsset(assets, platform, architecture);
+    if (asset) {
+      return { url: asset.browser_download_url, name: asset.name };
+    }
+  } catch (error) {
+    // If the release doesn't exist or has no zstd, fall through to latest release
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    octokit.log.info(
+      `zstd not found in LLVM ${llvm_version} release for ${platform}/${architecture} (${errorMessage}), falling back to latest release...`,
+    );
+  }
+
+  // Fall back to getting zstd from the latest release
+  const latestRelease = await octokit.request(
+    "GET /repos/{owner}/{repo}/releases/latest",
+    {
+      owner: REPO_OWNER,
+      repo: REPO_NAME,
+    },
+  );
+
+  const asset = findZstdAsset(
+    latestRelease.data.assets,
+    platform,
+    architecture,
+  );
+
+  if (!asset) {
+    throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
+  }
+
+  return { url: asset.browser_download_url, name: asset.name };
 }
 
 /**
@@ -98,14 +201,10 @@ async function getAssets(
   token: string,
   llvm_version: string,
 ): Promise<ReleaseAsset[]> {
-  const options: OctokitOptions = {};
-  if (token) {
-    options.auth = token;
-  }
-  const octokit = new Octokit(options);
+  const octokit = createOctokit(token);
   const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
-    owner: "munich-quantum-software",
-    repo: "portable-mlir-toolchain",
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
     per_page: 100,
   });
 
@@ -148,30 +247,47 @@ async function getAssets(
  * @param {ReleaseAsset[]} assets - list of release assets
  * @param {string} platform - platform to look for (either linux, macOS, or windows)
  * @param {string} architecture - architecture to look for (either X86 or AArch64)
+ * @param {boolean} debug - whether to download debug build (Windows only)
  * @returns {(ReleaseAsset | undefined)} - release asset or undefined if not found
  */
 function findAsset(
   assets: ReleaseAsset[],
   platform: string,
   architecture: string,
+  debug: boolean = false,
 ): ReleaseAsset | undefined {
-  if (platform === "linux") {
-    return assets.find((asset) =>
-      RegExp(`.*_linux_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
-    );
-  }
+  const archStr = getArchString(platform, architecture);
+  const platformLower = platform.toLowerCase();
+  const debugSuffix = debug && platform === "windows" ? "_debug" : "";
 
-  if (platform === "macOS") {
-    return assets.find((asset) =>
-      RegExp(`.*_macos_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
-    );
-  }
+  const pattern = new RegExp(
+    `^llvm-mlir_[0-9A-Za-z._-]+_${platformLower}_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`,
+    "i",
+  );
 
-  if (platform === "windows") {
-    return assets.find((asset) =>
-      RegExp(`.*_windows_.*_${architecture}.tar.zst$`, "i").exec(asset.name),
-    );
-  }
+  return assets.find((asset) => pattern.test(asset.name));
+}
 
-  throw new Error(`Invalid platform: ${platform}`);
+/**
+ * Find the zstd binary asset for the given platform and architecture.
+ * @param {ReleaseAsset[]} assets - list of release assets
+ * @param {string} platform - platform to look for (either linux, macOS, or windows)
+ * @param {string} architecture - architecture to look for (either X86 or AArch64)
+ * @returns {(ReleaseAsset | undefined)} - release asset or undefined if not found
+ */
+function findZstdAsset(
+  assets: ReleaseAsset[],
+  platform: string,
+  architecture: string,
+): ReleaseAsset | undefined {
+  const archStr = getArchString(platform, architecture);
+  const platformLower = platform.toLowerCase();
+  const extension = platform === "windows" ? "zip" : "tar.gz";
+
+  const pattern = new RegExp(
+    `^zstd-[A-Za-z0-9._-]+_${platformLower}_${archStr}_${architecture}\\.${extension}$`,
+    "i",
+  );
+
+  return assets.find((asset) => pattern.test(asset.name));
 }

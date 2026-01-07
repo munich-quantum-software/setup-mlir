@@ -16,38 +16,8 @@ permissions:
   contents: read
 
 jobs:
-  unit-tests:
-    name: Unit tests with coverage
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests with coverage
-        run: npm run test:coverage
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
-        with:
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: unit-tests
-          use_oidc: true
-
   test-installer-scripts:
-    name: Test installer script for version ${{ matrix.version }} on ${{ matrix.os }}
+    name: Test installer script for version ${{ matrix.version }} on ${{ matrix.os }}${{ matrix.debug && ' (debug)' || '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -62,15 +32,18 @@ jobs:
             windows-11-arm,
           ]
         version: ["21.1.8", "f8cb798"]
+        debug: [false]
+        include:
+          - os: windows-2022
+            version: "21.1.8"
+            debug: true
+          - os: windows-11-arm
+            version: "21.1.8"
+            debug: true
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          choco install zstandard -y
 
       - name: Test installer script (Bash)
         if: runner.os != 'Windows'
@@ -112,7 +85,7 @@ jobs:
         run: |
           $install_dir = Join-Path $env:TEMP "mlir-install"
 
-          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir -token ${{ github.token }}
+          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir -token ${{ github.token }} ${{ matrix.debug && '-use_debug' || '' }}
 
           # Verify installation
           if (-not (Test-Path "$install_dir\bin")) {
@@ -142,9 +115,12 @@ jobs:
 
           Write-Host "Installation test passed!"
 
-  test-action:
-    name: Test action for version ${{ matrix.version }} on ${{ matrix.os }}
+  integration-tests:
+    name: Integration tests with coverage on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -157,156 +133,42 @@ jobs:
             windows-2022,
             windows-11-arm,
           ]
-        version: ["21.1.8", "f8cb798"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      - name: Setup MLIR
-        uses: ./
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
-          llvm-version: ${{ matrix.version }}
+          node-version: 24
+          cache: npm
 
-      - name: Verify environment variables (Bash)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          # Check LLVM_DIR is set
-          if [ -z "$LLVM_DIR" ]; then
-            echo "Error: LLVM_DIR not set"
-            exit 1
-          fi
-          echo "LLVM_DIR=$LLVM_DIR"
+      - name: Install dependencies
+        run: npm ci
 
-          # Check MLIR_DIR is set
-          if [ -z "$MLIR_DIR" ]; then
-            echo "Error: MLIR_DIR not set"
-            exit 1
-          fi
-          echo "MLIR_DIR=$MLIR_DIR"
+      - name: Run integration tests with coverage
+        run: npm run test:coverage
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
-          # Verify directories exist
-          if [ ! -d "$LLVM_DIR" ]; then
-            echo "Error: LLVM_DIR directory does not exist"
-            exit 1
-          fi
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        with:
+          files: ./coverage/lcov.info
+          flags: integration-${{ matrix.os }}
+          name: integration-${{ matrix.os }}
+          use_oidc: true
 
-          if [ ! -d "$MLIR_DIR" ]; then
-            echo "Error: MLIR_DIR directory does not exist"
-            exit 1
-          fi
-
-          echo "Environment variables verified!"
-
-      - name: Verify environment variables (PowerShell)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          # Check LLVM_DIR is set
-          if (-not $env:LLVM_DIR) {
-            Write-Error "LLVM_DIR not set"
-            exit 1
-          }
-          Write-Host "LLVM_DIR=$env:LLVM_DIR"
-
-          # Check MLIR_DIR is set
-          if (-not $env:MLIR_DIR) {
-            Write-Error "MLIR_DIR not set"
-            exit 1
-          }
-          Write-Host "MLIR_DIR=$env:MLIR_DIR"
-
-          # Verify directories exist
-          if (-not (Test-Path $env:LLVM_DIR)) {
-            Write-Error "LLVM_DIR directory does not exist"
-            exit 1
-          }
-
-          if (-not (Test-Path $env:MLIR_DIR)) {
-            Write-Error "MLIR_DIR directory does not exist"
-            exit 1
-          }
-
-          Write-Host "Environment variables verified!"
-
-      - name: Verify binaries in PATH (Bash)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          # Check if mlir-opt is in PATH
-          if ! command -v mlir-opt &> /dev/null; then
-            echo "Error: mlir-opt not found in PATH"
-            exit 1
-          fi
-
-          # Test that mlir-opt runs
-          mlir-opt --version
-
-          # Check if mlir-translate is in PATH
-          if ! command -v mlir-translate &> /dev/null; then
-            echo "Error: mlir-translate not found in PATH"
-            exit 1
-          fi
-
-          mlir-translate --version
-
-          echo "Binaries verified!"
-
-      - name: Verify binaries in PATH (PowerShell)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          # Check if mlir-opt is in PATH
-          if (-not (Get-Command mlir-opt -ErrorAction SilentlyContinue)) {
-            Write-Error "mlir-opt not found in PATH"
-            exit 1
-          }
-
-          # Test that mlir-opt runs
-          mlir-opt --version
-
-          # Check if mlir-translate is in PATH
-          if (-not (Get-Command mlir-translate -ErrorAction SilentlyContinue)) {
-            Write-Error "mlir-translate not found in PATH"
-            exit 1
-          }
-
-          mlir-translate --version
-
-          Write-Host "Binaries verified!"
-
-  test-failure-modes:
-    name: Test failure modes
+  # This job does nothing and is only used for branch protection
+  required-checks-pass:
+    name: 🚦 Check
+    if: always()
+    needs:
+      - test-installer-scripts
+      - integration-tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
-      - name: Test invalid version format
-        id: invalid-version
-        continue-on-error: true
-        uses: ./
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
         with:
-          llvm-version: "invalid-version-123"
-
-      - name: Verify invalid version failed
-        if: steps.invalid-version.outcome != 'failure'
-        run: |
-          echo "Error: Expected action to fail with invalid version"
-          exit 1
-
-      - name: Test non-existent version
-        id: nonexistent-version
-        continue-on-error: true
-        uses: ./
-        with:
-          llvm-version: "99.99.99"
-
-      - name: Verify non-existent version failed
-        if: steps.nonexistent-version.outcome != 'failure'
-        run: |
-          echo "Error: Expected action to fail with non-existent version"
-          exit 1
-
-      - name: All failure mode tests passed
-        run: echo "All failure mode tests passed successfully!"
+          jobs: ${{ toJSON(needs) }}

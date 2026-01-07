@@ -17,18 +17,33 @@
 
 import * as core from "@actions/core";
 import * as tc from "@actions/tool-cache";
-import getDownloadLink from "./get-download-link.js";
+import * as exec from "@actions/exec";
+import * as io from "@actions/io";
+import getDownloadLink, { getZstdLink } from "./get-download-link.js";
 import path from "node:path";
+import process from "node:process";
+import fs from "node:fs";
+import os from "node:os";
+import { spawn } from "node:child_process";
 
 /**
  * Setup MLIR toolchain
  * @returns {Promise<void>}
  */
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   const llvm_version = core.getInput("llvm-version", { required: true });
   const platform = core.getInput("platform", { required: true });
   const architecture = core.getInput("architecture", { required: true });
   const token = core.getInput("token", { required: true });
+  const debug = core.getBooleanInput("debug", { required: false });
+
+  // Validate debug flag is only used on Windows
+  const isWindows =
+    platform === "windows" ||
+    (platform === "host" && process.platform === "win32");
+  if (debug && !isWindows) {
+    throw new Error("Debug builds are only available on Windows.");
+  }
 
   // Validate LLVM version (either X.Y.Z format or commit hash)
   const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
@@ -39,22 +54,112 @@ async function run(): Promise<void> {
     );
   }
 
-  core.debug("==> Determining asset URL");
-  const asset = await getDownloadLink(
+  core.debug("==> Determining zstd binary URL");
+  const zstdAsset = await getZstdLink(
     token,
     llvm_version,
     platform,
     architecture,
   );
-  core.debug(`==> Downloading asset: ${asset.url}`);
+  core.debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
+  const zstdFile = await tc.downloadTool(zstdAsset.url);
+
+  core.debug("==> Extracting zstd binary");
+  let zstdDir: string;
+  if (zstdAsset.name.endsWith(".zip")) {
+    zstdDir = await tc.extractZip(zstdFile);
+  } else {
+    zstdDir = await tc.extractTar(zstdFile);
+  }
+
+  // zstd archive contains a single executable file
+  const zstdExecutableName = process.platform === "win32" ? "zstd.exe" : "zstd";
+  const zstdPath = path.join(zstdDir, zstdExecutableName);
+
+  if (!fs.existsSync(zstdPath)) {
+    throw new Error(`zstd executable not found at ${zstdPath}`);
+  }
+
+  // Make sure zstd is executable on Unix
+  if (process.platform !== "win32") {
+    await exec.exec("chmod", ["+x", zstdPath]);
+  }
+
+  core.debug("==> Determining LLVM asset URL");
+  const asset = await getDownloadLink(
+    token,
+    llvm_version,
+    platform,
+    architecture,
+    debug,
+  );
+  core.debug(`==> Downloading LLVM asset: ${asset.url}`);
   const file = await tc.downloadTool(asset.url);
-  core.debug("==> Extracting asset");
-  const dir = await tc.extractTar(path.resolve(file), undefined, [
-    "--zstd",
-    "-xv",
-  ]);
-  core.debug("==> Adding MLIR toolchain to tool cache");
-  const cachedPath = await tc.cacheDir(dir, "mlir-toolchain", llvm_version);
+
+  core.debug("==> Decompressing and extracting LLVM distribution");
+  const extractDir = path.join(
+    process.env.RUNNER_TEMP || os.tmpdir(),
+    `mlir-extract-${Date.now()}`,
+  );
+  await io.mkdirP(extractDir);
+
+  // Extract the archive to a specific directory
+  const extractedDir = path.join(extractDir, "extracted");
+  await io.mkdirP(extractedDir);
+
+  let cachedPath: string;
+  try {
+    // Pipe zstd decompression directly to tar extraction
+    // This avoids creating an intermediate tar file on disk
+    //
+    // Note on process ordering: tar's successful close is treated as the
+    // definitive success signal. If tar closes stdin early (satisfied with
+    // input), zstd may receive SIGPIPE and exit non-zero, which is acceptable.
+    // In practice, both processes typically complete successfully.
+    await new Promise<void>((resolve, reject) => {
+      const zstd = spawn(zstdPath, ["-d", file, "--long=30", "--stdout"]);
+      const tar = spawn("tar", ["-x", "-f", "-", "-C", extractedDir]);
+
+      // Pipe zstd stdout to tar stdin
+      zstd.stdout.pipe(tar.stdin);
+
+      // Handle errors
+      zstd.on("error", (err) =>
+        reject(new Error(`zstd failed: ${err.message}`)),
+      );
+      tar.on("error", (err) => reject(new Error(`tar failed: ${err.message}`)));
+
+      // Handle process exit
+      tar.on("close", (code) => {
+        if (code !== 0) {
+          reject(new Error(`tar exited with code ${code}`));
+        } else {
+          resolve();
+        }
+      });
+
+      zstd.on("close", (code) => {
+        if (code !== 0) {
+          reject(new Error(`zstd exited with code ${code}`));
+        }
+      });
+    });
+
+    // Find the actual LLVM directory (might be nested)
+    const entries = fs.readdirSync(extractedDir);
+    const dir =
+      entries.length === 1 &&
+      fs.statSync(path.join(extractedDir, entries[0])).isDirectory()
+        ? path.join(extractedDir, entries[0])
+        : extractedDir;
+
+    core.debug("==> Adding MLIR toolchain to tool cache");
+    cachedPath = await tc.cacheDir(dir, "mlir-toolchain", llvm_version);
+  } finally {
+    // Cleanup temp directories (always runs, even on error)
+    await io.rmRF(extractDir);
+    await io.rmRF(zstdDir);
+  }
 
   core.debug("==> Adding MLIR toolchain to PATH");
   core.addPath(path.join(cachedPath, "bin"));
@@ -70,16 +175,22 @@ async function run(): Promise<void> {
   );
 }
 
-try {
-  core.debug("==> Starting MLIR toolchain setup");
-  await run();
-  core.debug("==> Finished MLIR toolchain setup");
-} catch (error) {
-  if (typeof error === "string") {
-    core.setFailed(error);
-  } else if (error instanceof Error) {
-    core.setFailed(error.message);
-  } else {
-    core.setFailed(`Unknown error: ${JSON.stringify(error)}`);
-  }
+// Run if this module is executed directly (not during tests)
+// Note: In production, this is bundled by ncc, so this check doesn't affect the action
+if (process.env.NODE_ENV !== "test") {
+  (async () => {
+    try {
+      core.debug("==> Starting MLIR toolchain setup");
+      await run();
+      core.debug("==> Finished MLIR toolchain setup");
+    } catch (error) {
+      if (typeof error === "string") {
+        core.setFailed(error);
+      } else if (error instanceof Error) {
+        core.setFailed(error.message);
+      } else {
+        core.setFailed(`Unknown error: ${JSON.stringify(error)}`);
+      }
+    }
+  })();
 }

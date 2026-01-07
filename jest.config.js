@@ -21,13 +21,18 @@ export default {
     "^(\\.{1,2}/.*)\\.js$": "$1",
   },
   transform: {
-    "^.+\\.tsx?$": [
+    "^.+\\.(ts|tsx|js|jsx|mjs)$": [
       "ts-jest",
       {
         useESM: true,
+        tsconfig: {
+          module: "ES2022",
+          target: "ES2022",
+        },
       },
     ],
   },
+  transformIgnorePatterns: [],
   testMatch: ["**/__tests__/**/*.test.ts"],
   collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts"],
   coverageDirectory: "coverage",
