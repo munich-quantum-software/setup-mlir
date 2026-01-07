@@ -30,8 +30,12 @@ On Windows, you can optionally install debug builds:
 ## Installation Scripts
 
 If you want to use the pre-built MLIR installations locally, we also provide installation scripts.
-The scripts require the LLVM version (e.g., `21.1.8`) and the desired installation directory to be passed.
+The scripts require the LLVM version or commit hash (e.g., `21.1.8` or `f8cb798`) and the desired installation directory to be passed.
 The scripts automatically download and use a platform-specific `zstd` binary for decompression, so only `tar` needs to be installed on the host system.
+
+> [!NOTE]
+>
+> `tar` is included by default in Windows 10 and Windows 11. If you're using an older version, you can install it, for example, via [Chocolatey](https://chocolatey.org/): `choco install tar`.
 
 On Linux and macOS, use the following Bash command:
 

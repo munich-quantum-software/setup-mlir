@@ -124,29 +124,42 @@ describe("Utils", () => {
           "Invalid platform: freebsd",
         );
       });
+
+      it("should throw error for invalid architecture", () => {
+        expect(() => getArchString("linux", "invalid")).toThrow(
+          "Invalid architecture: invalid. Expected X86 or AArch64.",
+        );
+      });
+
+      it("should throw error for unsupported architecture", () => {
+        expect(() => getArchString("linux", "x86_64")).toThrow(
+          "Invalid architecture: x86_64. Expected X86 or AArch64.",
+        );
+      });
     });
   });
 
   describe("getZstdExecutableName", () => {
-    it("should return zstd.exe for Windows", () => {
-      const originalPlatform = process.platform;
-      Object.defineProperty(process, "platform", {
-        value: "win32",
-        configurable: true,
-      });
+    const originalPlatform = process.platform;
 
-      expect(getZstdExecutableName()).toBe("zstd.exe");
-
-      // Restore
+    afterAll(() => {
+      // Restore platform after all tests
       Object.defineProperty(process, "platform", {
         value: originalPlatform,
         configurable: true,
       });
     });
 
-    it("should return zstd for non-Windows platforms", () => {
-      const originalPlatform = process.platform;
+    it("should return zstd.exe for Windows", () => {
+      Object.defineProperty(process, "platform", {
+        value: "win32",
+        configurable: true,
+      });
 
+      expect(getZstdExecutableName()).toBe("zstd.exe");
+    });
+
+    it("should return zstd for non-Windows platforms", () => {
       for (const platform of ["linux", "darwin", "freebsd"]) {
         Object.defineProperty(process, "platform", {
           value: platform,
@@ -155,12 +168,6 @@ describe("Utils", () => {
 
         expect(getZstdExecutableName()).toBe("zstd");
       }
-
-      // Restore
-      Object.defineProperty(process, "platform", {
-        value: originalPlatform,
-        configurable: true,
-      });
     });
   });
 });

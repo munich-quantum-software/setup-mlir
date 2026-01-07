@@ -32,12 +32,6 @@ if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# Check for unzip on Windows (needed for extracting zstd binary)
-if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
-    Write-Error "tar is required but not found. Please install tar."
-    exit 1
-}
-
 # Create installation directory if it does not exist
 New-Item -ItemType Directory -Path $install_prefix -Force | Out-Null
 

@@ -34725,14 +34725,22 @@ var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_nod
  * Find an executable file recursively in a directory
  * @param dir - Directory to search in
  * @param executableName - Name of the executable to find
+ * @param visited - Set of visited directories to prevent symlink cycles
  * @returns Path to the executable or undefined if not found
  */
-function findExecutable(dir, executableName) {
+function findExecutable(dir, executableName, visited = new Set()) {
+    // Get real path to detect symlink cycles
+    const realDir = external_node_fs_namespaceObject.realpathSync(dir);
+    // Check if we've already visited this directory
+    if (visited.has(realDir)) {
+        return undefined;
+    }
+    visited.add(realDir);
     const entries = external_node_fs_namespaceObject.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
         const fullPath = external_node_path_namespaceObject.join(dir, entry.name);
         if (entry.isDirectory()) {
-            const found = findExecutable(fullPath, executableName);
+            const found = findExecutable(fullPath, executableName, visited);
             if (found)
                 return found;
         }
@@ -34749,6 +34757,10 @@ function findExecutable(dir, executableName) {
  * @returns Platform-specific architecture string
  */
 function getArchString(platform, architecture) {
+    // Validate architecture
+    if (architecture !== "X86" && architecture !== "AArch64") {
+        throw new Error(`Invalid architecture: ${architecture}. Expected X86 or AArch64.`);
+    }
     if (platform === "linux") {
         return architecture === "X86" ? "x86_64" : "aarch64";
     }
@@ -34851,6 +34863,7 @@ async function getZstdLink(token, llvm_version, platform = "host", architecture 
     }
     catch (error) {
         // If the release doesn't exist or has no zstd, fall through to latest release
+        console.log(`zstd not found in portable-mlir-toolchain release for LLVM ${llvm_version}, trying latest release...`);
     }
     // Fall back to getting zstd from the latest release
     const octokit = createOctokit(token);
@@ -35011,10 +35024,9 @@ async function run() {
     const token = core.getInput("token", { required: true });
     const debug = core.getBooleanInput("debug", { required: false });
     // Validate debug flag is only used on Windows
-    if (debug && platform !== "windows" && platform !== "host") {
-        throw new Error("Debug builds are only available on Windows.");
-    }
-    if (debug && platform === "host" && (external_node_process_default()).platform !== "win32") {
+    const isWindows = platform === "windows" ||
+        (platform === "host" && (external_node_process_default()).platform === "win32");
+    if (debug && !isWindows) {
         throw new Error("Debug builds are only available on Windows.");
     }
     // Validate LLVM version (either X.Y.Z format or commit hash)

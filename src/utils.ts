@@ -23,17 +23,28 @@ import process from "node:process";
  * Find an executable file recursively in a directory
  * @param dir - Directory to search in
  * @param executableName - Name of the executable to find
+ * @param visited - Set of visited directories to prevent symlink cycles
  * @returns Path to the executable or undefined if not found
  */
 export function findExecutable(
   dir: string,
   executableName: string,
+  visited: Set<string> = new Set(),
 ): string | undefined {
+  // Get real path to detect symlink cycles
+  const realDir = fs.realpathSync(dir);
+
+  // Check if we've already visited this directory
+  if (visited.has(realDir)) {
+    return undefined;
+  }
+  visited.add(realDir);
+
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      const found = findExecutable(fullPath, executableName);
+      const found = findExecutable(fullPath, executableName, visited);
       if (found) return found;
     } else if (entry.isFile() && entry.name === executableName) {
       return fullPath;
@@ -49,6 +60,13 @@ export function findExecutable(
  * @returns Platform-specific architecture string
  */
 export function getArchString(platform: string, architecture: string): string {
+  // Validate architecture
+  if (architecture !== "X86" && architecture !== "AArch64") {
+    throw new Error(
+      `Invalid architecture: ${architecture}. Expected X86 or AArch64.`,
+    );
+  }
+
   if (platform === "linux") {
     return architecture === "X86" ? "x86_64" : "aarch64";
   }

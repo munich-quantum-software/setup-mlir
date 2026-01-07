@@ -106,6 +106,9 @@ export async function getZstdLink(
     }
   } catch (error) {
     // If the release doesn't exist or has no zstd, fall through to latest release
+    console.log(
+      `zstd not found in portable-mlir-toolchain release for LLVM ${llvm_version}, trying latest release...`,
+    );
   }
 
   // Fall back to getting zstd from the latest release

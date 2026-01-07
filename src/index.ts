@@ -37,10 +37,10 @@ export async function run(): Promise<void> {
   const debug = core.getBooleanInput("debug", { required: false });
 
   // Validate debug flag is only used on Windows
-  if (debug && platform !== "windows" && platform !== "host") {
-    throw new Error("Debug builds are only available on Windows.");
-  }
-  if (debug && platform === "host" && process.platform !== "win32") {
+  const isWindows =
+    platform === "windows" ||
+    (platform === "host" && process.platform === "win32");
+  if (debug && !isWindows) {
     throw new Error("Debug builds are only available on Windows.");
   }
 
