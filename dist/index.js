@@ -34930,6 +34930,8 @@ var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_nod
 ;// CONCATENATED MODULE: external "node:fs"
 const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
 var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_namespaceObject);
+;// CONCATENATED MODULE: external "node:child_process"
+const external_node_child_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:child_process");
 ;// CONCATENATED MODULE: ./src/index.ts
 /*
  * Copyright (c) 2025 Munich Quantum Software Company GmbH
@@ -34947,6 +34949,7 @@ var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_
  *
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
+
 
 
 
@@ -35009,14 +35012,31 @@ async function run() {
     // Extract the archive to a specific directory
     const extractedDir = external_node_path_default().join(extractDir, "extracted");
     await io.mkdirP(extractedDir);
-    if ((external_node_process_default()).platform === "win32") {
-        const command = `& "${zstdPath}" -d "${file}" --long=30 --stdout | tar -x -f - -C "${extractedDir}"`;
-        await exec.exec("powershell", ["-Command", command]);
-    }
-    else {
-        const command = `"${zstdPath}" -d "${file}" --long=30 --stdout | tar -x -f - -C "${extractedDir}"`;
-        await exec.exec("sh", ["-c", command]);
-    }
+    // Pipe zstd decompression directly to tar extraction
+    // This avoids creating an intermediate tar file on disk
+    await new Promise((resolve, reject) => {
+        const zstd = (0,external_node_child_process_namespaceObject.spawn)(zstdPath, ["-d", file, "--long=30", "--stdout"]);
+        const tar = (0,external_node_child_process_namespaceObject.spawn)("tar", ["-x", "-C", "-f", "-", extractedDir]);
+        // Pipe zstd stdout to tar stdin
+        zstd.stdout.pipe(tar.stdin);
+        // Handle errors
+        zstd.on("error", (err) => reject(new Error(`zstd failed: ${err.message}`)));
+        tar.on("error", (err) => reject(new Error(`tar failed: ${err.message}`)));
+        // Handle process exit
+        tar.on("close", (code) => {
+            if (code !== 0) {
+                reject(new Error(`tar exited with code ${code}`));
+            }
+            else {
+                resolve();
+            }
+        });
+        zstd.on("close", (code) => {
+            if (code !== 0) {
+                reject(new Error(`zstd exited with code ${code}`));
+            }
+        });
+    });
     // Find the actual LLVM directory (might be nested)
     const entries = external_node_fs_default().readdirSync(extractedDir);
     const dir = entries.length === 1 &&

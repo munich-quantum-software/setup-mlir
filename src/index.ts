@@ -23,6 +23,7 @@ import getDownloadLink, { getZstdLink } from "./get-download-link.js";
 import path from "node:path";
 import process from "node:process";
 import fs from "node:fs";
+import { spawn } from "node:child_process";
 
 /**
  * Setup MLIR toolchain
@@ -104,13 +105,35 @@ export async function run(): Promise<void> {
   // Extract the archive to a specific directory
   const extractedDir = path.join(extractDir, "extracted");
   await io.mkdirP(extractedDir);
-  if (process.platform === "win32") {
-    const command = `& "${zstdPath}" -d "${file}" --long=30 --stdout | tar -x -f - -C "${extractedDir}"`;
-    await exec.exec("powershell", ["-Command", command]);
-  } else {
-    const command = `"${zstdPath}" -d "${file}" --long=30 --stdout | tar -x -f - -C "${extractedDir}"`;
-    await exec.exec("sh", ["-c", command]);
-  }
+
+  // Pipe zstd decompression directly to tar extraction
+  // This avoids creating an intermediate tar file on disk
+  await new Promise<void>((resolve, reject) => {
+    const zstd = spawn(zstdPath, ["-d", file, "--long=30", "--stdout"]);
+    const tar = spawn("tar", ["-x", "-C", "-f", "-", extractedDir]);
+
+    // Pipe zstd stdout to tar stdin
+    zstd.stdout.pipe(tar.stdin);
+
+    // Handle errors
+    zstd.on("error", (err) => reject(new Error(`zstd failed: ${err.message}`)));
+    tar.on("error", (err) => reject(new Error(`tar failed: ${err.message}`)));
+
+    // Handle process exit
+    tar.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`tar exited with code ${code}`));
+      } else {
+        resolve();
+      }
+    });
+
+    zstd.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`zstd exited with code ${code}`));
+      }
+    });
+  });
 
   // Find the actual LLVM directory (might be nested)
   const entries = fs.readdirSync(extractedDir);
