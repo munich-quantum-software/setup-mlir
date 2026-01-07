@@ -35016,42 +35016,47 @@ async function run() {
     // Extract the archive to a specific directory
     const extractedDir = external_node_path_default().join(extractDir, "extracted");
     await io.mkdirP(extractedDir);
-    // Pipe zstd decompression directly to tar extraction
-    // This avoids creating an intermediate tar file on disk
-    await new Promise((resolve, reject) => {
-        const zstd = (0,external_node_child_process_namespaceObject.spawn)(zstdPath, ["-d", file, "--long=30", "--stdout"]);
-        const tar = (0,external_node_child_process_namespaceObject.spawn)("tar", ["-x", "-f", "-", "-C", extractedDir]);
-        // Pipe zstd stdout to tar stdin
-        zstd.stdout.pipe(tar.stdin);
-        // Handle errors
-        zstd.on("error", (err) => reject(new Error(`zstd failed: ${err.message}`)));
-        tar.on("error", (err) => reject(new Error(`tar failed: ${err.message}`)));
-        // Handle process exit
-        tar.on("close", (code) => {
-            if (code !== 0) {
-                reject(new Error(`tar exited with code ${code}`));
-            }
-            else {
-                resolve();
-            }
+    let cachedPath;
+    try {
+        // Pipe zstd decompression directly to tar extraction
+        // This avoids creating an intermediate tar file on disk
+        await new Promise((resolve, reject) => {
+            const zstd = (0,external_node_child_process_namespaceObject.spawn)(zstdPath, ["-d", file, "--long=30", "--stdout"]);
+            const tar = (0,external_node_child_process_namespaceObject.spawn)("tar", ["-x", "-f", "-", "-C", extractedDir]);
+            // Pipe zstd stdout to tar stdin
+            zstd.stdout.pipe(tar.stdin);
+            // Handle errors
+            zstd.on("error", (err) => reject(new Error(`zstd failed: ${err.message}`)));
+            tar.on("error", (err) => reject(new Error(`tar failed: ${err.message}`)));
+            // Handle process exit
+            tar.on("close", (code) => {
+                if (code !== 0) {
+                    reject(new Error(`tar exited with code ${code}`));
+                }
+                else {
+                    resolve();
+                }
+            });
+            zstd.on("close", (code) => {
+                if (code !== 0) {
+                    reject(new Error(`zstd exited with code ${code}`));
+                }
+            });
         });
-        zstd.on("close", (code) => {
-            if (code !== 0) {
-                reject(new Error(`zstd exited with code ${code}`));
-            }
-        });
-    });
-    // Find the actual LLVM directory (might be nested)
-    const entries = external_node_fs_default().readdirSync(extractedDir);
-    const dir = entries.length === 1 &&
-        external_node_fs_default().statSync(external_node_path_default().join(extractedDir, entries[0])).isDirectory()
-        ? external_node_path_default().join(extractedDir, entries[0])
-        : extractedDir;
-    core.debug("==> Adding MLIR toolchain to tool cache");
-    const cachedPath = await tool_cache.cacheDir(dir, "mlir-toolchain", llvm_version);
-    // Cleanup (after caching)
-    await io.rmRF(extractDir);
-    await io.rmRF(zstdDir);
+        // Find the actual LLVM directory (might be nested)
+        const entries = external_node_fs_default().readdirSync(extractedDir);
+        const dir = entries.length === 1 &&
+            external_node_fs_default().statSync(external_node_path_default().join(extractedDir, entries[0])).isDirectory()
+            ? external_node_path_default().join(extractedDir, entries[0])
+            : extractedDir;
+        core.debug("==> Adding MLIR toolchain to tool cache");
+        cachedPath = await tool_cache.cacheDir(dir, "mlir-toolchain", llvm_version);
+    }
+    finally {
+        // Cleanup temp directories (always runs, even on error)
+        await io.rmRF(extractDir);
+        await io.rmRF(zstdDir);
+    }
     core.debug("==> Adding MLIR toolchain to PATH");
     core.addPath(external_node_path_default().join(cachedPath, "bin"));
     core.debug("==> Exporting LLVM_DIR");
