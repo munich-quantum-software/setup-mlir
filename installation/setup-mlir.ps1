@@ -161,7 +161,7 @@ if (-not (Download-Asset -Pattern $llvmPattern -OutputFile "llvm.tar.zst" -Asset
 
 # Decompress and extract LLVM distribution
 Write-Host "Extracting LLVM distribution..."
-& $zstdBinPath -d "llvm.tar.zst" --long=30 --stdout | tar -x -C "$install_prefix"
+& $zstdBinPath -d "llvm.tar.zst" --long=30 --stdout | tar -x -f - -C "$install_prefix"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to extract LLVM distribution."
     exit 1

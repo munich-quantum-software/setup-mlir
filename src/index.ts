@@ -105,10 +105,10 @@ export async function run(): Promise<void> {
   const extractedDir = path.join(extractDir, "extracted");
   await io.mkdirP(extractedDir);
   if (process.platform === "win32") {
-    const command = `& "${zstdPath}" -d "${file}" --long=30 --stdout | tar -x -C "${extractedDir}"`;
+    const command = `& "${zstdPath}" -d "${file}" --long=30 --stdout | tar -x -f - -C "${extractedDir}"`;
     await exec.exec("powershell", ["-Command", command]);
   } else {
-    const command = `"${zstdPath}" -d "${file}" --long=30 --stdout | tar -x -C "${extractedDir}"`;
+    const command = `"${zstdPath}" -d "${file}" --long=30 --stdout | tar -x -f - -C "${extractedDir}"`;
     await exec.exec("sh", ["-c", command]);
   }
 
