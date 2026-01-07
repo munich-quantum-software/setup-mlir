@@ -16,6 +16,7 @@
  */
 
 import process from "node:process";
+import * as core from "@actions/core";
 import { Octokit, OctokitOptions } from "@octokit/core";
 import type { components } from "@octokit/openapi-types";
 import { getArchString } from "./utils.js";
@@ -106,8 +107,9 @@ export async function getZstdLink(
     }
   } catch (error) {
     // If the release doesn't exist or has no zstd, fall through to latest release
-    console.log(
-      `zstd not found in portable-mlir-toolchain release for LLVM ${llvm_version}, trying latest release...`,
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    core.info(
+      `zstd not found in LLVM ${llvm_version} release for ${platform}/${architecture} (${errorMessage}), falling back to latest release...`,
     );
   }
 
@@ -234,7 +236,7 @@ function findAsset(
   const debugSuffix = debug && platform === "windows" ? "_debug" : "";
 
   const pattern = new RegExp(
-    `^llvm-mlir_.*_${platformLower}_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`,
+    `^llvm-mlir_[0-9A-Za-z._-]+_${platformLower}_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`,
     "i",
   );
 
@@ -258,7 +260,7 @@ function findZstdAsset(
   const extension = platform === "windows" ? "zip" : "tar.gz";
 
   const pattern = new RegExp(
-    `^zstd-.*_${platformLower}_${archStr}_${architecture}\\.${extension}$`,
+    `^zstd-[A-Za-z0-9._-]+_${platformLower}_${archStr}_${architecture}\\.${extension}$`,
     "i",
   );
 
