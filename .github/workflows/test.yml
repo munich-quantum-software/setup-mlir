@@ -158,3 +158,17 @@ jobs:
           flags: integration-${{ matrix.os }}
           name: integration-${{ matrix.os }}
           use_oidc: true
+
+  # This job does nothing and is only used for branch protection
+  required-checks-pass:
+    name: 🚦 Check
+    if: always()
+    needs:
+      - test-installer-scripts
+      - integration-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}
