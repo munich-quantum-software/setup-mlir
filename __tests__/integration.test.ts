@@ -27,6 +27,7 @@ import * as core from "@actions/core";
 import * as io from "@actions/io";
 import * as path from "node:path";
 import * as fs from "node:fs";
+import * as os from "node:os";
 import process from "node:process";
 
 // Mock @actions/core
@@ -45,10 +46,10 @@ describe("MLIR Setup Integration Tests", () => {
 
     // Setup environment for tests
     if (!process.env.RUNNER_TEMP) {
-      process.env.RUNNER_TEMP = "/tmp";
+      process.env.RUNNER_TEMP = os.tmpdir();
     }
     if (!process.env.RUNNER_TOOL_CACHE) {
-      process.env.RUNNER_TOOL_CACHE = "/tmp/tool-cache";
+      process.env.RUNNER_TOOL_CACHE = path.join(os.tmpdir(), "tool-cache");
     }
 
     // Setup default mock implementations

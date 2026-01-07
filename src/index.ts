@@ -111,6 +111,11 @@ export async function run(): Promise<void> {
   try {
     // Pipe zstd decompression directly to tar extraction
     // This avoids creating an intermediate tar file on disk
+    //
+    // Note on process ordering: tar's successful close is treated as the
+    // definitive success signal. If tar closes stdin early (satisfied with
+    // input), zstd may receive SIGPIPE and exit non-zero, which is acceptable.
+    // In practice, both processes typically complete successfully.
     await new Promise<void>((resolve, reject) => {
       const zstd = spawn(zstdPath, ["-d", file, "--long=30", "--stdout"]);
       const tar = spawn("tar", ["-x", "-f", "-", "-C", extractedDir]);
