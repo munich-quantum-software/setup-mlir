@@ -72,15 +72,6 @@
     "version": "113f01aa82d055410f22a9d03b3468fa68600589"
   },
   {
-    "arch": "aarch64",
-    "assetName": "llvm-mlir_llvmorg-21.1.8_linux_aarch64_AArch64.tar.zst",
-    "downloadUrl": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/llvm-mlir_llvmorg-21.1.8_linux_aarch64_AArch64.tar.zst",
-    "isDebug": false,
-    "platform": "linux",
-    "tag": "2026.01.08",
-    "version": "21.1.8"
-  },
-  {
     "arch": "x86_64",
     "assetName": "llvm-mlir_llvmorg-21.1.8_linux_x86_64_X86.tar.zst",
     "downloadUrl": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/llvm-mlir_llvmorg-21.1.8_linux_x86_64_X86.tar.zst",
