@@ -32645,12 +32645,22 @@ async function run() {
         owner: REPO_OWNER,
         repo: REPO_NAME,
     });
-    const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-        per_page: 100,
-    });
-    const downloadUrls = releases.data.flatMap((release) => release.assets
+    const releases = [];
+    let page = 1;
+    while (true) {
+        const releasesPage = await octokit.request("GET /repos/{owner}/{repo}/releases", {
+            owner: REPO_OWNER,
+            repo: REPO_NAME,
+            per_page: 100,
+            page: page,
+        });
+        if (releasesPage.data.length === 0) {
+            break;
+        }
+        releases.push(...releasesPage.data);
+        page++;
+    }
+    const downloadUrls = releases.flatMap((release) => release.assets
         .filter((asset) => asset.name.startsWith("llvm-mlir"))
         .map((asset) => asset.browser_download_url));
     await updateManifest(downloadUrls);

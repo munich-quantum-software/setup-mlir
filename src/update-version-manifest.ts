@@ -19,8 +19,10 @@ import * as core from "@actions/core";
 import { promises as fs } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-
 import { Octokit, OctokitOptions } from "@octokit/core";
+import type { components } from "@octokit/openapi-types";
+
+type Release = components["schemas"]["release"];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -107,13 +109,26 @@ async function run(): Promise<void> {
     },
   );
 
-  const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
-    owner: REPO_OWNER,
-    repo: REPO_NAME,
-    per_page: 100,
-  });
+  const releases: Release[] = [];
+  let page = 1;
+  while (true) {
+    const releasesPage = await octokit.request(
+      "GET /repos/{owner}/{repo}/releases",
+      {
+        owner: REPO_OWNER,
+        repo: REPO_NAME,
+        per_page: 100,
+        page: page,
+      },
+    );
+    if (releasesPage.data.length === 0) {
+      break;
+    }
+    releases.push(...releasesPage.data);
+    page++;
+  }
 
-  const downloadUrls: string[] = releases.data.flatMap((release) =>
+  const downloadUrls: string[] = releases.flatMap((release) =>
     release.assets
       .filter((asset) => asset.name.startsWith("llvm-mlir"))
       .map((asset) => asset.browser_download_url),
