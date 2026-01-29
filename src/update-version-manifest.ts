@@ -96,7 +96,7 @@ async function updateManifest(downloadUrls: string[]): Promise<void> {
 }
 
 async function run(): Promise<void> {
-  const token = process.argv.slice(2)[0];
+  const token = process.env.GITHUB_TOKEN || "";
   const octokit = createOctokit(token);
 
   const latestRelease = await octokit.request(
