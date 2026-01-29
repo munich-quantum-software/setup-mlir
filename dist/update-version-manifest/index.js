@@ -32658,6 +32658,9 @@ async function run() {
             break;
         }
         releases.push(...releasesPage.data);
+        if (releasesPage.data.length < 100) {
+            break;
+        }
         page++;
     }
     const downloadUrls = releases.flatMap((release) => release.assets
@@ -32666,7 +32669,9 @@ async function run() {
     await updateManifest(downloadUrls);
     core.setOutput("latest-tag", latestRelease.data.tag_name);
 }
-run();
+run().catch((error) => {
+    core.setFailed(error instanceof Error ? error.message : String(error));
+});
 
 
 //# sourceMappingURL=index.js.map

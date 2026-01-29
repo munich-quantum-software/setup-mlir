@@ -40411,6 +40411,9 @@ async function getAssets(token, llvm_version) {
             break;
         }
         releases.push(...releasesPage.data);
+        if (releasesPage.data.length < 100) {
+            break;
+        }
         page++;
     }
     // Check if llvm_version is a version tag or commit hash
