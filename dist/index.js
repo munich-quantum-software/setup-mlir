@@ -35346,14 +35346,24 @@ function determineArchitecture() {
  */
 async function getAssets(token, llvm_version) {
     const octokit = createOctokit(token);
-    const releases = await octokit.request("GET /repos/{owner}/{repo}/releases", {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-        per_page: 100,
-    });
+    const releases = [];
+    let page = 1;
+    while (true) {
+        const releasesPage = await octokit.request("GET /repos/{owner}/{repo}/releases", {
+            owner: REPO_OWNER,
+            repo: REPO_NAME,
+            per_page: 100,
+            page: page,
+        });
+        if (releasesPage.data.length === 0) {
+            break;
+        }
+        releases.push(...releasesPage.data);
+        page++;
+    }
     // Check if llvm_version is a version tag or commit hash
     const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
-    const matching_releases = releases.data.filter((release) => {
+    const matchingReleases = releases.filter((release) => {
         if (!release.assets)
             return false;
         return release.assets.some((asset) => {
@@ -35375,13 +35385,13 @@ async function getAssets(token, llvm_version) {
             }
         });
     });
-    if (matching_releases.length > 0) {
-        matching_releases.sort((a, b) => {
+    if (matchingReleases.length > 0) {
+        matchingReleases.sort((a, b) => {
             const time_a = a.published_at ? new Date(a.published_at).getTime() : 0;
             const time_b = b.published_at ? new Date(b.published_at).getTime() : 0;
             return time_b - time_a;
         });
-        return matching_releases[0].assets;
+        return matchingReleases[0].assets;
     }
     throw new Error(`No release with LLVM ${llvm_version} found.`);
 }
