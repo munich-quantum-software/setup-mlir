@@ -219,6 +219,9 @@ async function getAssets(
       break;
     }
     releases.push(...releasesPage.data);
+    if (releasesPage.data.length < 100) {
+      break;
+    }
     page++;
   }
 

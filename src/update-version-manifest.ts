@@ -125,6 +125,9 @@ async function run(): Promise<void> {
       break;
     }
     releases.push(...releasesPage.data);
+    if (releasesPage.data.length < 100) {
+      break;
+    }
     page++;
   }
 
@@ -139,4 +142,6 @@ async function run(): Promise<void> {
   core.setOutput("latest-tag", latestRelease.data.tag_name);
 }
 
-run();
+run().catch((error) => {
+  core.setFailed(error instanceof Error ? error.message : String(error));
+});
