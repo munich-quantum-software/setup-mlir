@@ -30,7 +30,9 @@ jobs:
           save-cache: ${{ github.ref == 'refs/heads/main' }}
       - name: Update version manifest
         id: update-version-manifest
-        run: node dist/update-version-manifest/index.js ${{ secrets.GITHUB_TOKEN }}
+        run: node dist/update-version-manifest/index.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Format version-manifest.json
         run: uvx prek --files version-manifest.json
       - name: Create pull request

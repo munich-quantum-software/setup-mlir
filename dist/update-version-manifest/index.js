@@ -32639,7 +32639,7 @@ async function updateManifest(downloadUrls) {
     await external_node_fs_namespaceObject.promises.writeFile(MANIFEST_FILE, JSON.stringify(manifest));
 }
 async function run() {
-    const token = process.argv.slice(2)[0];
+    const token = process.env.GITHUB_TOKEN || "";
     const octokit = createOctokit(token);
     const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
         owner: REPO_OWNER,
