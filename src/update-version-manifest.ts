@@ -51,9 +51,7 @@ interface ManifestEntry {
   version: string;
 }
 
-async function getPlatform(
-  assetName: string,
-): Promise<[string, string, boolean]> {
+function getPlatform(assetName: string): [string, string, boolean] {
   const platformMatch = assetName.match(
     /llvm-mlir_(.+?)_(.+?)_(.+)_(X86|AArch64)(_debug)?\./i,
   );
@@ -63,7 +61,7 @@ async function getPlatform(
   throw new Error(`Could not extract platform from asset name: ${assetName}`);
 }
 
-async function getVersion(assetName: string): Promise<string> {
+function getVersion(assetName: string): string {
   const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
   if (versionMatch) {
     return versionMatch[1];
@@ -81,8 +79,8 @@ async function updateManifest(downloadUrls: string[]): Promise<void> {
     const urlParts = downloadUrl.split("/");
     const tag = urlParts[urlParts.length - 2];
     const assetName = urlParts[urlParts.length - 1];
-    const [platform, arch, isDebug] = await getPlatform(assetName);
-    const version = await getVersion(assetName);
+    const [platform, arch, isDebug] = getPlatform(assetName);
+    const version = getVersion(assetName);
     manifest.push({
       arch: arch,
       assetName: assetName,

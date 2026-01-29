@@ -32599,14 +32599,14 @@ function createOctokit(token) {
     const options = token ? { auth: token } : {};
     return new Octokit(options);
 }
-async function getPlatform(assetName) {
+function getPlatform(assetName) {
     const platformMatch = assetName.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(X86|AArch64)(_debug)?\./i);
     if (platformMatch) {
         return [platformMatch[2], platformMatch[3], Boolean(platformMatch[5])];
     }
     throw new Error(`Could not extract platform from asset name: ${assetName}`);
 }
-async function getVersion(assetName) {
+function getVersion(assetName) {
     const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
     if (versionMatch) {
         return versionMatch[1];
@@ -32623,8 +32623,8 @@ async function updateManifest(downloadUrls) {
         const urlParts = downloadUrl.split("/");
         const tag = urlParts[urlParts.length - 2];
         const assetName = urlParts[urlParts.length - 1];
-        const [platform, arch, isDebug] = await getPlatform(assetName);
-        const version = await getVersion(assetName);
+        const [platform, arch, isDebug] = getPlatform(assetName);
+        const version = getVersion(assetName);
         manifest.push({
             arch: arch,
             assetName: assetName,
