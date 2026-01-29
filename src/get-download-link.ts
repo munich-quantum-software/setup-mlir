@@ -231,6 +231,7 @@ async function getAssets(
       }
     });
   });
+
   if (matching_releases.length > 0) {
     matching_releases.sort((a: Release, b: Release) => {
       const time_a = a.published_at ? new Date(a.published_at).getTime() : 0;
@@ -239,6 +240,7 @@ async function getAssets(
     });
     return matching_releases[0].assets;
   }
+
   throw new Error(`No release with LLVM ${llvm_version} found.`);
 }
 

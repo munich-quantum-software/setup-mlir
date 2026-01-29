@@ -1,0 +1,45 @@
+name: Update version manifest
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: 20
+      - name: Install latest version of uv
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
+        with:
+          enable-cache: true
+          save-cache: ${{ github.ref == 'refs/heads/main' }}
+      - name: Update version manifest
+        id: update-version-manifest
+        run: node dist/update-version-manifest/index.js ${{ secrets.GITHUB_TOKEN }}
+      - name: Format version-manifest.json
+        run: uvx prek --files version-manifest.json
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725 # v8.0.0
+        with:
+          commit-message: 👷 Update version manifest
+          title: 👷 Update version manifest for ${{ steps.update-version-manifest.outputs.latest-version }}
+          body: This PR updates the version manifest to include `${{ steps.update-version-manifest.outputs.latest-version }}`.
+          base: main
+          labels: "enhancement"
+          branch: update-version-manifest
+          delete-branch: true
