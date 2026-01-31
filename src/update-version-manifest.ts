@@ -91,7 +91,17 @@ async function updateManifest(downloadUrls: string[]): Promise<void> {
       version: version,
     });
   }
-  core.debug(`Updating manifest file: ${JSON.stringify(manifest)}`);
+
+  manifest.sort((a, b) => {
+    if (a.tag !== b.tag) {
+      return b.tag.localeCompare(a.tag);
+    }
+    if (a.platform !== b.platform) {
+      return a.platform.localeCompare(b.platform);
+    }
+    return a.arch.localeCompare(b.arch);
+  });
+
   await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest));
 }
 
