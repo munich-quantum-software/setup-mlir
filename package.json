@@ -5,8 +5,8 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt",
-    "test": "cross-env NODE_ENV=test jest",
-    "test:coverage": "cross-env NODE_ENV=test jest --coverage"
+    "test": "cross-env NODE_ENV=test NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
+    "test:coverage": "cross-env NODE_ENV=test NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest --coverage"
   },
   "repository": {
     "type": "git",
