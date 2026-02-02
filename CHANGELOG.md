@@ -11,7 +11,7 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ### Added
 
-- ✨ Add version manifest ([#79]) ([**@denialhaag**])
+- ✨ Add version manifest ([#79]) ([**@denialhaag**], [**@burgholzer**])
 
 ## [1.1.0] - 2026-01-07
 

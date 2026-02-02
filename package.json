@@ -4,7 +4,7 @@
   "description": "GitHub Action that sets up a specific version of the MLIR toolchain",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt && npx ncc build src/update-version-manifest.ts -o dist/update-version-manifest --source-map --license licenses.txt",
+    "build": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt && npx ncc build src/update-known-versions.ts -o dist/update-known-versions --source-map --license licenses.txt",
     "test": "cross-env NODE_ENV=test NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
     "test:coverage": "cross-env NODE_ENV=test NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest --coverage"
   },

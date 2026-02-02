@@ -32035,7 +32035,7 @@ class Octokit {
 }
 
 
-;// CONCATENATED MODULE: ./src/update-version-manifest.ts
+;// CONCATENATED MODULE: ./src/update-known-versions.ts
 /*
  * Copyright (c) 2025 Munich Quantum Software Company GmbH
  * Copyright (c) 2025 Chair for Design Automation, TUM
@@ -32057,11 +32057,11 @@ class Octokit {
 
 
 
-const update_version_manifest_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
-const update_version_manifest_dirname = (0,external_node_path_namespaceObject.dirname)(update_version_manifest_filename);
+const update_known_versions_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
+const update_known_versions_dirname = (0,external_node_path_namespaceObject.dirname)(update_known_versions_filename);
 const REPO_OWNER = "munich-quantum-software";
 const REPO_NAME = "portable-mlir-toolchain";
-const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(update_version_manifest_dirname, "..", "..", "version-manifest.json");
+const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(update_known_versions_dirname, "..", "..", "version-manifest.json");
 /**
  * Create an Octokit instance with optional authentication
  * @param token - GitHub token (optional)
