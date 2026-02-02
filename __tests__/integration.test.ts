@@ -23,23 +23,45 @@ import {
   afterEach,
   jest,
 } from "@jest/globals";
-import * as core from "@actions/core";
 import * as io from "@actions/io";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import process from "node:process";
 
-// Mock @actions/core
-jest.mock("@actions/core");
+// Create mock functions
+const mockGetInput =
+  jest.fn<(name: string, options?: { required?: boolean }) => string>();
+const mockGetBooleanInput =
+  jest.fn<(name: string, options?: { required?: boolean }) => boolean>();
+const mockDebug = jest.fn<(message: string) => void>();
+const mockAddPath = jest.fn<(pathToAdd: string) => void>();
+const mockExportVariable = jest.fn<(name: string, value: string) => void>();
+const mockSetFailed = jest.fn<(message: string) => void>();
 
-const mockCore = core as jest.Mocked<typeof core>;
+const mockCore = {
+  getInput: mockGetInput,
+  getBooleanInput: mockGetBooleanInput,
+  debug: mockDebug,
+  addPath: mockAddPath,
+  exportVariable: mockExportVariable,
+  setFailed: mockSetFailed,
+};
+
+// Mock @actions/core before importing it
+jest.unstable_mockModule("@actions/core", () => mockCore);
 
 describe("MLIR Setup Integration Tests", () => {
   const testVersion = "21.1.8";
   const testVersionCommit = "f8cb798";
   const testToken = process.env.GITHUB_TOKEN || "";
   let cachedPath: string | undefined;
+  let run: () => Promise<void>;
+
+  beforeAll(async () => {
+    const module = await import("../src/index.js");
+    run = module.run;
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -242,8 +264,6 @@ describe("MLIR Setup Integration Tests", () => {
         return;
       }
 
-      const { run } = await import("../src/index.js");
-
       // Run the actual setup function
       await run();
 
@@ -313,8 +333,6 @@ describe("MLIR Setup Integration Tests", () => {
         return name === "debug";
       });
 
-      const { run } = await import("../src/index.js");
-
       await run();
 
       expect(mockCore.addPath).toHaveBeenCalled();
@@ -336,8 +354,6 @@ describe("MLIR Setup Integration Tests", () => {
         return name === "debug";
       });
 
-      const { run } = await import("../src/index.js");
-
       await expect(run()).rejects.toThrow(
         "Debug builds are only available on Windows",
       );
@@ -351,8 +367,6 @@ describe("MLIR Setup Integration Tests", () => {
         if (name === "token") return testToken;
         return "";
       });
-
-      const { run } = await import("../src/index.js");
 
       await expect(run()).rejects.toThrow("Invalid LLVM version");
     });
