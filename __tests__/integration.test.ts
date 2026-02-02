@@ -35,6 +35,7 @@ const mockGetInput =
 const mockGetBooleanInput =
   jest.fn<(name: string, options?: { required?: boolean }) => boolean>();
 const mockDebug = jest.fn<(message: string) => void>();
+const mockIsDebug = jest.fn<() => boolean>(() => false);
 const mockAddPath = jest.fn<(pathToAdd: string) => void>();
 const mockExportVariable = jest.fn<(name: string, value: string) => void>();
 const mockSetFailed = jest.fn<(message: string) => void>();
@@ -43,6 +44,7 @@ const mockCore = {
   getInput: mockGetInput,
   getBooleanInput: mockGetBooleanInput,
   debug: mockDebug,
+  isDebug: mockIsDebug,
   addPath: mockAddPath,
   exportVariable: mockExportVariable,
   setFailed: mockSetFailed,
