@@ -40,6 +40,6 @@ jobs:
           title: 👷 Update version manifest for ${{ steps.update-version-manifest.outputs.latest-tag }}
           body: This PR updates the version manifest to include `${{ steps.update-version-manifest.outputs.latest-tag }}`.
           base: main
-          labels: "enhancement"
+          labels: "documentation"
           branch: update-version-manifest
           delete-branch: true
