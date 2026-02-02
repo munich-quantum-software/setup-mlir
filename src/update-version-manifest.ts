@@ -41,6 +41,9 @@ function createOctokit(token: string): Octokit {
   return new Octokit(options);
 }
 
+/**
+ * Interface representing an entry in the version manifest
+ */
 interface ManifestEntry {
   arch: string;
   assetName: string;
@@ -51,6 +54,11 @@ interface ManifestEntry {
   version: string;
 }
 
+/**
+ * Extract platform, arch, and isDebug from the name of a release asset
+ * @param assetName - Name of the release asset
+ * @returns Tuple of platform, arch, and isDebug flag
+ */
 function getPlatform(assetName: string): [string, string, boolean] {
   const platformMatch = assetName.match(
     /llvm-mlir_(.+?)_(.+?)_(.+)_(X86|AArch64)(_debug)?\./i,
@@ -61,6 +69,11 @@ function getPlatform(assetName: string): [string, string, boolean] {
   throw new Error(`Could not extract platform from asset name: ${assetName}`);
 }
 
+/**
+ * Extract version from the name of a release asset
+ * @param assetName - Name of the release asset
+ * @returns Version string
+ */
 function getVersion(assetName: string): string {
   const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
   if (versionMatch) {
@@ -73,6 +86,10 @@ function getVersion(assetName: string): string {
   throw new Error(`Could not extract version from asset name: ${assetName}`);
 }
 
+/**
+ * Update the version manifest with release assets
+ * @param downloadUrls - Array of download URLs for the release assets
+ */
 async function updateManifest(downloadUrls: string[]): Promise<void> {
   const manifest: ManifestEntry[] = [];
   for (const downloadUrl of downloadUrls) {
@@ -105,6 +122,9 @@ async function updateManifest(downloadUrls: string[]): Promise<void> {
   await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest));
 }
 
+/**
+ * Main function to update the version manifest
+ */
 async function run(): Promise<void> {
   const token = process.env.GITHUB_TOKEN || "";
   const octokit = createOctokit(token);

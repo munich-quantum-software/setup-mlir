@@ -32599,6 +32599,11 @@ function createOctokit(token) {
     const options = token ? { auth: token } : {};
     return new Octokit(options);
 }
+/**
+ * Extract platform, arch, and isDebug from the name of a release asset
+ * @param assetName - Name of the release asset
+ * @returns Tuple of platform, arch, and isDebug flag
+ */
 function getPlatform(assetName) {
     const platformMatch = assetName.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(X86|AArch64)(_debug)?\./i);
     if (platformMatch) {
@@ -32606,6 +32611,11 @@ function getPlatform(assetName) {
     }
     throw new Error(`Could not extract platform from asset name: ${assetName}`);
 }
+/**
+ * Extract version from the name of a release asset
+ * @param assetName - Name of the release asset
+ * @returns Version string
+ */
 function getVersion(assetName) {
     const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
     if (versionMatch) {
@@ -32617,6 +32627,10 @@ function getVersion(assetName) {
     }
     throw new Error(`Could not extract version from asset name: ${assetName}`);
 }
+/**
+ * Update the version manifest with release assets
+ * @param downloadUrls - Array of download URLs for the release assets
+ */
 async function updateManifest(downloadUrls) {
     const manifest = [];
     for (const downloadUrl of downloadUrls) {
@@ -32646,6 +32660,9 @@ async function updateManifest(downloadUrls) {
     });
     await external_node_fs_namespaceObject.promises.writeFile(MANIFEST_FILE, JSON.stringify(manifest));
 }
+/**
+ * Main function to update the version manifest
+ */
 async function run() {
     const token = process.env.GITHUB_TOKEN || "";
     const octokit = createOctokit(token);
