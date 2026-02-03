@@ -75,7 +75,10 @@ describe("Update Known Versions", () => {
     await updateManifest();
 
     // Parse the generated manifest
-    const fileContent = await actualFsModule.readFile(tempManifestPath);
+    const fileContent = await actualFsModule.readFile(
+      tempManifestPath,
+      "utf-8",
+    );
     const manifest: ManifestEntry[] = JSON.parse(fileContent);
 
     // Verify manifest is an array with entries

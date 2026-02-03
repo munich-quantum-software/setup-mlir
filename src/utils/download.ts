@@ -47,7 +47,7 @@ async function getManifestEntry(
   architecture: string,
   debug: boolean,
 ): Promise<ManifestEntry> {
-  const fileContent = await fs.readFile(MANIFEST_FILE);
+  const fileContent = await fs.readFile(MANIFEST_FILE, "utf-8");
   const manifest: ManifestEntry[] = JSON.parse(fileContent.toString());
 
   const entry = manifest.find(

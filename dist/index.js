@@ -35751,7 +35751,7 @@ const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(download_dirna
  * @returns The manifest entry
  */
 async function getManifestEntry(version, platform, architecture, debug) {
-    const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE);
+    const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE, "utf-8");
     const manifest = JSON.parse(fileContent.toString());
     const entry = manifest.find((entry) => entry.version.startsWith(version) &&
         entry.platform === platform.toLowerCase() &&
@@ -35876,7 +35876,7 @@ async function run() {
     const isWindows = platform === "windows" ||
         (platform === "host" && (external_node_process_default()).platform === "win32");
     if (debug && !isWindows) {
-        throw new Error("Debug builds are only available on Windows.");
+        throw new Error(`Debug builds are only available on Windows.`);
     }
     // Validate LLVM version (either X.Y.Z format or commit hash)
     const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);

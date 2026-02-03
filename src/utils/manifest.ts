@@ -28,6 +28,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const MANIFEST_FILE = join(__dirname, "..", "..", "version-manifest.json");
+const README_FILE = join(__dirname, "..", "..", "README.md");
+
+const README_LIST_BEGIN = "<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->";
+const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 
 /**
  * Interface representing an entry in the version manifest
@@ -48,9 +52,7 @@ export interface ManifestEntry {
  * @param assetName - Name of the release asset
  * @returns Tuple of platform, architecture, and debug
  */
-function getMetadataFromAssetName(
-  assetName: string,
-): [string, string, boolean] {
+function getMetadata(assetName: string): [string, string, boolean] {
   const platformMatch = assetName.match(
     /llvm-mlir_(.+?)_(.+?)_(.+)_(X86|AArch64)(_debug)?\./i,
   );
@@ -75,6 +77,56 @@ function getVersionFromAssetName(assetName: string): string {
     return hashMatch[1];
   }
   throw new Error(`Could not extract version from asset name: ${assetName}`);
+}
+
+/**
+ * Update README.md file with a list of available versions
+ * @param versions The available versions
+ */
+async function updatedReadme(versions: Set<string>): Promise<void> {
+  const readme = await fs.readFile(README_FILE, "utf-8");
+  const beginIndex = readme.indexOf(README_LIST_BEGIN);
+  const endIndex = readme.indexOf(README_LIST_END);
+
+  if (beginIndex === -1 || endIndex === -1 || beginIndex >= endIndex) {
+    throw new Error(`Could not find valid list markers in README.md.`);
+  }
+
+  let tags: string[] = [];
+  let hashes: string[] = [];
+  for (const version of versions) {
+    if (/^\d+\.\d+\.\d+$/.test(version)) {
+      tags.push(version);
+    } else if (/^[0-9a-f]{7,40}$/i.test(version)) {
+      hashes.push(version);
+    }
+  }
+
+  let body = "";
+  if (tags.length > 0) {
+    body += `List of available LLVM versions:\n\n`;
+    tags.sort((a, b) => {
+      return b.localeCompare(a);
+    });
+    for (const tag of tags) {
+      body += `- \`${tag}\`\n`;
+    }
+    body += `\n`;
+  }
+  if (hashes.length > 0) {
+    body += `List of available LLVM commit hashes:\n\n`;
+    hashes.sort();
+    for (const hash of hashes) {
+      body += `- \`${hash}\`\n`;
+    }
+    body += `\n`;
+  }
+
+  const before = readme.slice(0, beginIndex + README_LIST_BEGIN.length);
+  const after = readme.slice(endIndex);
+
+  const updatedReadme = `${before}\n\n${body}${after}`;
+  await fs.writeFile(README_FILE, updatedReadme);
 }
 
 /**
@@ -107,14 +159,13 @@ export async function updateManifest(): Promise<void> {
   }
 
   const manifest: ManifestEntry[] = [];
+  const versions: Set<string> = new Set();
 
   for (const release of releases) {
     for (const asset of release.assets) {
       if (asset.name.startsWith("llvm-mlir")) {
         const downloadUrl = asset.browser_download_url;
-        const [platform, architecture, debug] = getMetadataFromAssetName(
-          asset.name,
-        );
+        const [platform, architecture, debug] = getMetadata(asset.name);
         const version = getVersionFromAssetName(asset.name);
         manifest.push({
           architecture: architecture.toLowerCase(),
@@ -126,6 +177,7 @@ export async function updateManifest(): Promise<void> {
           tag: release.tag_name,
           version: version,
         });
+        versions.add(version);
       }
     }
   }
@@ -141,4 +193,5 @@ export async function updateManifest(): Promise<void> {
   });
 
   await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest, null, 2) + "\n");
+  await updatedReadme(versions);
 }
