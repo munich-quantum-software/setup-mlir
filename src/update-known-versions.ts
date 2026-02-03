@@ -16,8 +16,6 @@
  */
 
 import * as core from "@actions/core";
-import { createOctokit } from "./utils/create-oktokit.js";
-import { REPO_OWNER, REPO_NAME } from "./utils/constants.js";
 import { updateManifest } from "./utils/manifest.js";
 
 /**
@@ -25,17 +23,6 @@ import { updateManifest } from "./utils/manifest.js";
  */
 async function run(): Promise<void> {
   await updateManifest();
-
-  const token = process.env.GITHUB_TOKEN || "";
-  const octokit = createOctokit(token);
-  const latestRelease = await octokit.request(
-    "GET /repos/{owner}/{repo}/releases/latest",
-    {
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
-    },
-  );
-  core.setOutput("latest-tag", latestRelease.data.tag_name);
 }
 
 run().catch((error) => {

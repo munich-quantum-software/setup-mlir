@@ -29,6 +29,8 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import process from "node:process";
 
+const itIf = (condition: boolean) => (condition ? it : it.skip);
+
 // Create mock functions
 const mockGetInput =
   jest.fn<(name: string, options?: { required?: boolean }) => string>();
@@ -164,40 +166,36 @@ describe("setup-mlir Integration Tests", () => {
       expect(expectedArch).not.toBeNull();
     });
 
-    it("should handle explicit platform specification", async () => {
-      if (!testToken) {
-        console.log("Skipping: No GITHUB_TOKEN available");
-        return;
-      }
+    itIf(!!testToken)(
+      "should handle explicit platform specification",
+      async () => {
+        const { getMlirUrl } = await import("../src/utils/download.js");
 
-      const { getMlirUrl } = await import("../src/utils/download.js");
+        // Test explicit linux platform
+        const linuxAsset = await getMlirUrl(testVersion, "linux", "X86", false);
+        expect(linuxAsset.name).toContain("linux");
+        expect(linuxAsset.name).toContain("x86_64");
+      },
+    );
 
-      // Test explicit linux platform
-      const linuxAsset = await getMlirUrl(testVersion, "linux", "X86", false);
-      expect(linuxAsset.name).toContain("linux");
-      expect(linuxAsset.name).toContain("x86_64");
-    });
+    itIf(!!testToken)(
+      "should handle explicit architecture specification",
+      async () => {
+        const { getMlirUrl } = await import("../src/utils/download.js");
 
-    it("should handle explicit architecture specification", async () => {
-      if (!testToken) {
-        console.log("Skipping: No GITHUB_TOKEN available");
-        return;
-      }
+        // Test with current platform but explicit architecture
+        const platform =
+          process.platform === "linux"
+            ? "linux"
+            : process.platform === "darwin"
+              ? "macOS"
+              : "windows";
 
-      const { getMlirUrl } = await import("../src/utils/download.js");
-
-      // Test with current platform but explicit architecture
-      const platform =
-        process.platform === "linux"
-          ? "linux"
-          : process.platform === "darwin"
-            ? "macOS"
-            : "windows";
-
-      const asset = await getMlirUrl(testVersion, platform, "X86", false);
-      expect(asset.url).toBeTruthy();
-      expect(asset.name).toContain("X86");
-    });
+        const asset = await getMlirUrl(testVersion, platform, "X86", false);
+        expect(asset.url).toBeTruthy();
+        expect(asset.name).toContain("X86");
+      },
+    );
   });
 
   describe("Asset Download", () => {
@@ -240,106 +238,88 @@ describe("setup-mlir Integration Tests", () => {
   });
 
   describe("Full Setup Integration", () => {
-    it("should complete full setup for current platform", async () => {
-      if (!testToken) {
-        console.log("Skipping: No GITHUB_TOKEN available");
-        return;
-      }
+    itIf(!!testToken)(
+      "should complete full setup for current platform",
+      async () => {
+        // Run the actual setup function
+        await run();
 
-      // Run the actual setup function
-      await run();
+        // Verify mocks were called correctly
+        expect(mockCore.addPath).toHaveBeenCalled();
 
-      // Verify mocks were called correctly
-      expect(mockCore.addPath).toHaveBeenCalled();
+        // Check LLVM_DIR was set correctly (normalize paths for cross-platform)
+        const llvmDirCall = mockCore.exportVariable.mock.calls.find(
+          (call) => call[0] === "LLVM_DIR",
+        );
+        expect(llvmDirCall).toBeDefined();
+        expect(llvmDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]llvm$/);
 
-      // Check LLVM_DIR was set correctly (normalize paths for cross-platform)
-      const llvmDirCall = mockCore.exportVariable.mock.calls.find(
-        (call) => call[0] === "LLVM_DIR",
-      );
-      expect(llvmDirCall).toBeDefined();
-      expect(llvmDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]llvm$/);
+        // Check MLIR_DIR was set correctly
+        const mlirDirCall = mockCore.exportVariable.mock.calls.find(
+          (call) => call[0] === "MLIR_DIR",
+        );
+        expect(mlirDirCall).toBeDefined();
+        expect(mlirDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]mlir$/);
+        expect(mockCore.setFailed).not.toHaveBeenCalled();
 
-      // Check MLIR_DIR was set correctly
-      const mlirDirCall = mockCore.exportVariable.mock.calls.find(
-        (call) => call[0] === "MLIR_DIR",
-      );
-      expect(mlirDirCall).toBeDefined();
-      expect(mlirDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]mlir$/);
-      expect(mockCore.setFailed).not.toHaveBeenCalled();
+        // Get the cached path from the addPath call
+        const addPathCall = mockCore.addPath.mock.calls[0];
+        if (addPathCall) {
+          const binPath = addPathCall[0] as string;
+          const cachedDir = path.dirname(binPath);
 
-      // Get the cached path from the addPath call
-      const addPathCall = mockCore.addPath.mock.calls[0];
-      if (addPathCall) {
-        const binPath = addPathCall[0] as string;
-        const cachedDir = path.dirname(binPath);
+          // Verify the structure
+          expect(fs.existsSync(binPath)).toBe(true);
+          expect(
+            fs.existsSync(path.join(cachedDir, "lib", "cmake", "llvm")),
+          ).toBe(true);
+          expect(
+            fs.existsSync(path.join(cachedDir, "lib", "cmake", "mlir")),
+          ).toBe(true);
 
-        // Verify the structure
-        expect(fs.existsSync(binPath)).toBe(true);
-        expect(
-          fs.existsSync(path.join(cachedDir, "lib", "cmake", "llvm")),
-        ).toBe(true);
-        expect(
-          fs.existsSync(path.join(cachedDir, "lib", "cmake", "mlir")),
-        ).toBe(true);
+          // Verify binaries exist
+          const mlirOptName =
+            process.platform === "win32" ? "mlir-opt.exe" : "mlir-opt";
+          const mlirOptPath = path.join(binPath, mlirOptName);
+          expect(fs.existsSync(mlirOptPath)).toBe(true);
 
-        // Verify binaries exist
-        const mlirOptName =
-          process.platform === "win32" ? "mlir-opt.exe" : "mlir-opt";
-        const mlirOptPath = path.join(binPath, mlirOptName);
-        expect(fs.existsSync(mlirOptPath)).toBe(true);
+          // Verify mlir-opt can run and check version
+          const { execSync } = await import("node:child_process");
+          const versionOutput = execSync(`"${mlirOptPath}" --version`, {
+            encoding: "utf8",
+          });
+          expect(versionOutput).toContain("LLVM version");
+          expect(versionOutput).toContain(testVersion);
 
-        // Verify mlir-opt can run and check version
-        const { execSync } = await import("node:child_process");
-        const versionOutput = execSync(`"${mlirOptPath}" --version`, {
-          encoding: "utf8",
+          cachedPath = cachedDir;
+        }
+      },
+      600000,
+    ); // 10 minute timeout
+
+    itIf(!!testToken || process.platform === "win32")(
+      "should handle debug flag on Windows",
+      async () => {
+        await run();
+
+        expect(mockCore.addPath).toHaveBeenCalled();
+        expect(mockCore.setFailed).not.toHaveBeenCalled();
+      },
+      600000,
+    ); // 10 minute timeout
+
+    itIf(!!testToken || process.platform !== "win32")(
+      "should reject debug flag on non-Windows platforms",
+      async () => {
+        mockCore.getBooleanInput.mockImplementation((name: string) => {
+          return name === "debug";
         });
-        expect(versionOutput).toContain("LLVM version");
-        expect(versionOutput).toContain(testVersion);
 
-        cachedPath = cachedDir;
-      }
-    }, 600000); // 10 minute timeout
-
-    it("should handle debug flag on Windows", async () => {
-      if (process.platform !== "win32") {
-        console.log("Skipping: Only available on Windows");
-        return;
-      }
-
-      if (!testToken) {
-        console.log("Skipping: No GITHUB_TOKEN available");
-        return;
-      }
-
-      mockCore.getBooleanInput.mockImplementation((name: string) => {
-        return name === "debug";
-      });
-
-      await run();
-
-      expect(mockCore.addPath).toHaveBeenCalled();
-      expect(mockCore.setFailed).not.toHaveBeenCalled();
-    }, 600000); // 10 minute timeout
-
-    it("should reject debug flag on non-Windows platforms", async () => {
-      if (process.platform === "win32") {
-        console.log("Skipping: Only relevant on non-Windows");
-        return;
-      }
-
-      if (!testToken) {
-        console.log("Skipping: No GITHUB_TOKEN available");
-        return;
-      }
-
-      mockCore.getBooleanInput.mockImplementation((name: string) => {
-        return name === "debug";
-      });
-
-      await expect(run()).rejects.toThrow(
-        "Debug builds are only available on Windows",
-      );
-    });
+        await expect(run()).rejects.toThrow(
+          "Debug builds are only available on Windows",
+        );
+      },
+    );
 
     it("should reject invalid version", async () => {
       mockCore.getInput.mockImplementation((name: string) => {

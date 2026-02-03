@@ -15,6 +15,7 @@
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 
+import * as core from "@actions/core";
 import { fileURLToPath } from "node:url";
 import { promises as fs } from "node:fs";
 import { dirname, join } from "node:path";
@@ -83,7 +84,7 @@ function getVersionFromAssetName(assetName: string): string {
  * Update README.md file with a list of available versions
  * @param versions The available versions
  */
-async function updatedReadme(versions: Set<string>): Promise<void> {
+async function updateReadme(versions: Set<string>): Promise<void> {
   const readme = await fs.readFile(README_FILE, "utf-8");
   const beginIndex = readme.indexOf(README_LIST_BEGIN);
   const endIndex = readme.indexOf(README_LIST_END);
@@ -193,5 +194,14 @@ export async function updateManifest(): Promise<void> {
   });
 
   await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest, null, 2) + "\n");
-  await updatedReadme(versions);
+  await updateReadme(versions);
+
+  const latestRelease = await octokit.request(
+    "GET /repos/{owner}/{repo}/releases/latest",
+    {
+      owner: REPO_OWNER,
+      repo: REPO_NAME,
+    },
+  );
+  core.setOutput("latest-tag", latestRelease.data.tag_name);
 }

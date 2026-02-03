@@ -16,7 +16,7 @@
  */
 
 /**
- * Verify and normalize a platform strings
+ * Verify and normalize a platform string
  * @param platform The platform string to verify
  * @returns The normalized platform string
  */

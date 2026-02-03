@@ -35650,7 +35650,7 @@ const REPO_NAME = "portable-mlir-toolchain";
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 /**
- * Verify and normalize a platform strings
+ * Verify and normalize a platform string
  * @param platform The platform string to verify
  * @returns The normalized platform string
  */
