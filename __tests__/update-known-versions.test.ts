@@ -35,6 +35,7 @@ describe("Update Known Versions", () => {
   let tempDir: string;
   let tempManifestPath: string;
   let actualFsModule: any;
+  let actualFsCore: any;
   let updateManifest: () => Promise<void>;
 
   beforeEach(async () => {
@@ -45,13 +46,25 @@ describe("Update Known Versions", () => {
 
     // Get the actual fs module
     actualFsModule = await import("node:fs/promises");
+    actualFsCore = await import("node:fs");
 
-    // Redirect writeFile to temporary file
-    jest.unstable_mockModule("node:fs/promises", () => ({
-      ...actualFsModule,
-      writeFile: jest.fn(async (_file: any, data: any, options?: any) => {
-        return actualFsModule.writeFile(tempManifestPath, data, options);
-      }),
+    // Redirect writeFile to temporary files
+    jest.unstable_mockModule("node:fs", () => ({
+      ...actualFsCore,
+      promises: {
+        ...actualFsCore.promises,
+        writeFile: jest.fn(async (file: any, data: any, options?: any) => {
+          const filePath = file.toString();
+          if (filePath.endsWith("version-manifest.json")) {
+            return actualFsModule.writeFile(tempManifestPath, data, options);
+          }
+          if (filePath.endsWith("README.md")) {
+            const tempReadmePath = path.join(tempDir, "README.md");
+            return actualFsModule.writeFile(tempReadmePath, data, options);
+          }
+          return actualFsModule.writeFile(file, data, options);
+        }),
+      },
     }));
 
     // Import manifest module after mocking
@@ -61,7 +74,7 @@ describe("Update Known Versions", () => {
 
   afterEach(async () => {
     // Clean up
-    jest.unstable_mockModule("node:fs/promises", () => actualFsModule);
+    jest.resetModules();
     if (tempDir) {
       await actualFsModule.rm(tempDir, { recursive: true, force: true });
     }
@@ -125,6 +138,6 @@ describe("Update Known Versions", () => {
       // Verify asset name matches expected pattern
       expect(entry.asset_name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
     },
-    600000,
-  ); // 10 minute timeout
+    600000, // 10 minute timeout
+  );
 });
