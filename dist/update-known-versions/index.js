@@ -32052,7 +32052,7 @@ class Octokit {
  * @param token - GitHub token (optional)
  * @returns Octokit instance
  */
-function create_oktokit_createOctokit(token) {
+function createOctokit(token) {
     const options = token ? { auth: token } : {};
     return new Octokit(options);
 }
@@ -32074,8 +32074,8 @@ function create_oktokit_createOctokit(token) {
  *
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
-const constants_REPO_OWNER = "munich-quantum-software";
-const constants_REPO_NAME = "portable-mlir-toolchain";
+const REPO_OWNER = "munich-quantum-software";
+const REPO_NAME = "portable-mlir-toolchain";
 
 // EXTERNAL MODULE: external "node:url"
 var external_node_url_ = __nccwpck_require__(3136);
@@ -32100,7 +32100,6 @@ const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(impo
  *
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
-
 
 
 
@@ -32142,13 +32141,13 @@ function getVersionFromAsset(assetName) {
  */
 async function updateManifest() {
     const token = process.env.GITHUB_TOKEN || "";
-    const octokit = create_oktokit_createOctokit(token);
+    const octokit = createOctokit(token);
     const releases = [];
     let page = 1;
     while (true) {
         const releasesPage = await octokit.request("GET /repos/{owner}/{repo}/releases", {
-            owner: constants_REPO_OWNER,
-            repo: constants_REPO_NAME,
+            owner: REPO_OWNER,
+            repo: REPO_NAME,
             per_page: 100,
             page: page,
         });
@@ -32195,59 +32194,6 @@ async function updateManifest() {
     });
     await external_node_fs_namespaceObject.promises.writeFile(MANIFEST_FILE, JSON.stringify(manifest));
 }
-async function getManifestEntry(version, platform, architecture, debug) {
-    const fileContent = await fs.readFile(MANIFEST_FILE);
-    let data = fileContent.toString();
-    let manifest = JSON.parse(data);
-    const entry = manifest.find((entry) => entry.version.startsWith(version) &&
-        entry.platform === platform.toLowerCase() &&
-        entry.architecture === architecture.toLowerCase() &&
-        entry.debug === debug);
-    if (!entry) {
-        throw new Error(`No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`);
-    }
-    return entry;
-}
-async function getZstdAsset(assets, platform, architecture) {
-    platform = platform.toLowerCase();
-    const extension = platform === "windows" ? "zip" : "tar.gz";
-    const pattern = RegExp(`^zstd-[A-Za-z0-9._-]+_${platform}_[A-Za-z0-9._-]+_${architecture}\\.${extension}$`, "i");
-    return assets.find((asset) => pattern.test(asset.name));
-}
-async function getZstdUrl(token, version, platform, architecture) {
-    const octokit = createOctokit(token);
-    platform = getPlatform(platform);
-    architecture = getArchitecture(architecture);
-    const entry = await getManifestEntry(version, platform, architecture, false);
-    let assets;
-    let asset;
-    const release = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-        tag: entry.tag,
-    });
-    assets = release.data.assets;
-    asset = await getZstdAsset(assets, platform, architecture);
-    if (!asset) {
-        octokit.log.info(`No zstd binary found for ${architecture} ${platform} in release ${entry.tag}.`);
-    }
-    const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-    });
-    assets = latestRelease.data.assets;
-    asset = await getZstdAsset(assets, platform, architecture);
-    if (!asset) {
-        throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
-    }
-    return { url: asset.browser_download_url, name: asset.name };
-}
-async function getMlirUrl(version, platform, architecture, debug) {
-    platform = getPlatform(platform);
-    architecture = getArchitecture(architecture);
-    const entry = await getManifestEntry(version, platform, architecture, debug);
-    return { url: entry.download_url, name: entry.asset_name };
-}
 
 ;// CONCATENATED MODULE: ./src/update-known-versions.ts
 /*
@@ -32276,10 +32222,10 @@ async function getMlirUrl(version, platform, architecture, debug) {
 async function run() {
     await updateManifest();
     const token = process.env.GITHUB_TOKEN || "";
-    const octokit = create_oktokit_createOctokit(token);
+    const octokit = createOctokit(token);
     const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
-        owner: constants_REPO_OWNER,
-        repo: constants_REPO_NAME,
+        owner: REPO_OWNER,
+        repo: REPO_NAME,
     });
     setOutput("latest-tag", latestRelease.data.tag_name);
 }

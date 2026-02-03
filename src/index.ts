@@ -19,7 +19,7 @@ import * as core from "@actions/core";
 import * as tc from "@actions/tool-cache";
 import * as exec from "@actions/exec";
 import * as io from "@actions/io";
-import { getMlirUrl, getZstdUrl } from "./utils/manifest.js";
+import { getMlirUrl, getZstdUrl } from "./utils/download.js";
 import path from "node:path";
 import process from "node:process";
 import fs from "node:fs";

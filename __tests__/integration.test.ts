@@ -131,7 +131,7 @@ describe("MLIR Setup Integration Tests", () => {
     });
 
     it("should reject non-existent version", async () => {
-      const { getMlirUrl } = await import("../src/utils/manifest.js");
+      const { getMlirUrl } = await import("../src/utils/download.js");
 
       await expect(
         getMlirUrl("99.99.99", "host", "host", false),
@@ -169,7 +169,7 @@ describe("MLIR Setup Integration Tests", () => {
         return;
       }
 
-      const { getMlirUrl } = await import("../src/utils/manifest.js");
+      const { getMlirUrl } = await import("../src/utils/download.js");
 
       // Test explicit linux platform
       const linuxAsset = await getMlirUrl(testVersion, "linux", "X86", false);
@@ -182,7 +182,7 @@ describe("MLIR Setup Integration Tests", () => {
         return;
       }
 
-      const { getMlirUrl } = await import("../src/utils/manifest.js");
+      const { getMlirUrl } = await import("../src/utils/download.js");
 
       // Test with current platform but explicit architecture
       const platform =
@@ -200,7 +200,7 @@ describe("MLIR Setup Integration Tests", () => {
 
   describe("Asset Download", () => {
     it("should fetch download link for LLVM distribution", async () => {
-      const { getMlirUrl } = await import("../src/utils/manifest.js");
+      const { getMlirUrl } = await import("../src/utils/download.js");
 
       const asset = await getMlirUrl(testVersion, "host", "host", false);
 
@@ -209,7 +209,7 @@ describe("MLIR Setup Integration Tests", () => {
     });
 
     it("should fetch download link for zstd binary", async () => {
-      const { getZstdUrl } = await import("../src/utils/manifest.js");
+      const { getZstdUrl } = await import("../src/utils/download.js");
 
       const zstdAsset = await getZstdUrl(
         testToken,
@@ -223,7 +223,7 @@ describe("MLIR Setup Integration Tests", () => {
     });
 
     it("should fall back to latest release for zstd when version release doesn't have it", async () => {
-      const { getZstdUrl } = await import("../src/utils/manifest.js");
+      const { getZstdUrl } = await import("../src/utils/download.js");
 
       const zstdAsset = await getZstdUrl(
         testToken,
@@ -362,7 +362,7 @@ describe("MLIR Setup Integration Tests", () => {
             : "windows";
       const arch = process.arch === "x64" ? "X86" : "AArch64";
 
-      const { getMlirUrl } = await import("../src/utils/manifest.js");
+      const { getMlirUrl } = await import("../src/utils/download.js");
 
       const asset = await getMlirUrl(testVersion, platform, arch, false);
 
@@ -372,7 +372,7 @@ describe("MLIR Setup Integration Tests", () => {
     });
 
     it("should match correct zstd patterns for current platform", async () => {
-      const { getZstdUrl } = await import("../src/utils/manifest.js");
+      const { getZstdUrl } = await import("../src/utils/download.js");
 
       const zstdAsset = await getZstdUrl(
         testToken,
@@ -390,7 +390,7 @@ describe("MLIR Setup Integration Tests", () => {
     });
 
     it("should reject invalid platform", async () => {
-      const { getMlirUrl } = await import("../src/utils/manifest.js");
+      const { getMlirUrl } = await import("../src/utils/download.js");
 
       await expect(
         getMlirUrl(testVersion, "invalid", "X86", false),
@@ -398,7 +398,7 @@ describe("MLIR Setup Integration Tests", () => {
     });
 
     it("should reject invalid architecture", async () => {
-      const { getMlirUrl } = await import("../src/utils/manifest.js");
+      const { getMlirUrl } = await import("../src/utils/download.js");
 
       await expect(
         getMlirUrl(testVersion, "linux", "invalid", false),
