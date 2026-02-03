@@ -32181,7 +32181,6 @@ async function updateReadme(versions) {
     }
     if (hashes.length > 0) {
         body += `List of available LLVM commit hashes:\n\n`;
-        hashes.sort();
         for (const hash of hashes) {
             body += `- \`${hash}\`\n`;
         }
