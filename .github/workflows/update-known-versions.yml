@@ -24,18 +24,11 @@ jobs:
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: 24
-      - name: Install latest version of uv
-        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
-        with:
-          enable-cache: true
-          save-cache: ${{ github.ref == 'refs/heads/main' }}
       - name: Update known versions
         id: update-known-versions
         run: node dist/update-known-versions/index.js
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - name: Format version-manifest.json
-        run: uvx prek --files version-manifest.json || true
       - name: Create pull request
         uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725 # v8.0.0
         with:
