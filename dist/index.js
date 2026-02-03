@@ -35629,8 +35629,14 @@ function createOctokit(token) {
  *
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
+
+
 const REPO_OWNER = "munich-quantum-software";
 const REPO_NAME = "portable-mlir-toolchain";
+const constants_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
+const constants_dirname = (0,external_node_path_namespaceObject.dirname)(constants_filename);
+const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(constants_dirname, "..", "..", "version-manifest.json");
+const README_FILE = (0,external_node_path_namespaceObject.join)(constants_dirname, "..", "..", "README.md");
 
 ;// CONCATENATED MODULE: ./src/utils/platform.ts
 /*
@@ -35741,7 +35747,7 @@ function determineArchitecture() {
 
 const download_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
 const download_dirname = (0,external_node_path_namespaceObject.dirname)(download_filename);
-const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(download_dirname, "..", "..", "version-manifest.json");
+const download_MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(download_dirname, "..", "..", "version-manifest.json");
 /**
  * Get the manifest entry for the specified arguments
  * @param version The requested LLVM version
@@ -35751,7 +35757,7 @@ const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(download_dirna
  * @returns The manifest entry
  */
 async function getManifestEntry(version, platform, architecture, debug) {
-    const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE, "utf-8");
+    const fileContent = await external_node_fs_namespaceObject.promises.readFile(download_MANIFEST_FILE, "utf-8");
     const manifest = JSON.parse(fileContent);
     const entry = manifest.find((entry) => entry.version.startsWith(version) &&
         entry.platform === platform.toLowerCase() &&

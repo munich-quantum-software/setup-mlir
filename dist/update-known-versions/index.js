@@ -30951,12 +30951,8 @@ function getIDToken(aud) {
  */
 
 //# sourceMappingURL=core.js.map
-// EXTERNAL MODULE: external "node:url"
-var external_node_url_ = __nccwpck_require__(3136);
 ;// CONCATENATED MODULE: external "node:fs"
 const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
-;// CONCATENATED MODULE: external "node:path"
-const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 ;// CONCATENATED MODULE: ./node_modules/universal-user-agent/index.js
 function getUserAgent() {
   if (typeof navigator === "object" && "userAgent" in navigator) {
@@ -32063,6 +32059,10 @@ function createOctokit(token) {
     return new Octokit(options);
 }
 
+// EXTERNAL MODULE: external "node:url"
+var external_node_url_ = __nccwpck_require__(3136);
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 ;// CONCATENATED MODULE: ./src/utils/constants.ts
 /*
  * Copyright (c) 2025 Munich Quantum Software Company GmbH
@@ -32080,8 +32080,14 @@ function createOctokit(token) {
  *
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
+
+
 const REPO_OWNER = "munich-quantum-software";
 const REPO_NAME = "portable-mlir-toolchain";
+const constants_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
+const constants_dirname = (0,external_node_path_namespaceObject.dirname)(constants_filename);
+const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(constants_dirname, "..", "..", "version-manifest.json");
+const README_FILE = (0,external_node_path_namespaceObject.join)(constants_dirname, "..", "..", "README.md");
 
 ;// CONCATENATED MODULE: ./src/utils/manifest.ts
 /*
@@ -32104,12 +32110,6 @@ const REPO_NAME = "portable-mlir-toolchain";
 
 
 
-
-
-const manifest_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
-const manifest_dirname = (0,external_node_path_namespaceObject.dirname)(manifest_filename);
-const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(manifest_dirname, "..", "..", "version-manifest.json");
-const README_FILE = (0,external_node_path_namespaceObject.join)(manifest_dirname, "..", "..", "README.md");
 const README_LIST_BEGIN = "<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 /**

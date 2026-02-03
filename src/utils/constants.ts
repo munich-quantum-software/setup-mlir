@@ -15,5 +15,19 @@
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
 export const REPO_OWNER = "munich-quantum-software";
 export const REPO_NAME = "portable-mlir-toolchain";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export const MANIFEST_FILE = join(
+  __dirname,
+  "..",
+  "..",
+  "version-manifest.json",
+);
+export const README_FILE = join(__dirname, "..", "..", "README.md");

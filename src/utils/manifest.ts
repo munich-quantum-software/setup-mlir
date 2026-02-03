@@ -16,20 +16,17 @@
  */
 
 import * as core from "@actions/core";
-import { fileURLToPath } from "node:url";
 import { promises as fs } from "node:fs";
-import { dirname, join } from "node:path";
 import { createOctokit } from "./create-oktokit.js";
-import { REPO_OWNER, REPO_NAME } from "./constants.js";
+import {
+  MANIFEST_FILE,
+  README_FILE,
+  REPO_NAME,
+  REPO_OWNER,
+} from "./constants.js";
 import type { components } from "@octokit/openapi-types";
 
 type Release = components["schemas"]["release"];
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const MANIFEST_FILE = join(__dirname, "..", "..", "version-manifest.json");
-const README_FILE = join(__dirname, "..", "..", "README.md");
 
 const README_LIST_BEGIN = "<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
