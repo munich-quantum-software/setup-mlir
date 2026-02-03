@@ -27,7 +27,7 @@ import os from "node:os";
 import { spawn } from "node:child_process";
 
 /**
- * Setup MLIR toolchain
+ * Set up MLIR toolchain
  * @returns {Promise<void>}
  */
 export async function run(): Promise<void> {

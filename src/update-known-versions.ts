@@ -16,12 +16,9 @@
  */
 
 import * as core from "@actions/core";
-import type { components } from "@octokit/openapi-types";
 import { createOctokit } from "./utils/create-oktokit.js";
 import { REPO_OWNER, REPO_NAME } from "./utils/constants.js";
 import { updateManifest } from "./utils/manifest.js";
-
-type Release = components["schemas"]["release"];
 
 /**
  * Main function to update the version manifest

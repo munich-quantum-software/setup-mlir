@@ -35649,6 +35649,11 @@ const REPO_NAME = "portable-mlir-toolchain";
  *
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
+/**
+ * Verify and normalize a platform strings
+ * @param platform The platform string to verify
+ * @returns The normalized platform string
+ */
 function getPlatform(platform) {
     if (platform !== "host" &&
         platform !== "linux" &&
@@ -35661,6 +35666,11 @@ function getPlatform(platform) {
     }
     return platform;
 }
+/**
+ * Verify and normalize an architecture string
+ * @param architecture The architecture string to verify
+ * @returns The normalized architecture string
+ */
 function getArchitecture(architecture) {
     if (architecture !== "host" &&
         architecture !== "X86" &&
@@ -35732,6 +35742,14 @@ function determineArchitecture() {
 const download_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
 const download_dirname = (0,external_node_path_namespaceObject.dirname)(download_filename);
 const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(download_dirname, "..", "..", "version-manifest.json");
+/**
+ * Get the manifest entry for the specified arguments
+ * @param version The requested LLVM version
+ * @param platform The platform
+ * @param architecture The architecture
+ * @param debug Whether to get a debug build
+ * @returns The manifest entry
+ */
 async function getManifestEntry(version, platform, architecture, debug) {
     const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE);
     const manifest = JSON.parse(fileContent.toString());
@@ -35744,18 +35762,32 @@ async function getManifestEntry(version, platform, architecture, debug) {
     }
     return entry;
 }
-function getZstdAsset(assets, platform, architecture) {
+/**
+ * Get the requested zstd release asset from a release
+ * @param release The GitHub release containing the assets
+ * @param platform The platform
+ * @param architecture The architecture
+ * @returns The matching release asset if found
+ */
+function getZstdAsset(release, platform, architecture) {
     platform = platform.toLowerCase();
     const extension = platform === "windows" ? "zip" : "tar.gz";
     const pattern = RegExp(`^zstd-[A-Za-z0-9._-]+_${platform}_[A-Za-z0-9._-]+_${architecture}\\.${extension}$`, "i");
-    return assets.find((asset) => pattern.test(asset.name));
+    return release.assets.find((asset) => pattern.test(asset.name));
 }
+/**
+ * Get the download URL for the requested zstd binary
+ * @param token GitHub token for authentication
+ * @param version The requested LLVM version
+ * @param platform The platform
+ * @param architecture The architecture
+ * @returns The download URL and the asset name
+ */
 async function getZstdUrl(token, version, platform, architecture) {
     const octokit = createOctokit(token);
     platform = getPlatform(platform);
     architecture = getArchitecture(architecture);
     const entry = await getManifestEntry(version, platform, architecture, false);
-    let assets;
     let asset;
     const tag = entry.tag;
     if (!tag.match(/^v?\d+\.\d+\.\d+$/)) {
@@ -35766,22 +35798,28 @@ async function getZstdUrl(token, version, platform, architecture) {
         repo: REPO_NAME,
         tag: tag,
     });
-    assets = release.data.assets;
-    asset = getZstdAsset(assets, platform, architecture);
+    asset = getZstdAsset(release.data, platform, architecture);
     if (!asset) {
         octokit.log.info(`No zstd binary found for ${architecture} ${platform} in release ${entry.tag}.`);
         const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
             owner: REPO_OWNER,
             repo: REPO_NAME,
         });
-        assets = latestRelease.data.assets;
-        asset = getZstdAsset(assets, platform, architecture);
+        asset = getZstdAsset(latestRelease.data, platform, architecture);
     }
     if (!asset) {
         throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
     }
     return { url: asset.browser_download_url, name: asset.name };
 }
+/**
+ * Get the download URL for the requested MLIR/LLVM binary
+ * @param version The requested LLVM version
+ * @param platform The platform
+ * @param architecture The architecture
+ * @param debug Whether to get a debug build
+ * @returns The download URL and the asset name
+ */
 async function getMlirUrl(version, platform, architecture, debug) {
     platform = getPlatform(platform);
     architecture = getArchitecture(architecture);
@@ -35825,7 +35863,7 @@ const external_node_child_process_namespaceObject = __WEBPACK_EXTERNAL_createReq
 
 
 /**
- * Setup MLIR toolchain
+ * Set up MLIR toolchain
  * @returns {Promise<void>}
  */
 async function run() {

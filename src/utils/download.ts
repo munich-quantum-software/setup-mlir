@@ -25,6 +25,7 @@ import type { components } from "@octokit/openapi-types";
 
 import { getPlatform, getArchitecture } from "./platform.js";
 
+type Release = components["schemas"]["release"];
 type ReleaseAsset = components["schemas"]["release-asset"];
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,6 +33,14 @@ const __dirname = dirname(__filename);
 
 const MANIFEST_FILE = join(__dirname, "..", "..", "version-manifest.json");
 
+/**
+ * Get the manifest entry for the specified arguments
+ * @param version The requested LLVM version
+ * @param platform The platform
+ * @param architecture The architecture
+ * @param debug Whether to get a debug build
+ * @returns The manifest entry
+ */
 async function getManifestEntry(
   version: string,
   platform: string,
@@ -57,8 +66,15 @@ async function getManifestEntry(
   return entry;
 }
 
+/**
+ * Get the requested zstd release asset from a release
+ * @param release The GitHub release containing the assets
+ * @param platform The platform
+ * @param architecture The architecture
+ * @returns The matching release asset if found
+ */
 function getZstdAsset(
-  assets: ReleaseAsset[],
+  release: Release,
   platform: string,
   architecture: string,
 ): ReleaseAsset | undefined {
@@ -68,9 +84,17 @@ function getZstdAsset(
     `^zstd-[A-Za-z0-9._-]+_${platform}_[A-Za-z0-9._-]+_${architecture}\\.${extension}$`,
     "i",
   );
-  return assets.find((asset) => pattern.test(asset.name));
+  return release.assets.find((asset) => pattern.test(asset.name));
 }
 
+/**
+ * Get the download URL for the requested zstd binary
+ * @param token GitHub token for authentication
+ * @param version The requested LLVM version
+ * @param platform The platform
+ * @param architecture The architecture
+ * @returns The download URL and the asset name
+ */
 export async function getZstdUrl(
   token: string,
   version: string,
@@ -83,7 +107,6 @@ export async function getZstdUrl(
   architecture = getArchitecture(architecture);
   const entry = await getManifestEntry(version, platform, architecture, false);
 
-  let assets: ReleaseAsset[];
   let asset: ReleaseAsset | undefined;
 
   const tag = entry.tag;
@@ -98,14 +121,12 @@ export async function getZstdUrl(
       tag: tag,
     },
   );
-  assets = release.data.assets;
-  asset = getZstdAsset(assets, platform, architecture);
+  asset = getZstdAsset(release.data, platform, architecture);
 
   if (!asset) {
     octokit.log.info(
       `No zstd binary found for ${architecture} ${platform} in release ${entry.tag}.`,
     );
-
     const latestRelease = await octokit.request(
       "GET /repos/{owner}/{repo}/releases/latest",
       {
@@ -113,8 +134,7 @@ export async function getZstdUrl(
         repo: REPO_NAME,
       },
     );
-    assets = latestRelease.data.assets;
-    asset = getZstdAsset(assets, platform, architecture);
+    asset = getZstdAsset(latestRelease.data, platform, architecture);
   }
 
   if (!asset) {
@@ -124,6 +144,14 @@ export async function getZstdUrl(
   return { url: asset.browser_download_url, name: asset.name };
 }
 
+/**
+ * Get the download URL for the requested MLIR/LLVM binary
+ * @param version The requested LLVM version
+ * @param platform The platform
+ * @param architecture The architecture
+ * @param debug Whether to get a debug build
+ * @returns The download URL and the asset name
+ */
 export async function getMlirUrl(
   version: string,
   platform: string,

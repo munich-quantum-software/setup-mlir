@@ -15,6 +15,11 @@
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 
+/**
+ * Verify and normalize a platform strings
+ * @param platform The platform string to verify
+ * @returns The normalized platform string
+ */
 export function getPlatform(platform: string): string {
   if (
     platform !== "host" &&
@@ -34,6 +39,11 @@ export function getPlatform(platform: string): string {
   return platform;
 }
 
+/**
+ * Verify and normalize an architecture string
+ * @param architecture The architecture string to verify
+ * @returns The normalized architecture string
+ */
 export function getArchitecture(architecture: string): string {
   if (
     architecture !== "host" &&
