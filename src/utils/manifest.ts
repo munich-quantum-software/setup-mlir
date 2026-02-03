@@ -57,7 +57,7 @@ function getMetadata(assetName: string): [string, string, boolean] {
   if (platformMatch) {
     return [platformMatch[2], platformMatch[4], Boolean(platformMatch[5])];
   }
-  throw new Error(`Could not extract platform from asset name: ${assetName}`);
+  throw new Error(`Could not extract metadata from asset name: ${assetName}`);
 }
 
 /**
@@ -170,21 +170,29 @@ export async function updateManifest(): Promise<void> {
     let version: string | undefined = undefined;
     for (const asset of release.assets) {
       if (asset.name.startsWith("llvm-mlir")) {
-        version = getVersionFromAssetName(asset.name);
-        if (versions.has(version)) {
-          continue;
+        try {
+          const [platform, architecture, debug] = getMetadata(asset.name);
+          version = getVersionFromAssetName(asset.name);
+          if (versions.has(version)) {
+            continue;
+          }
+          manifest.push({
+            architecture: architecture.toLowerCase(),
+            asset_name: asset.name,
+            debug: debug,
+            download_url: asset.browser_download_url,
+            platform: platform.toLowerCase(),
+            release_url: release.html_url,
+            tag: release.tag_name,
+            version: version,
+          });
+        } catch (error) {
+          core.warning(
+            `Skipping asset ${asset.name}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
         }
-        const [platform, architecture, debug] = getMetadata(asset.name);
-        manifest.push({
-          architecture: architecture.toLowerCase(),
-          asset_name: asset.name,
-          debug: debug,
-          download_url: asset.browser_download_url,
-          platform: platform.toLowerCase(),
-          release_url: release.html_url,
-          tag: release.tag_name,
-          version: version,
-        });
       }
     }
     if (version) {
