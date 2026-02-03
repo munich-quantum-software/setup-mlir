@@ -35757,10 +35757,14 @@ async function getZstdUrl(token, version, platform, architecture) {
     const entry = await getManifestEntry(version, platform, architecture, false);
     let assets;
     let asset;
+    const tag = entry.tag;
+    if (!tag.match(/^v?\d+\.\d+\.\d+$/)) {
+        throw new Error(`Invalid tag in manifest: ${tag}`);
+    }
     const release = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
         owner: REPO_OWNER,
         repo: REPO_NAME,
-        tag: entry.tag,
+        tag: tag,
     });
     assets = release.data.assets;
     asset = getZstdAsset(assets, platform, architecture);

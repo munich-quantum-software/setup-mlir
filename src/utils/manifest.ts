@@ -48,7 +48,9 @@ export interface ManifestEntry {
  * @param assetName - Name of the release asset
  * @returns Tuple of platform, architecture, and debug
  */
-function getPlatformFromAsset(assetName: string): [string, string, boolean] {
+function getMetadataFromAssetName(
+  assetName: string,
+): [string, string, boolean] {
   const platformMatch = assetName.match(
     /llvm-mlir_(.+?)_(.+?)_(.+)_(X86|AArch64)(_debug)?\./i,
   );
@@ -63,7 +65,7 @@ function getPlatformFromAsset(assetName: string): [string, string, boolean] {
  * @param assetName - Name of the release asset
  * @returns Version string
  */
-function getVersionFromAsset(assetName: string): string {
+function getVersionFromAssetName(assetName: string): string {
   const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
   if (versionMatch) {
     return versionMatch[1];
@@ -110,10 +112,10 @@ export async function updateManifest(): Promise<void> {
     for (const asset of release.assets) {
       if (asset.name.startsWith("llvm-mlir")) {
         const downloadUrl = asset.browser_download_url;
-        const [platform, architecture, debug] = getPlatformFromAsset(
+        const [platform, architecture, debug] = getMetadataFromAssetName(
           asset.name,
         );
-        const version = getVersionFromAsset(asset.name);
+        const version = getVersionFromAssetName(asset.name);
         manifest.push({
           architecture: architecture.toLowerCase(),
           asset_name: asset.name,
