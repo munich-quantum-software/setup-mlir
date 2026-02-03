@@ -110,19 +110,18 @@ export async function updateManifest(): Promise<void> {
     for (const asset of release.assets) {
       if (asset.name.startsWith("llvm-mlir")) {
         const downloadUrl = asset.browser_download_url;
-        const urlParts = downloadUrl.split("/");
-        const tag = urlParts[urlParts.length - 2];
-        const assetName = urlParts[urlParts.length - 1];
-        const [platform, architecture, debug] = getPlatformFromAsset(assetName);
-        const version = getVersionFromAsset(assetName);
+        const [platform, architecture, debug] = getPlatformFromAsset(
+          asset.name,
+        );
+        const version = getVersionFromAsset(asset.name);
         manifest.push({
           architecture: architecture.toLowerCase(),
-          asset_name: assetName,
+          asset_name: asset.name,
           debug: debug,
           download_url: downloadUrl,
           platform: platform.toLowerCase(),
           release_url: release.html_url,
-          tag: tag,
+          tag: release.tag_name,
           version: version,
         });
       }
@@ -139,5 +138,5 @@ export async function updateManifest(): Promise<void> {
     return a.architecture.localeCompare(b.architecture);
   });
 
-  await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest));
+  await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest, null, 2) + "\n");
 }

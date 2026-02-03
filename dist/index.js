@@ -35734,8 +35734,7 @@ const download_dirname = (0,external_node_path_namespaceObject.dirname)(download
 const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(download_dirname, "..", "..", "version-manifest.json");
 async function getManifestEntry(version, platform, architecture, debug) {
     const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE);
-    let data = fileContent.toString();
-    let manifest = JSON.parse(data);
+    const manifest = JSON.parse(fileContent.toString());
     const entry = manifest.find((entry) => entry.version.startsWith(version) &&
         entry.platform === platform.toLowerCase() &&
         entry.architecture === architecture.toLowerCase() &&
@@ -35745,7 +35744,7 @@ async function getManifestEntry(version, platform, architecture, debug) {
     }
     return entry;
 }
-async function getZstdAsset(assets, platform, architecture) {
+function getZstdAsset(assets, platform, architecture) {
     platform = platform.toLowerCase();
     const extension = platform === "windows" ? "zip" : "tar.gz";
     const pattern = RegExp(`^zstd-[A-Za-z0-9._-]+_${platform}_[A-Za-z0-9._-]+_${architecture}\\.${extension}$`, "i");
@@ -35764,16 +35763,16 @@ async function getZstdUrl(token, version, platform, architecture) {
         tag: entry.tag,
     });
     assets = release.data.assets;
-    asset = await getZstdAsset(assets, platform, architecture);
+    asset = getZstdAsset(assets, platform, architecture);
     if (!asset) {
         octokit.log.info(`No zstd binary found for ${architecture} ${platform} in release ${entry.tag}.`);
+        const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
+            owner: REPO_OWNER,
+            repo: REPO_NAME,
+        });
+        assets = latestRelease.data.assets;
+        asset = getZstdAsset(assets, platform, architecture);
     }
-    const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-    });
-    assets = latestRelease.data.assets;
-    asset = await getZstdAsset(assets, platform, architecture);
     if (!asset) {
         throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
     }

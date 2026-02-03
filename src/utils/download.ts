@@ -39,8 +39,7 @@ async function getManifestEntry(
   debug: boolean,
 ): Promise<ManifestEntry> {
   const fileContent = await fs.readFile(MANIFEST_FILE);
-  let data: string = fileContent.toString();
-  let manifest: ManifestEntry[] = JSON.parse(data);
+  const manifest: ManifestEntry[] = JSON.parse(fileContent.toString());
 
   const entry = manifest.find(
     (entry) =>
@@ -58,11 +57,11 @@ async function getManifestEntry(
   return entry;
 }
 
-async function getZstdAsset(
+function getZstdAsset(
   assets: ReleaseAsset[],
   platform: string,
   architecture: string,
-): Promise<ReleaseAsset | undefined> {
+): ReleaseAsset | undefined {
   platform = platform.toLowerCase();
   const extension = platform === "windows" ? "zip" : "tar.gz";
   const pattern = RegExp(
@@ -96,23 +95,23 @@ export async function getZstdUrl(
     },
   );
   assets = release.data.assets;
-  asset = await getZstdAsset(assets, platform, architecture);
+  asset = getZstdAsset(assets, platform, architecture);
 
   if (!asset) {
     octokit.log.info(
       `No zstd binary found for ${architecture} ${platform} in release ${entry.tag}.`,
     );
-  }
 
-  const latestRelease = await octokit.request(
-    "GET /repos/{owner}/{repo}/releases/latest",
-    {
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
-    },
-  );
-  assets = latestRelease.data.assets;
-  asset = await getZstdAsset(assets, platform, architecture);
+    const latestRelease = await octokit.request(
+      "GET /repos/{owner}/{repo}/releases/latest",
+      {
+        owner: REPO_OWNER,
+        repo: REPO_NAME,
+      },
+    );
+    assets = latestRelease.data.assets;
+    asset = getZstdAsset(assets, platform, architecture);
+  }
 
   if (!asset) {
     throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
