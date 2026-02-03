@@ -165,30 +165,38 @@ export async function updateManifest(): Promise<void> {
     page++;
   }
 
-  const manifest: ManifestEntry[] = [];
-  const versions: Set<string> = new Set();
+  // Sort releases by creation date
+  releases.sort((a, b) => b.created_at.localeCompare(a.created_at));
 
+  const versions: Set<string> = new Set();
+  const manifest: ManifestEntry[] = [];
   for (const release of releases) {
+    let version: string | undefined = undefined;
     for (const asset of release.assets) {
       if (asset.name.startsWith("llvm-mlir")) {
-        const downloadUrl = asset.browser_download_url;
+        version = getVersionFromAssetName(asset.name);
+        if (versions.has(version)) {
+          continue;
+        }
         const [platform, architecture, debug] = getMetadata(asset.name);
-        const version = getVersionFromAssetName(asset.name);
         manifest.push({
           architecture: architecture.toLowerCase(),
           asset_name: asset.name,
           debug: debug,
-          download_url: downloadUrl,
+          download_url: asset.browser_download_url,
           platform: platform.toLowerCase(),
           release_url: release.html_url,
           tag: release.tag_name,
           version: version,
         });
-        versions.add(version);
       }
+    }
+    if (version) {
+      versions.add(version);
     }
   }
 
+  // Sort manifest entries by tag name, platform, and architecture
   manifest.sort((a, b) => {
     if (a.tag !== b.tag) {
       return b.tag.localeCompare(a.tag);
