@@ -53,7 +53,7 @@ const mockCore = {
 // Mock @actions/core before importing it
 jest.unstable_mockModule("@actions/core", () => mockCore);
 
-describe("MLIR Setup Integration Tests", () => {
+describe("setup-mlir Integration Tests", () => {
   const testVersion = "21.1.8";
   const testVersionCommit = "f8cb798";
   const testToken = process.env.GITHUB_TOKEN || "";
@@ -68,7 +68,7 @@ describe("MLIR Setup Integration Tests", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Setup environment for tests
+    // Set up environment for tests
     if (!process.env.RUNNER_TEMP) {
       process.env.RUNNER_TEMP = os.tmpdir();
     }
@@ -166,6 +166,7 @@ describe("MLIR Setup Integration Tests", () => {
 
     it("should handle explicit platform specification", async () => {
       if (!testToken) {
+        console.log("Skipping: No GITHUB_TOKEN available");
         return;
       }
 
@@ -179,6 +180,7 @@ describe("MLIR Setup Integration Tests", () => {
 
     it("should handle explicit architecture specification", async () => {
       if (!testToken) {
+        console.log("Skipping: No GITHUB_TOKEN available");
         return;
       }
 
@@ -317,7 +319,7 @@ describe("MLIR Setup Integration Tests", () => {
 
       expect(mockCore.addPath).toHaveBeenCalled();
       expect(mockCore.setFailed).not.toHaveBeenCalled();
-    }, 600000);
+    }, 600000); // 10 minute timeout
 
     it("should reject debug flag on non-Windows platforms", async () => {
       if (process.platform === "win32") {
