@@ -42,7 +42,7 @@ export async function run(): Promise<void> {
     platform === "windows" ||
     (platform === "host" && process.platform === "win32");
   if (debug && !isWindows) {
-    throw new Error(`Debug builds are only available on Windows.`);
+    throw new Error("Debug builds are only available on Windows.");
   }
 
   // Validate LLVM version (either X.Y.Z format or commit hash)

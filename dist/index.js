@@ -34498,14 +34498,9 @@ function _unique(values) {
     return Array.from(new Set(values));
 }
 //# sourceMappingURL=tool-cache.js.map
-// EXTERNAL MODULE: external "node:url"
-var external_node_url_ = __nccwpck_require__(3136);
 ;// CONCATENATED MODULE: external "node:fs"
 const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
 var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_namespaceObject);
-;// CONCATENATED MODULE: external "node:path"
-const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
-var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
 ;// CONCATENATED MODULE: ./node_modules/universal-user-agent/index.js
 function getUserAgent() {
   if (typeof navigator === "object" && "userAgent" in navigator) {
@@ -35612,6 +35607,11 @@ function createOctokit(token) {
     return new Octokit(options);
 }
 
+// EXTERNAL MODULE: external "node:url"
+var external_node_url_ = __nccwpck_require__(3136);
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
+var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
 ;// CONCATENATED MODULE: ./src/utils/constants.ts
 /*
  * Copyright (c) 2025 Munich Quantum Software Company GmbH
@@ -35743,11 +35743,6 @@ function determineArchitecture() {
 
 
 
-
-
-const download_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
-const download_dirname = (0,external_node_path_namespaceObject.dirname)(download_filename);
-const download_MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(download_dirname, "..", "..", "version-manifest.json");
 /**
  * Get the manifest entry for the specified arguments
  * @param version The requested LLVM version
@@ -35757,7 +35752,7 @@ const download_MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(downl
  * @returns The manifest entry
  */
 async function getManifestEntry(version, platform, architecture, debug) {
-    const fileContent = await external_node_fs_namespaceObject.promises.readFile(download_MANIFEST_FILE, "utf-8");
+    const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE, "utf-8");
     const manifest = JSON.parse(fileContent);
     const entry = manifest.find((entry) => entry.version.startsWith(version) &&
         entry.platform === platform.toLowerCase() &&
@@ -35882,7 +35877,7 @@ async function run() {
     const isWindows = platform === "windows" ||
         (platform === "host" && (external_node_process_default()).platform === "win32");
     if (debug && !isWindows) {
-        throw new Error(`Debug builds are only available on Windows.`);
+        throw new Error("Debug builds are only available on Windows.");
     }
     // Validate LLVM version (either X.Y.Z format or commit hash)
     const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);

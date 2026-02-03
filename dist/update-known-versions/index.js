@@ -32149,7 +32149,7 @@ async function updateReadme(versions) {
     const beginIndex = readme.indexOf(README_LIST_BEGIN);
     const endIndex = readme.indexOf(README_LIST_END);
     if (beginIndex === -1 || endIndex === -1 || beginIndex >= endIndex) {
-        throw new Error(`Could not find valid list markers in README.md.`);
+        throw new Error("Could not find valid list markers in README.md.");
     }
     let tags = [];
     let hashes = [];
@@ -32196,6 +32196,9 @@ async function updateReadme(versions) {
  */
 async function updateManifest() {
     const token = process.env.GITHUB_TOKEN || "";
+    if (!token) {
+        warning("GITHUB_TOKEN is not set. API rate limits may apply.");
+    }
     const octokit = createOctokit(token);
     const releases = [];
     let page = 1;

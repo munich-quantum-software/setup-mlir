@@ -15,23 +15,16 @@
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 
-import { fileURLToPath } from "node:url";
 import { promises as fs } from "node:fs";
-import { dirname, join } from "node:path";
 import { createOctokit } from "./create-oktokit.js";
 import { ManifestEntry } from "./manifest.js";
-import { REPO_OWNER, REPO_NAME } from "./constants.js";
+import { MANIFEST_FILE, REPO_NAME, REPO_OWNER } from "./constants.js";
 import type { components } from "@octokit/openapi-types";
 
 import { getPlatform, getArchitecture } from "./platform.js";
 
 type Release = components["schemas"]["release"];
 type ReleaseAsset = components["schemas"]["release-asset"];
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const MANIFEST_FILE = join(__dirname, "..", "..", "version-manifest.json");
 
 /**
  * Get the manifest entry for the specified arguments
