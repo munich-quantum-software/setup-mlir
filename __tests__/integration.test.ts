@@ -297,7 +297,7 @@ describe("setup-mlir Integration Tests", () => {
       600000,
     ); // 10 minute timeout
 
-    itIf(!!testToken || process.platform === "win32")(
+    itIf(!!testToken && process.platform === "win32")(
       "should handle debug flag on Windows",
       async () => {
         await run();
@@ -308,7 +308,7 @@ describe("setup-mlir Integration Tests", () => {
       600000,
     ); // 10 minute timeout
 
-    itIf(!!testToken || process.platform !== "win32")(
+    itIf(!!testToken && process.platform !== "win32")(
       "should reject debug flag on non-Windows platforms",
       async () => {
         mockCore.getBooleanInput.mockImplementation((name: string) => {
