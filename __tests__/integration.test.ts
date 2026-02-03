@@ -166,36 +166,30 @@ describe("setup-mlir Integration Tests", () => {
       expect(expectedArch).not.toBeNull();
     });
 
-    itIf(!!testToken)(
-      "should handle explicit platform specification",
-      async () => {
-        const { getMlirUrl } = await import("../src/utils/download.js");
+    it("should handle explicit platform specification", async () => {
+      const { getMlirUrl } = await import("../src/utils/download.js");
 
-        // Test explicit linux platform
-        const linuxAsset = await getMlirUrl(testVersion, "linux", "X86", false);
-        expect(linuxAsset.name).toContain("linux");
-        expect(linuxAsset.name).toContain("x86_64");
-      },
-    );
+      // Test explicit linux platform
+      const linuxAsset = await getMlirUrl(testVersion, "linux", "X86", false);
+      expect(linuxAsset.name).toContain("linux");
+      expect(linuxAsset.name).toContain("x86_64");
+    });
 
-    itIf(!!testToken)(
-      "should handle explicit architecture specification",
-      async () => {
-        const { getMlirUrl } = await import("../src/utils/download.js");
+    it("should handle explicit architecture specification", async () => {
+      const { getMlirUrl } = await import("../src/utils/download.js");
 
-        // Test with current platform but explicit architecture
-        const platform =
-          process.platform === "linux"
-            ? "linux"
-            : process.platform === "darwin"
-              ? "macOS"
-              : "windows";
+      // Test with current platform but explicit architecture
+      const platform =
+        process.platform === "linux"
+          ? "linux"
+          : process.platform === "darwin"
+            ? "macOS"
+            : "windows";
 
-        const asset = await getMlirUrl(testVersion, platform, "X86", false);
-        expect(asset.url).toBeTruthy();
-        expect(asset.name).toContain("X86");
-      },
-    );
+      const asset = await getMlirUrl(testVersion, platform, "X86", false);
+      expect(asset.url).toBeTruthy();
+      expect(asset.name).toContain("X86");
+    });
   });
 
   describe("Asset Download", () => {
@@ -208,33 +202,39 @@ describe("setup-mlir Integration Tests", () => {
       expect(asset.name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
     });
 
-    it("should fetch download link for zstd binary", async () => {
-      const { getZstdUrl } = await import("../src/utils/download.js");
+    itIf(!!testToken)(
+      "should fetch download link for zstd binary",
+      async () => {
+        const { getZstdUrl } = await import("../src/utils/download.js");
 
-      const zstdAsset = await getZstdUrl(
-        testToken,
-        testVersion,
-        "host",
-        "host",
-      );
+        const zstdAsset = await getZstdUrl(
+          testToken,
+          testVersion,
+          "host",
+          "host",
+        );
 
-      expect(zstdAsset.url).toBeTruthy();
-      expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
-    });
+        expect(zstdAsset.url).toBeTruthy();
+        expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
+      },
+    );
 
-    it("should fall back to latest release for zstd when version release doesn't have it", async () => {
-      const { getZstdUrl } = await import("../src/utils/download.js");
+    itIf(!!testToken)(
+      "should fall back to latest release for zstd when version release doesn't have it",
+      async () => {
+        const { getZstdUrl } = await import("../src/utils/download.js");
 
-      const zstdAsset = await getZstdUrl(
-        testToken,
-        testVersionCommit,
-        "host",
-        "host",
-      );
+        const zstdAsset = await getZstdUrl(
+          testToken,
+          testVersionCommit,
+          "host",
+          "host",
+        );
 
-      expect(zstdAsset.url).toBeTruthy();
-      expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
-    });
+        expect(zstdAsset.url).toBeTruthy();
+        expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
+      },
+    );
   });
 
   describe("Full Setup Integration", () => {
@@ -353,23 +353,26 @@ describe("setup-mlir Integration Tests", () => {
       expect(asset.name).toMatch(/\.tar\.zst$/);
     });
 
-    it("should match correct zstd patterns for current platform", async () => {
-      const { getZstdUrl } = await import("../src/utils/download.js");
+    itIf(!!testToken)(
+      "should match correct zstd patterns for current platform",
+      async () => {
+        const { getZstdUrl } = await import("../src/utils/download.js");
 
-      const zstdAsset = await getZstdUrl(
-        testToken,
-        testVersion,
-        "host",
-        "host",
-      );
+        const zstdAsset = await getZstdUrl(
+          testToken,
+          testVersion,
+          "host",
+          "host",
+        );
 
-      expect(zstdAsset.name).toMatch(/^zstd-/);
-      if (process.platform === "win32") {
-        expect(zstdAsset.name).toMatch(/\.zip$/);
-      } else {
-        expect(zstdAsset.name).toMatch(/\.tar\.gz$/);
-      }
-    });
+        expect(zstdAsset.name).toMatch(/^zstd-/);
+        if (process.platform === "win32") {
+          expect(zstdAsset.name).toMatch(/\.zip$/);
+        } else {
+          expect(zstdAsset.name).toMatch(/\.tar\.gz$/);
+        }
+      },
+    );
 
     it("should reject invalid platform", async () => {
       const { getMlirUrl } = await import("../src/utils/download.js");
@@ -384,9 +387,7 @@ describe("setup-mlir Integration Tests", () => {
 
       await expect(
         getMlirUrl(testVersion, "linux", "invalid", false),
-      ).rejects.toThrow(
-        "Invalid architecture: invalid. Expected X86 or AArch64.",
-      );
+      ).rejects.toThrow("Invalid architecture: invalid");
     });
   });
 });

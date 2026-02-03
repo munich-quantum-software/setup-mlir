@@ -28,7 +28,7 @@ export function getPlatform(platform: string): string {
     platform !== "windows"
   ) {
     throw new Error(
-      `Invalid platform: ${platform}. Expected linux, macOS, or windows.`,
+      `Invalid platform: ${platform}. Expected host, linux, macOS, or windows.`,
     );
   }
 
@@ -51,7 +51,7 @@ export function getArchitecture(architecture: string): string {
     architecture !== "AArch64"
   ) {
     throw new Error(
-      `Invalid architecture: ${architecture}. Expected X86 or AArch64.`,
+      `Invalid architecture: ${architecture}. Expected host, X86, or AArch64.`,
     );
   }
 

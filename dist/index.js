@@ -35659,7 +35659,7 @@ function getPlatform(platform) {
         platform !== "linux" &&
         platform !== "macOS" &&
         platform !== "windows") {
-        throw new Error(`Invalid platform: ${platform}. Expected linux, macOS, or windows.`);
+        throw new Error(`Invalid platform: ${platform}. Expected host, linux, macOS, or windows.`);
     }
     if (platform === "host") {
         platform = determinePlatform();
@@ -35675,7 +35675,7 @@ function getArchitecture(architecture) {
     if (architecture !== "host" &&
         architecture !== "X86" &&
         architecture !== "AArch64") {
-        throw new Error(`Invalid architecture: ${architecture}. Expected X86 or AArch64.`);
+        throw new Error(`Invalid architecture: ${architecture}. Expected host, X86, or AArch64.`);
     }
     if (architecture === "host") {
         architecture = determineArchitecture();
@@ -35752,7 +35752,7 @@ const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(download_dirna
  */
 async function getManifestEntry(version, platform, architecture, debug) {
     const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE, "utf-8");
-    const manifest = JSON.parse(fileContent.toString());
+    const manifest = JSON.parse(fileContent);
     const entry = manifest.find((entry) => entry.version.startsWith(version) &&
         entry.platform === platform.toLowerCase() &&
         entry.architecture === architecture.toLowerCase() &&
@@ -35790,7 +35790,7 @@ async function getZstdUrl(token, version, platform, architecture) {
     const entry = await getManifestEntry(version, platform, architecture, false);
     let asset;
     const tag = entry.tag;
-    if (!tag.match(/^v?\d+\.\d+\.\d+$/)) {
+    if (!tag.match(/^\d{4}\.\d{2}\.\d{2}$/)) {
         throw new Error(`Invalid tag in manifest: ${tag}`);
     }
     const release = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {

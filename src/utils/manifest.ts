@@ -107,7 +107,13 @@ async function updateReadme(versions: Set<string>): Promise<void> {
   if (tags.length > 0) {
     body += `List of available LLVM versions:\n\n`;
     tags.sort((a, b) => {
-      return b.localeCompare(a);
+      const pa = a.split(".").map(Number);
+      const pb = b.split(".").map(Number);
+      for (let i = 0; i < 3; i++) {
+        const diff = (pb[i] ?? 0) - (pa[i] ?? 0);
+        if (diff !== 0) return diff;
+      }
+      return 0;
     });
     for (const tag of tags) {
       body += `- \`${tag}\`\n`;

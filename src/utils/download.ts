@@ -48,7 +48,7 @@ async function getManifestEntry(
   debug: boolean,
 ): Promise<ManifestEntry> {
   const fileContent = await fs.readFile(MANIFEST_FILE, "utf-8");
-  const manifest: ManifestEntry[] = JSON.parse(fileContent.toString());
+  const manifest: ManifestEntry[] = JSON.parse(fileContent);
 
   const entry = manifest.find(
     (entry) =>
@@ -110,7 +110,7 @@ export async function getZstdUrl(
   let asset: ReleaseAsset | undefined;
 
   const tag = entry.tag;
-  if (!tag.match(/^v?\d+\.\d+\.\d+$/)) {
+  if (!tag.match(/^\d{4}\.\d{2}\.\d{2}$/)) {
     throw new Error(`Invalid tag in manifest: ${tag}`);
   }
   const release = await octokit.request(
