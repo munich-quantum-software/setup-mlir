@@ -16,119 +16,21 @@
  */
 
 import * as core from "@actions/core";
-import { promises as fs } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { Octokit, OctokitOptions } from "@octokit/core";
 import type { components } from "@octokit/openapi-types";
+import { createOctokit } from "./utils/create-oktokit.js";
+import { REPO_OWNER, REPO_NAME } from "./utils/constants.js";
+import { updateManifest } from "./utils/manifest.js";
 
 type Release = components["schemas"]["release"];
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const REPO_OWNER = "munich-quantum-software";
-const REPO_NAME = "portable-mlir-toolchain";
-const MANIFEST_FILE = join(__dirname, "..", "..", "version-manifest.json");
-
-/**
- * Create an Octokit instance with optional authentication
- * @param token - GitHub token (optional)
- * @returns Octokit instance
- */
-function createOctokit(token: string): Octokit {
-  const options: OctokitOptions = token ? { auth: token } : {};
-  return new Octokit(options);
-}
-
-/**
- * Interface representing an entry in the version manifest
- */
-interface ManifestEntry {
-  arch: string;
-  assetName: string;
-  downloadUrl: string;
-  isDebug: boolean;
-  platform: string;
-  tag: string;
-  version: string;
-}
-
-/**
- * Extract platform, arch, and isDebug from the name of a release asset
- * @param assetName - Name of the release asset
- * @returns Tuple of platform, arch, and isDebug flag
- */
-function getPlatform(assetName: string): [string, string, boolean] {
-  const platformMatch = assetName.match(
-    /llvm-mlir_(.+?)_(.+?)_(.+)_(X86|AArch64)(_debug)?\./i,
-  );
-  if (platformMatch) {
-    return [platformMatch[2], platformMatch[3], Boolean(platformMatch[5])];
-  }
-  throw new Error(`Could not extract platform from asset name: ${assetName}`);
-}
-
-/**
- * Extract version from the name of a release asset
- * @param assetName - Name of the release asset
- * @returns Version string
- */
-function getVersion(assetName: string): string {
-  const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
-  if (versionMatch) {
-    return versionMatch[1];
-  }
-  const hashMatch = assetName.match(/llvm-mlir_([0-9a-f]{7,40})_/i);
-  if (hashMatch) {
-    return hashMatch[1];
-  }
-  throw new Error(`Could not extract version from asset name: ${assetName}`);
-}
-
-/**
- * Update the version manifest with release assets
- * @param downloadUrls - Array of download URLs for the release assets
- */
-async function updateManifest(downloadUrls: string[]): Promise<void> {
-  const manifest: ManifestEntry[] = [];
-  for (const downloadUrl of downloadUrls) {
-    const urlParts = downloadUrl.split("/");
-    const tag = urlParts[urlParts.length - 2];
-    const assetName = urlParts[urlParts.length - 1];
-    const [platform, arch, isDebug] = getPlatform(assetName);
-    const version = getVersion(assetName);
-    manifest.push({
-      arch: arch,
-      assetName: assetName,
-      downloadUrl: downloadUrl,
-      isDebug: isDebug,
-      platform: platform,
-      tag: tag,
-      version: version,
-    });
-  }
-
-  manifest.sort((a, b) => {
-    if (a.tag !== b.tag) {
-      return b.tag.localeCompare(a.tag);
-    }
-    if (a.platform !== b.platform) {
-      return a.platform.localeCompare(b.platform);
-    }
-    return a.arch.localeCompare(b.arch);
-  });
-
-  await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest));
-}
 
 /**
  * Main function to update the version manifest
  */
 async function run(): Promise<void> {
+  await updateManifest();
+
   const token = process.env.GITHUB_TOKEN || "";
   const octokit = createOctokit(token);
-
   const latestRelease = await octokit.request(
     "GET /repos/{owner}/{repo}/releases/latest",
     {
@@ -136,37 +38,6 @@ async function run(): Promise<void> {
       repo: REPO_NAME,
     },
   );
-
-  const releases: Release[] = [];
-  let page = 1;
-  while (true) {
-    const releasesPage = await octokit.request(
-      "GET /repos/{owner}/{repo}/releases",
-      {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-        per_page: 100,
-        page: page,
-      },
-    );
-    if (releasesPage.data.length === 0) {
-      break;
-    }
-    releases.push(...releasesPage.data);
-    if (releasesPage.data.length < 100) {
-      break;
-    }
-    page++;
-  }
-
-  const downloadUrls: string[] = releases.flatMap((release) =>
-    release.assets
-      .filter((asset) => asset.name.startsWith("llvm-mlir"))
-      .map((asset) => asset.browser_download_url),
-  );
-
-  await updateManifest(downloadUrls);
-
   core.setOutput("latest-tag", latestRelease.data.tag_name);
 }
 

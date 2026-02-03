@@ -30951,12 +30951,6 @@ function getIDToken(aud) {
  */
 
 //# sourceMappingURL=core.js.map
-;// CONCATENATED MODULE: external "node:fs"
-const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
-// EXTERNAL MODULE: external "node:url"
-var external_node_url_ = __nccwpck_require__(3136);
-;// CONCATENATED MODULE: external "node:path"
-const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 ;// CONCATENATED MODULE: ./node_modules/universal-user-agent/index.js
 function getUserAgent() {
   if (typeof navigator === "object" && "userAgent" in navigator) {
@@ -32035,7 +32029,61 @@ class Octokit {
 }
 
 
-;// CONCATENATED MODULE: ./src/update-known-versions.ts
+;// CONCATENATED MODULE: ./src/utils/create-oktokit.ts
+/*
+ * Copyright (c) 2025 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
+ * may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+
+/**
+ * Create an Octokit instance with optional authentication
+ * @param token - GitHub token (optional)
+ * @returns Octokit instance
+ */
+function create_oktokit_createOctokit(token) {
+    const options = token ? { auth: token } : {};
+    return new Octokit(options);
+}
+
+;// CONCATENATED MODULE: ./src/utils/constants.ts
+/*
+ * Copyright (c) 2025 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
+ * may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+const constants_REPO_OWNER = "munich-quantum-software";
+const constants_REPO_NAME = "portable-mlir-toolchain";
+
+// EXTERNAL MODULE: external "node:url"
+var external_node_url_ = __nccwpck_require__(3136);
+;// CONCATENATED MODULE: external "node:fs"
+const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
+;// CONCATENATED MODULE: ./src/utils/manifest.ts
 /*
  * Copyright (c) 2025 Munich Quantum Software Company GmbH
  * Copyright (c) 2025 Chair for Design Automation, TUM
@@ -32057,29 +32105,19 @@ class Octokit {
 
 
 
-const update_known_versions_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
-const update_known_versions_dirname = (0,external_node_path_namespaceObject.dirname)(update_known_versions_filename);
-const REPO_OWNER = "munich-quantum-software";
-const REPO_NAME = "portable-mlir-toolchain";
-const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(update_known_versions_dirname, "..", "..", "version-manifest.json");
+
+const manifest_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
+const manifest_dirname = (0,external_node_path_namespaceObject.dirname)(manifest_filename);
+const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(manifest_dirname, "..", "..", "version-manifest.json");
 /**
- * Create an Octokit instance with optional authentication
- * @param token - GitHub token (optional)
- * @returns Octokit instance
- */
-function createOctokit(token) {
-    const options = token ? { auth: token } : {};
-    return new Octokit(options);
-}
-/**
- * Extract platform, arch, and isDebug from the name of a release asset
+ * Extract platform, architecture, and debug from the name of a release asset
  * @param assetName - Name of the release asset
- * @returns Tuple of platform, arch, and isDebug flag
+ * @returns Tuple of platform, architecture, and debug
  */
-function getPlatform(assetName) {
+function getPlatformFromAsset(assetName) {
     const platformMatch = assetName.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(X86|AArch64)(_debug)?\./i);
     if (platformMatch) {
-        return [platformMatch[2], platformMatch[3], Boolean(platformMatch[5])];
+        return [platformMatch[2], platformMatch[4], Boolean(platformMatch[5])];
     }
     throw new Error(`Could not extract platform from asset name: ${assetName}`);
 }
@@ -32088,7 +32126,7 @@ function getPlatform(assetName) {
  * @param assetName - Name of the release asset
  * @returns Version string
  */
-function getVersion(assetName) {
+function getVersionFromAsset(assetName) {
     const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
     if (versionMatch) {
         return versionMatch[1];
@@ -32101,53 +32139,16 @@ function getVersion(assetName) {
 }
 /**
  * Update the version manifest with release assets
- * @param downloadUrls - Array of download URLs for the release assets
  */
-async function updateManifest(downloadUrls) {
-    const manifest = [];
-    for (const downloadUrl of downloadUrls) {
-        const urlParts = downloadUrl.split("/");
-        const tag = urlParts[urlParts.length - 2];
-        const assetName = urlParts[urlParts.length - 1];
-        const [platform, arch, isDebug] = getPlatform(assetName);
-        const version = getVersion(assetName);
-        manifest.push({
-            arch: arch,
-            assetName: assetName,
-            downloadUrl: downloadUrl,
-            isDebug: isDebug,
-            platform: platform,
-            tag: tag,
-            version: version,
-        });
-    }
-    manifest.sort((a, b) => {
-        if (a.tag !== b.tag) {
-            return b.tag.localeCompare(a.tag);
-        }
-        if (a.platform !== b.platform) {
-            return a.platform.localeCompare(b.platform);
-        }
-        return a.arch.localeCompare(b.arch);
-    });
-    await external_node_fs_namespaceObject.promises.writeFile(MANIFEST_FILE, JSON.stringify(manifest));
-}
-/**
- * Main function to update the version manifest
- */
-async function run() {
+async function updateManifest() {
     const token = process.env.GITHUB_TOKEN || "";
-    const octokit = createOctokit(token);
-    const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-    });
+    const octokit = create_oktokit_createOctokit(token);
     const releases = [];
     let page = 1;
     while (true) {
         const releasesPage = await octokit.request("GET /repos/{owner}/{repo}/releases", {
-            owner: REPO_OWNER,
-            repo: REPO_NAME,
+            owner: constants_REPO_OWNER,
+            repo: constants_REPO_NAME,
             per_page: 100,
             page: page,
         });
@@ -32160,10 +32161,126 @@ async function run() {
         }
         page++;
     }
-    const downloadUrls = releases.flatMap((release) => release.assets
-        .filter((asset) => asset.name.startsWith("llvm-mlir"))
-        .map((asset) => asset.browser_download_url));
-    await updateManifest(downloadUrls);
+    const manifest = [];
+    for (const release of releases) {
+        for (const asset of release.assets) {
+            if (asset.name.startsWith("llvm-mlir")) {
+                const downloadUrl = asset.browser_download_url;
+                const urlParts = downloadUrl.split("/");
+                const tag = urlParts[urlParts.length - 2];
+                const assetName = urlParts[urlParts.length - 1];
+                const [platform, architecture, debug] = getPlatformFromAsset(assetName);
+                const version = getVersionFromAsset(assetName);
+                manifest.push({
+                    architecture: architecture.toLowerCase(),
+                    asset_name: assetName,
+                    debug: debug,
+                    download_url: downloadUrl,
+                    platform: platform.toLowerCase(),
+                    release_url: release.html_url,
+                    tag: tag,
+                    version: version,
+                });
+            }
+        }
+    }
+    manifest.sort((a, b) => {
+        if (a.tag !== b.tag) {
+            return b.tag.localeCompare(a.tag);
+        }
+        if (a.platform !== b.platform) {
+            return a.platform.localeCompare(b.platform);
+        }
+        return a.architecture.localeCompare(b.architecture);
+    });
+    await external_node_fs_namespaceObject.promises.writeFile(MANIFEST_FILE, JSON.stringify(manifest));
+}
+async function getManifestEntry(version, platform, architecture, debug) {
+    const fileContent = await fs.readFile(MANIFEST_FILE);
+    let data = fileContent.toString();
+    let manifest = JSON.parse(data);
+    const entry = manifest.find((entry) => entry.version.startsWith(version) &&
+        entry.platform === platform.toLowerCase() &&
+        entry.architecture === architecture.toLowerCase() &&
+        entry.debug === debug);
+    if (!entry) {
+        throw new Error(`No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`);
+    }
+    return entry;
+}
+async function getZstdAsset(assets, platform, architecture) {
+    platform = platform.toLowerCase();
+    const extension = platform === "windows" ? "zip" : "tar.gz";
+    const pattern = RegExp(`^zstd-[A-Za-z0-9._-]+_${platform}_[A-Za-z0-9._-]+_${architecture}\\.${extension}$`, "i");
+    return assets.find((asset) => pattern.test(asset.name));
+}
+async function getZstdUrl(token, version, platform, architecture) {
+    const octokit = createOctokit(token);
+    platform = getPlatform(platform);
+    architecture = getArchitecture(architecture);
+    const entry = await getManifestEntry(version, platform, architecture, false);
+    let assets;
+    let asset;
+    const release = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
+        owner: REPO_OWNER,
+        repo: REPO_NAME,
+        tag: entry.tag,
+    });
+    assets = release.data.assets;
+    asset = await getZstdAsset(assets, platform, architecture);
+    if (!asset) {
+        octokit.log.info(`No zstd binary found for ${architecture} ${platform} in release ${entry.tag}.`);
+    }
+    const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
+        owner: REPO_OWNER,
+        repo: REPO_NAME,
+    });
+    assets = latestRelease.data.assets;
+    asset = await getZstdAsset(assets, platform, architecture);
+    if (!asset) {
+        throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
+    }
+    return { url: asset.browser_download_url, name: asset.name };
+}
+async function getMlirUrl(version, platform, architecture, debug) {
+    platform = getPlatform(platform);
+    architecture = getArchitecture(architecture);
+    const entry = await getManifestEntry(version, platform, architecture, debug);
+    return { url: entry.download_url, name: entry.asset_name };
+}
+
+;// CONCATENATED MODULE: ./src/update-known-versions.ts
+/*
+ * Copyright (c) 2025 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
+ * may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+
+
+
+
+/**
+ * Main function to update the version manifest
+ */
+async function run() {
+    await updateManifest();
+    const token = process.env.GITHUB_TOKEN || "";
+    const octokit = create_oktokit_createOctokit(token);
+    const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
+        owner: constants_REPO_OWNER,
+        repo: constants_REPO_NAME,
+    });
     setOutput("latest-tag", latestRelease.data.tag_name);
 }
 run().catch((error) => {

@@ -34498,9 +34498,88 @@ function _unique(values) {
     return Array.from(new Set(values));
 }
 //# sourceMappingURL=tool-cache.js.map
-;// CONCATENATED MODULE: external "node:process"
-const external_node_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:process");
-var external_node_process_default = /*#__PURE__*/__nccwpck_require__.n(external_node_process_namespaceObject);
+// EXTERNAL MODULE: external "node:url"
+var external_node_url_ = __nccwpck_require__(3136);
+;// CONCATENATED MODULE: external "node:fs"
+const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
+var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_namespaceObject);
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
+var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+;// CONCATENATED MODULE: ./src/utils/platform.ts
+/*
+ * Copyright (c) 2025 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
+ * may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+function getPlatform(platform) {
+    if (platform !== "host" &&
+        platform !== "linux" &&
+        platform !== "macOS" &&
+        platform !== "windows") {
+        throw new Error(`Invalid platform: ${platform}. Expected linux, macOS, or windows.`);
+    }
+    if (platform === "host") {
+        platform = determinePlatform();
+    }
+    return platform;
+}
+function getArchitecture(architecture) {
+    if (architecture !== "host" &&
+        architecture !== "X86" &&
+        architecture !== "AArch64") {
+        throw new Error(`Invalid architecture: ${architecture}. Expected X86 or AArch64.`);
+    }
+    if (architecture === "host") {
+        architecture = determineArchitecture();
+    }
+    return architecture;
+}
+/**
+ * Determine the platform of the current host.
+ * @returns {string} - platform of the current host (either linux, macOS, or windows)
+ */
+function determinePlatform() {
+    if (process.platform === "linux") {
+        return "linux";
+    }
+    else if (process.platform === "darwin") {
+        return "macOS";
+    }
+    else if (process.platform === "win32") {
+        return "windows";
+    }
+    else {
+        throw new Error(`Unsupported platform: ${process.platform}`);
+    }
+}
+/**
+ * Determine the architecture of the current host.
+ * @returns {string} - architecture of the current host (either X86 or AArch64)
+ */
+function determineArchitecture() {
+    if (process.arch === "x64") {
+        return "X86";
+    }
+    else if (process.arch === "arm64") {
+        return "AArch64";
+    }
+    else {
+        throw new Error(`Unsupported architecture: ${process.arch}`);
+    }
+}
+
 ;// CONCATENATED MODULE: ./node_modules/universal-user-agent/index.js
 function getUserAgent() {
   if (typeof navigator === "object" && "userAgent" in navigator) {
@@ -35579,7 +35658,55 @@ class Octokit {
 }
 
 
-;// CONCATENATED MODULE: ./src/get-download-link.ts
+;// CONCATENATED MODULE: ./src/utils/create-oktokit.ts
+/*
+ * Copyright (c) 2025 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
+ * may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+
+/**
+ * Create an Octokit instance with optional authentication
+ * @param token - GitHub token (optional)
+ * @returns Octokit instance
+ */
+function create_oktokit_createOctokit(token) {
+    const options = token ? { auth: token } : {};
+    return new Octokit(options);
+}
+
+;// CONCATENATED MODULE: ./src/utils/constants.ts
+/*
+ * Copyright (c) 2025 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
+ * may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+const constants_REPO_OWNER = "munich-quantum-software";
+const constants_REPO_NAME = "portable-mlir-toolchain";
+
+;// CONCATENATED MODULE: ./src/utils/manifest.ts
 /*
  * Copyright (c) 2025 Munich Quantum Software Company GmbH
  * Copyright (c) 2025 Chair for Design Automation, TUM
@@ -35598,146 +35725,46 @@ class Octokit {
  */
 
 
-const REPO_OWNER = "munich-quantum-software";
-const REPO_NAME = "portable-mlir-toolchain";
+
+
+
+
+const manifest_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
+const manifest_dirname = (0,external_node_path_namespaceObject.dirname)(manifest_filename);
+const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(manifest_dirname, "..", "..", "version-manifest.json");
 /**
- * Get the platform-specific architecture string for asset names
- * @param platform - Platform (linux, macOS, windows)
- * @param architecture - Architecture (X86, AArch64)
- * @returns Platform-specific architecture string
+ * Extract platform, architecture, and debug from the name of a release asset
+ * @param assetName - Name of the release asset
+ * @returns Tuple of platform, architecture, and debug
  */
-function getArchString(platform, architecture) {
-    // Validate architecture
-    if (architecture !== "X86" && architecture !== "AArch64") {
-        throw new Error(`Invalid architecture: ${architecture}. Expected X86 or AArch64.`);
+function getPlatformFromAsset(assetName) {
+    const platformMatch = assetName.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(X86|AArch64)(_debug)?\./i);
+    if (platformMatch) {
+        return [platformMatch[2], platformMatch[4], Boolean(platformMatch[5])];
     }
-    if (platform === "linux") {
-        return architecture === "X86" ? "x86_64" : "aarch64";
-    }
-    if (platform === "macOS") {
-        return architecture === "X86" ? "x86_64" : "arm64";
-    }
-    if (platform === "windows") {
-        return architecture === "X86" ? "X64" : "Arm64";
-    }
-    throw new Error(`Invalid platform: ${platform}`);
+    throw new Error(`Could not extract platform from asset name: ${assetName}`);
 }
 /**
- * Create an Octokit instance with optional authentication
- * @param token - GitHub token (optional)
- * @returns Octokit instance
+ * Extract version from the name of a release asset
+ * @param assetName - Name of the release asset
+ * @returns Version string
  */
-function createOctokit(token) {
-    const options = token ? { auth: token } : {};
-    return new Octokit(options);
+function getVersionFromAsset(assetName) {
+    const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
+    if (versionMatch) {
+        return versionMatch[1];
+    }
+    const hashMatch = assetName.match(/llvm-mlir_([0-9a-f]{7,40})_/i);
+    if (hashMatch) {
+        return hashMatch[1];
+    }
+    throw new Error(`Could not extract version from asset name: ${assetName}`);
 }
 /**
- * Determine the URL of the release asset for the given platform and architecture.
- * @param {string} token - GitHub token
- * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
- * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
- * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
- * @param {boolean} debug - whether to download debug build (Windows only)
- * @returns {{url: string, name: string}} - download URL for the release asset and the asset name
+ * Update the version manifest with release assets
  */
-async function getDownloadLink(token, llvm_version, platform = "host", architecture = "host", debug = false) {
-    const assets = await getAssets(token, llvm_version);
-    if (platform === "host") {
-        platform = determinePlatform();
-    }
-    if (architecture === "host") {
-        architecture = determineArchitecture();
-    }
-    // Determine the file name of the asset
-    const asset = findAsset(assets, platform, architecture, debug);
-    if (asset) {
-        return { url: asset.browser_download_url, name: asset.name };
-    }
-    else {
-        throw new Error(`No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${llvm_version}.`);
-    }
-}
-/**
- * Get the URL and name of the zstd binary for the given platform and architecture.
- * Tries to get zstd from the specified LLVM version release, and if not found, from the latest release.
- * @param {string} token - GitHub token
- * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
- * @param {string} platform - platform to look for (either host, linux, macOS, or windows)
- * @param {string} architecture - architecture to look for (either host, X86, or AArch64)
- * @returns {{url: string, name: string}} - download URL for the zstd binary and the asset name
- */
-async function getZstdLink(token, llvm_version, platform = "host", architecture = "host") {
-    if (platform === "host") {
-        platform = determinePlatform();
-    }
-    if (architecture === "host") {
-        architecture = determineArchitecture();
-    }
-    const octokit = createOctokit(token);
-    // Try to get zstd from the same release as the LLVM distribution
-    try {
-        const assets = await getAssets(token, llvm_version);
-        const asset = findZstdAsset(assets, platform, architecture);
-        if (asset) {
-            return { url: asset.browser_download_url, name: asset.name };
-        }
-    }
-    catch (error) {
-        // If the release doesn't exist or has no zstd, fall through to latest release
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        octokit.log.info(`zstd not found in LLVM ${llvm_version} release for ${platform}/${architecture} (${errorMessage}), falling back to latest release...`);
-    }
-    // Fall back to getting zstd from the latest release
-    const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-    });
-    const asset = findZstdAsset(latestRelease.data.assets, platform, architecture);
-    if (!asset) {
-        throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
-    }
-    return { url: asset.browser_download_url, name: asset.name };
-}
-/**
- * Determine the platform of the current host.
- * @returns {string} - platform of the current host (either linux, macOS, or windows)
- */
-function determinePlatform() {
-    if ((external_node_process_default()).platform === "linux") {
-        return "linux";
-    }
-    else if ((external_node_process_default()).platform === "darwin") {
-        return "macOS";
-    }
-    else if ((external_node_process_default()).platform === "win32") {
-        return "windows";
-    }
-    else {
-        throw new Error(`Unsupported platform: ${(external_node_process_default()).platform}`);
-    }
-}
-/**
- * Determine the architecture of the current host.
- * @returns {string} - architecture of the current host (either X86 or AArch64)
- */
-function determineArchitecture() {
-    if ((external_node_process_default()).arch === "x64") {
-        return "X86";
-    }
-    else if ((external_node_process_default()).arch === "arm64") {
-        return "AArch64";
-    }
-    else {
-        throw new Error(`Unsupported architecture: ${(external_node_process_default()).arch}`);
-    }
-}
-/**
- * Get the release assets for the given LLVM version from GitHub.
- * @param {string} token - GitHub token
- * @param {string} llvm_version - LLVM version (e.g., 21.1.6) or commit hash (e.g., a832a52)
- * @returns {Promise<ReleaseAsset[]>} - list of release assets
- */
-async function getAssets(token, llvm_version) {
+async function updateManifest() {
+    const token = process.env.GITHUB_TOKEN || "";
     const octokit = createOctokit(token);
     const releases = [];
     let page = 1;
@@ -35757,76 +35784,97 @@ async function getAssets(token, llvm_version) {
         }
         page++;
     }
-    // Check if llvm_version is a version tag or commit hash
-    const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
-    const matchingReleases = releases.filter((release) => {
-        if (!release.assets)
-            return false;
-        return release.assets.some((asset) => {
-            if (!asset.name)
-                return false;
-            if (isVersionTag) {
-                // For version tags, match exact pattern like: llvm-mlir_llvmorg-21.1.8_...
-                return asset.name.includes(`llvm-mlir_llvmorg-${llvm_version}_`);
+    const manifest = [];
+    for (const release of releases) {
+        for (const asset of release.assets) {
+            if (asset.name.startsWith("llvm-mlir")) {
+                const downloadUrl = asset.browser_download_url;
+                const urlParts = downloadUrl.split("/");
+                const tag = urlParts[urlParts.length - 2];
+                const assetName = urlParts[urlParts.length - 1];
+                const [platform, architecture, debug] = getPlatformFromAsset(assetName);
+                const version = getVersionFromAsset(assetName);
+                manifest.push({
+                    architecture: architecture.toLowerCase(),
+                    asset_name: assetName,
+                    debug: debug,
+                    download_url: downloadUrl,
+                    platform: platform.toLowerCase(),
+                    release_url: release.html_url,
+                    tag: tag,
+                    version: version,
+                });
             }
-            else {
-                // For commit hashes, match as prefix (supports short hashes)
-                // Extract hash from filename pattern like: llvm-mlir_f8cb798_...
-                const hashMatch = asset.name.match(/llvm-mlir_([0-9a-f]{7,40})_/i);
-                if (!hashMatch)
-                    return false;
-                return hashMatch[1]
-                    .toLowerCase()
-                    .startsWith(llvm_version.toLowerCase());
-            }
-        });
-    });
-    if (matchingReleases.length > 0) {
-        matchingReleases.sort((a, b) => {
-            const time_a = a.published_at ? new Date(a.published_at).getTime() : 0;
-            const time_b = b.published_at ? new Date(b.published_at).getTime() : 0;
-            return time_b - time_a;
-        });
-        return matchingReleases[0].assets;
+        }
     }
-    throw new Error(`No release with LLVM ${llvm_version} found.`);
+    manifest.sort((a, b) => {
+        if (a.tag !== b.tag) {
+            return b.tag.localeCompare(a.tag);
+        }
+        if (a.platform !== b.platform) {
+            return a.platform.localeCompare(b.platform);
+        }
+        return a.architecture.localeCompare(b.architecture);
+    });
+    await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest));
 }
-/**
- * Find the release asset for the given platform and architecture.
- * @param {ReleaseAsset[]} assets - list of release assets
- * @param {string} platform - platform to look for (either linux, macOS, or windows)
- * @param {string} architecture - architecture to look for (either X86 or AArch64)
- * @param {boolean} debug - whether to download debug build (Windows only)
- * @returns {(ReleaseAsset | undefined)} - release asset or undefined if not found
- */
-function findAsset(assets, platform, architecture, debug = false) {
-    const archStr = getArchString(platform, architecture);
-    const platformLower = platform.toLowerCase();
-    const debugSuffix = debug && platform === "windows" ? "_debug" : "";
-    const pattern = new RegExp(`^llvm-mlir_[0-9A-Za-z._-]+_${platformLower}_${archStr}_${architecture}${debugSuffix}\\.tar\\.zst$`, "i");
-    return assets.find((asset) => pattern.test(asset.name));
+async function getManifestEntry(version, platform, architecture, debug) {
+    const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE);
+    let data = fileContent.toString();
+    let manifest = JSON.parse(data);
+    const entry = manifest.find((entry) => entry.version.startsWith(version) &&
+        entry.platform === platform.toLowerCase() &&
+        entry.architecture === architecture.toLowerCase() &&
+        entry.debug === debug);
+    if (!entry) {
+        throw new Error(`No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`);
+    }
+    return entry;
 }
-/**
- * Find the zstd binary asset for the given platform and architecture.
- * @param {ReleaseAsset[]} assets - list of release assets
- * @param {string} platform - platform to look for (either linux, macOS, or windows)
- * @param {string} architecture - architecture to look for (either X86 or AArch64)
- * @returns {(ReleaseAsset | undefined)} - release asset or undefined if not found
- */
-function findZstdAsset(assets, platform, architecture) {
-    const archStr = getArchString(platform, architecture);
-    const platformLower = platform.toLowerCase();
+async function getZstdAsset(assets, platform, architecture) {
+    platform = platform.toLowerCase();
     const extension = platform === "windows" ? "zip" : "tar.gz";
-    const pattern = new RegExp(`^zstd-[A-Za-z0-9._-]+_${platformLower}_${archStr}_${architecture}\\.${extension}$`, "i");
+    const pattern = RegExp(`^zstd-[A-Za-z0-9._-]+_${platform}_[A-Za-z0-9._-]+_${architecture}\\.${extension}$`, "i");
     return assets.find((asset) => pattern.test(asset.name));
+}
+async function getZstdUrl(token, version, platform, architecture) {
+    const octokit = create_oktokit_createOctokit(token);
+    platform = getPlatform(platform);
+    architecture = getArchitecture(architecture);
+    const entry = await getManifestEntry(version, platform, architecture, false);
+    let assets;
+    let asset;
+    const release = await octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
+        owner: constants_REPO_OWNER,
+        repo: constants_REPO_NAME,
+        tag: entry.tag,
+    });
+    assets = release.data.assets;
+    asset = await getZstdAsset(assets, platform, architecture);
+    if (!asset) {
+        octokit.log.info(`No zstd binary found for ${architecture} ${platform} in release ${entry.tag}.`);
+    }
+    const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
+        owner: constants_REPO_OWNER,
+        repo: constants_REPO_NAME,
+    });
+    assets = latestRelease.data.assets;
+    asset = await getZstdAsset(assets, platform, architecture);
+    if (!asset) {
+        throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
+    }
+    return { url: asset.browser_download_url, name: asset.name };
+}
+async function getMlirUrl(version, platform, architecture, debug) {
+    platform = getPlatform(platform);
+    architecture = getArchitecture(architecture);
+    const entry = await getManifestEntry(version, platform, architecture, debug);
+    return { url: entry.download_url, name: entry.asset_name };
 }
 
-;// CONCATENATED MODULE: external "node:path"
-const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
-var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
-;// CONCATENATED MODULE: external "node:fs"
-const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
-var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_namespaceObject);
+;// CONCATENATED MODULE: external "node:process"
+const external_node_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:process");
+var external_node_process_default = /*#__PURE__*/__nccwpck_require__.n(external_node_process_namespaceObject);
 ;// CONCATENATED MODULE: external "node:os"
 const external_node_os_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:os");
 var external_node_os_default = /*#__PURE__*/__nccwpck_require__.n(external_node_os_namespaceObject);
@@ -35882,7 +35930,7 @@ async function run() {
         throw new Error(`Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z or a commit hash (minimum 7 characters).`);
     }
     core_debug("==> Determining zstd binary URL");
-    const zstdAsset = await getZstdLink(token, llvm_version, platform, architecture);
+    const zstdAsset = await getZstdUrl(token, llvm_version, platform, architecture);
     core_debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
     const zstdFile = await downloadTool(zstdAsset.url);
     core_debug("==> Extracting zstd binary");
@@ -35904,7 +35952,7 @@ async function run() {
         await exec_exec("chmod", ["+x", zstdPath]);
     }
     core_debug("==> Determining LLVM asset URL");
-    const asset = await getDownloadLink(token, llvm_version, platform, architecture, debug);
+    const asset = await getMlirUrl(llvm_version, platform, architecture, debug);
     core_debug(`==> Downloading LLVM asset: ${asset.url}`);
     const file = await downloadTool(asset.url);
     core_debug("==> Decompressing and extracting LLVM distribution");
