@@ -133,10 +133,10 @@ describe("setup-mlir Integration Tests", () => {
     });
 
     it("should reject non-existent version", async () => {
-      const { getMlirUrl } = await import("../src/utils/download.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
       await expect(
-        getMlirUrl("99.99.99", "host", "host", false),
+        getMLIRUrl("99.99.99", "host", "host", false),
       ).rejects.toThrow();
     });
   });
@@ -167,16 +167,16 @@ describe("setup-mlir Integration Tests", () => {
     });
 
     it("should handle explicit platform specification", async () => {
-      const { getMlirUrl } = await import("../src/utils/download.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
       // Test explicit linux platform
-      const linuxAsset = await getMlirUrl(testVersion, "linux", "X86", false);
+      const linuxAsset = await getMLIRUrl(testVersion, "linux", "X86", false);
       expect(linuxAsset.name).toContain("linux");
       expect(linuxAsset.name).toContain("x86_64");
     });
 
     it("should handle explicit architecture specification", async () => {
-      const { getMlirUrl } = await import("../src/utils/download.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
       // Test with current platform but explicit architecture
       const platform =
@@ -186,7 +186,7 @@ describe("setup-mlir Integration Tests", () => {
             ? "macOS"
             : "windows";
 
-      const asset = await getMlirUrl(testVersion, platform, "X86", false);
+      const asset = await getMLIRUrl(testVersion, platform, "X86", false);
       expect(asset.url).toBeTruthy();
       expect(asset.name).toContain("X86");
     });
@@ -194,9 +194,9 @@ describe("setup-mlir Integration Tests", () => {
 
   describe("Asset Download", () => {
     it("should fetch download link for LLVM distribution", async () => {
-      const { getMlirUrl } = await import("../src/utils/download.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
-      const asset = await getMlirUrl(testVersion, "host", "host", false);
+      const asset = await getMLIRUrl(testVersion, "host", "host", false);
 
       expect(asset.url).toBeTruthy();
       expect(asset.name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
@@ -344,9 +344,9 @@ describe("setup-mlir Integration Tests", () => {
             : "windows";
       const arch = process.arch === "x64" ? "X86" : "AArch64";
 
-      const { getMlirUrl } = await import("../src/utils/download.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
-      const asset = await getMlirUrl(testVersion, platform, arch, false);
+      const asset = await getMLIRUrl(testVersion, platform, arch, false);
 
       expect(asset.name).toMatch(/^llvm-mlir_llvmorg-21\.1\.8_/);
       expect(asset.name).toContain(platform.toLowerCase());
@@ -375,18 +375,18 @@ describe("setup-mlir Integration Tests", () => {
     );
 
     it("should reject invalid platform", async () => {
-      const { getMlirUrl } = await import("../src/utils/download.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
       await expect(
-        getMlirUrl(testVersion, "invalid", "X86", false),
+        getMLIRUrl(testVersion, "invalid", "X86", false),
       ).rejects.toThrow("Invalid platform: invalid");
     });
 
     it("should reject invalid architecture", async () => {
-      const { getMlirUrl } = await import("../src/utils/download.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
       await expect(
-        getMlirUrl(testVersion, "linux", "invalid", false),
+        getMLIRUrl(testVersion, "linux", "invalid", false),
       ).rejects.toThrow("Invalid architecture: invalid");
     });
   });

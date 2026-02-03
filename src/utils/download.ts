@@ -152,7 +152,7 @@ export async function getZstdUrl(
  * @param debug Whether to get a debug build
  * @returns The download URL and the asset name
  */
-export async function getMlirUrl(
+export async function getMLIRUrl(
   version: string,
   platform: string,
   architecture: string,

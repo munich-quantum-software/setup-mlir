@@ -35826,7 +35826,7 @@ async function getZstdUrl(token, version, platform, architecture) {
  * @param debug Whether to get a debug build
  * @returns The download URL and the asset name
  */
-async function getMlirUrl(version, platform, architecture, debug) {
+async function getMLIRUrl(version, platform, architecture, debug) {
     platform = getPlatform(platform);
     architecture = getArchitecture(architecture);
     const entry = await getManifestEntry(version, platform, architecture, debug);
@@ -35913,7 +35913,7 @@ async function run() {
         await exec_exec("chmod", ["+x", zstdPath]);
     }
     core_debug("==> Determining LLVM asset URL");
-    const asset = await getMlirUrl(llvm_version, platform, architecture, debug);
+    const asset = await getMLIRUrl(llvm_version, platform, architecture, debug);
     core_debug(`==> Downloading LLVM asset: ${asset.url}`);
     const file = await downloadTool(asset.url);
     core_debug("==> Decompressing and extracting LLVM distribution");
