@@ -207,7 +207,7 @@ describe("setup-mlir Integration Tests", () => {
       expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
     });
 
-    it("should fall back to latest release for zstd when version release doesn't have it", async () => {
+    it("should use latest release also when requested release doesn't have zstd binaries", async () => {
       const { getZstdUrl } = await import("../src/utils/download.js");
 
       const zstdAsset = await getZstdUrl(testVersionCommit, "host", "host");

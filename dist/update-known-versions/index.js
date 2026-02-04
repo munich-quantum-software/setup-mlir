@@ -32234,7 +32234,7 @@ async function updateManifest() {
     const releases = await getReleases(octokit);
     const versions = new Set();
     const manifest = [];
-    const latestZstdInfo = {};
+    const zstdInfo = {};
     for (const release of releases) {
         let version = undefined;
         for (const asset of release.assets) {
@@ -32243,8 +32243,12 @@ async function updateManifest() {
                 if (match) {
                     const platform = match[2].toLowerCase();
                     const architecture = match[4].toLowerCase();
-                    latestZstdInfo[`asset_name_${platform}_${architecture}`] = asset.name;
-                    latestZstdInfo[`download_url_${platform}_${architecture}`] = asset.browser_download_url;
+                    const assetNameKey = `asset_name_${platform}_${architecture}`;
+                    const downloadUrlKey = `download_url_${platform}_${architecture}`;
+                    if (!zstdInfo[assetNameKey] || !zstdInfo[downloadUrlKey]) {
+                        zstdInfo[assetNameKey] = asset.name;
+                        zstdInfo[downloadUrlKey] = asset.browser_download_url;
+                    }
                 }
             }
         }
@@ -32258,8 +32262,8 @@ async function updateManifest() {
                     const [platform, architecture, debug] = getMetadata(asset.name);
                     const zstdAssetNameKey = `asset_name_${platform}_${architecture}`;
                     const zstdDownloadUrlKey = `download_url_${platform}_${architecture}`;
-                    const zstdAssetName = latestZstdInfo[zstdAssetNameKey];
-                    const zstdDownloadUrl = latestZstdInfo[zstdDownloadUrlKey];
+                    const zstdAssetName = zstdInfo[zstdAssetNameKey];
+                    const zstdDownloadUrl = zstdInfo[zstdDownloadUrlKey];
                     if (!zstdAssetName || !zstdDownloadUrl) {
                         throw new Error(`No zstd binary found for ${asset.name}.`);
                     }

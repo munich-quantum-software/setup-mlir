@@ -200,7 +200,7 @@ export async function updateManifest(): Promise<void> {
 
   const versions: Set<string> = new Set();
   const manifest: ManifestEntry[] = [];
-  const latestZstdInfo: ZstdInfo = {};
+  const zstdInfo: ZstdInfo = {};
   for (const release of releases) {
     let version: string | undefined = undefined;
     for (const asset of release.assets) {
@@ -211,12 +211,14 @@ export async function updateManifest(): Promise<void> {
         if (match) {
           const platform = match[2].toLowerCase();
           const architecture = match[4].toLowerCase();
-          latestZstdInfo[
-            `asset_name_${platform}_${architecture}` as keyof ZstdInfo
-          ] = asset.name;
-          latestZstdInfo[
-            `download_url_${platform}_${architecture}` as keyof ZstdInfo
-          ] = asset.browser_download_url;
+          const assetNameKey =
+            `asset_name_${platform}_${architecture}` as keyof ZstdInfo;
+          const downloadUrlKey =
+            `download_url_${platform}_${architecture}` as keyof ZstdInfo;
+          if (!zstdInfo[assetNameKey] || !zstdInfo[downloadUrlKey]) {
+            zstdInfo[assetNameKey] = asset.name;
+            zstdInfo[downloadUrlKey] = asset.browser_download_url;
+          }
         }
       }
     }
@@ -232,8 +234,8 @@ export async function updateManifest(): Promise<void> {
             `asset_name_${platform}_${architecture}` as keyof ZstdInfo;
           const zstdDownloadUrlKey =
             `download_url_${platform}_${architecture}` as keyof ZstdInfo;
-          const zstdAssetName = latestZstdInfo[zstdAssetNameKey];
-          const zstdDownloadUrl = latestZstdInfo[zstdDownloadUrlKey];
+          const zstdAssetName = zstdInfo[zstdAssetNameKey];
+          const zstdDownloadUrl = zstdInfo[zstdDownloadUrlKey];
           if (!zstdAssetName || !zstdDownloadUrl) {
             throw new Error(`No zstd binary found for ${asset.name}.`);
           }

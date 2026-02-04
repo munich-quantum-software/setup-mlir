@@ -105,7 +105,7 @@
     "tag": "2026.01.08",
     "version": "21.1.8",
     "zstd_asset_name": "zstd-1.5.7_linux_aarch64_AArch64.tar.gz",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_linux_aarch64_AArch64.tar.gz"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_linux_aarch64_AArch64.tar.gz"
   },
   {
     "architecture": "x86",
@@ -117,7 +117,7 @@
     "tag": "2026.01.08",
     "version": "21.1.8",
     "zstd_asset_name": "zstd-1.5.7_linux_x86_64_X86.tar.gz",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_linux_x86_64_X86.tar.gz"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_linux_x86_64_X86.tar.gz"
   },
   {
     "architecture": "aarch64",
@@ -129,7 +129,7 @@
     "tag": "2026.01.08",
     "version": "21.1.8",
     "zstd_asset_name": "zstd-1.5.7_macos_arm64_AArch64.tar.gz",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_macos_arm64_AArch64.tar.gz"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_macos_arm64_AArch64.tar.gz"
   },
   {
     "architecture": "x86",
@@ -141,7 +141,7 @@
     "tag": "2026.01.08",
     "version": "21.1.8",
     "zstd_asset_name": "zstd-1.5.7_macos_x86_64_X86.tar.gz",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_macos_x86_64_X86.tar.gz"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_macos_x86_64_X86.tar.gz"
   },
   {
     "architecture": "aarch64",
@@ -153,7 +153,7 @@
     "tag": "2026.01.08",
     "version": "21.1.8",
     "zstd_asset_name": "zstd-1.5.7_windows_Arm64_AArch64.zip",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_windows_Arm64_AArch64.zip"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_windows_Arm64_AArch64.zip"
   },
   {
     "architecture": "aarch64",
@@ -165,7 +165,7 @@
     "tag": "2026.01.08",
     "version": "21.1.8",
     "zstd_asset_name": "zstd-1.5.7_windows_Arm64_AArch64.zip",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_windows_Arm64_AArch64.zip"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_windows_Arm64_AArch64.zip"
   },
   {
     "architecture": "x86",
@@ -177,7 +177,7 @@
     "tag": "2026.01.08",
     "version": "21.1.8",
     "zstd_asset_name": "zstd-1.5.7_windows_X64_X86.zip",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_windows_X64_X86.zip"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_windows_X64_X86.zip"
   },
   {
     "architecture": "x86",
@@ -189,7 +189,7 @@
     "tag": "2026.01.08",
     "version": "21.1.8",
     "zstd_asset_name": "zstd-1.5.7_windows_X64_X86.zip",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_windows_X64_X86.zip"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_windows_X64_X86.zip"
   },
   {
     "architecture": "aarch64",
@@ -201,7 +201,7 @@
     "tag": "2025.12.23",
     "version": "f8cb7987c64dcffb72414a40560055cb717dbf74",
     "zstd_asset_name": "zstd-1.5.7_linux_aarch64_AArch64.tar.gz",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_linux_aarch64_AArch64.tar.gz"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_linux_aarch64_AArch64.tar.gz"
   },
   {
     "architecture": "x86",
@@ -213,7 +213,7 @@
     "tag": "2025.12.23",
     "version": "f8cb7987c64dcffb72414a40560055cb717dbf74",
     "zstd_asset_name": "zstd-1.5.7_linux_x86_64_X86.tar.gz",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_linux_x86_64_X86.tar.gz"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_linux_x86_64_X86.tar.gz"
   },
   {
     "architecture": "aarch64",
@@ -225,7 +225,7 @@
     "tag": "2025.12.23",
     "version": "f8cb7987c64dcffb72414a40560055cb717dbf74",
     "zstd_asset_name": "zstd-1.5.7_macos_arm64_AArch64.tar.gz",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_macos_arm64_AArch64.tar.gz"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_macos_arm64_AArch64.tar.gz"
   },
   {
     "architecture": "x86",
@@ -237,7 +237,7 @@
     "tag": "2025.12.23",
     "version": "f8cb7987c64dcffb72414a40560055cb717dbf74",
     "zstd_asset_name": "zstd-1.5.7_macos_x86_64_X86.tar.gz",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_macos_x86_64_X86.tar.gz"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_macos_x86_64_X86.tar.gz"
   },
   {
     "architecture": "aarch64",
@@ -249,7 +249,7 @@
     "tag": "2025.12.23",
     "version": "f8cb7987c64dcffb72414a40560055cb717dbf74",
     "zstd_asset_name": "zstd-1.5.7_windows_Arm64_AArch64.zip",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_windows_Arm64_AArch64.zip"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_windows_Arm64_AArch64.zip"
   },
   {
     "architecture": "x86",
@@ -261,6 +261,6 @@
     "tag": "2025.12.23",
     "version": "f8cb7987c64dcffb72414a40560055cb717dbf74",
     "zstd_asset_name": "zstd-1.5.7_windows_X64_X86.zip",
-    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/zstd-1.5.7_windows_X64_X86.zip"
+    "zstd_download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/zstd-1.5.7_windows_X64_X86.zip"
   }
 ]
