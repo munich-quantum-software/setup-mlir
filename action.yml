@@ -33,10 +33,6 @@ inputs:
     description: "Whether to install the debug build (Windows only). Defaults to false."
     required: false
     default: "false"
-  token:
-    description: "The token that the action will use to query the GitHub API. Defaults to the repository's GitHub token."
-    required: false
-    default: ${{ github.token }}
 
 runs:
   using: node24

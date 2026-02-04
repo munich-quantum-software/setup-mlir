@@ -34550,7 +34550,6 @@ async function run() {
     const llvm_version = getInput("llvm-version", { required: true });
     const platform = getInput("platform", { required: true });
     const architecture = getInput("architecture", { required: true });
-    const token = getInput("token", { required: true });
     const debug = getBooleanInput("debug", { required: false });
     // Validate debug flag is only used on Windows
     const isWindows = platform === "windows" ||

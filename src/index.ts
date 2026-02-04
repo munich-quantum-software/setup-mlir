@@ -34,7 +34,6 @@ export async function run(): Promise<void> {
   const llvm_version = core.getInput("llvm-version", { required: true });
   const platform = core.getInput("platform", { required: true });
   const architecture = core.getInput("architecture", { required: true });
-  const token = core.getInput("token", { required: true });
   const debug = core.getBooleanInput("debug", { required: false });
 
   // Validate debug flag is only used on Windows
