@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2025 Munich Quantum Software Company GmbH
- * Copyright (c) 2025 Chair for Design Automation, TUM
+ * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
  * All rights reserved.
  *
  * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you

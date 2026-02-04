@@ -32033,8 +32033,8 @@ class Octokit {
 
 ;// CONCATENATED MODULE: ./src/utils/create-oktokit.ts
 /*
- * Copyright (c) 2025 Munich Quantum Software Company GmbH
- * Copyright (c) 2025 Chair for Design Automation, TUM
+ * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
  * All rights reserved.
  *
  * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
@@ -32065,8 +32065,8 @@ var external_node_url_ = __nccwpck_require__(3136);
 const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 ;// CONCATENATED MODULE: ./src/utils/constants.ts
 /*
- * Copyright (c) 2025 Munich Quantum Software Company GmbH
- * Copyright (c) 2025 Chair for Design Automation, TUM
+ * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
  * All rights reserved.
  *
  * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
@@ -32091,8 +32091,8 @@ const README_FILE = (0,external_node_path_namespaceObject.join)(constants_dirnam
 
 ;// CONCATENATED MODULE: ./src/utils/manifest.ts
 /*
- * Copyright (c) 2025 Munich Quantum Software Company GmbH
- * Copyright (c) 2025 Chair for Design Automation, TUM
+ * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
  * All rights reserved.
  *
  * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
@@ -32306,8 +32306,8 @@ async function updateManifest() {
 
 ;// CONCATENATED MODULE: ./src/update-known-versions.ts
 /*
- * Copyright (c) 2025 Munich Quantum Software Company GmbH
- * Copyright (c) 2025 Chair for Design Automation, TUM
+ * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
  * All rights reserved.
  *
  * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
