@@ -4,10 +4,25 @@ This repository provides an action for setting up MLIR in GitHub Actions and ins
 
 The MLIR binaries are built and distributed in the [`portable-mlir-toolchain`](https://github.com/munich-quantum-software/portable-mlir-toolchain/) repository.
 
+<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->
+
+List of available LLVM versions:
+
+- `21.1.8`
+
+List of available LLVM commit hashes:
+
+- `113f01aa82d055410f22a9d03b3468fa68600589`
+- `f8cb7987c64dcffb72414a40560055cb717dbf74`
+
+<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->
+
+For more information on the available LLVM versions and commit hashes, see [`version-manifest.json`](./version-manifest.json).
+
 ## GitHub Actions
 
 ```yaml
-- name: Setup MLIR
+- name: Set up MLIR
   uses: munich-quantum-software/setup-mlir@v1.1.0
   with:
     llvm-version: 21.1.8
@@ -20,7 +35,7 @@ This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and d
 On Windows, you can optionally install debug builds:
 
 ```yaml
-- name: Setup MLIR (Debug)
+- name: Set up MLIR (Debug)
   uses: munich-quantum-software/setup-mlir@v1.1.0
   with:
     llvm-version: 21.1.8
@@ -35,7 +50,8 @@ The scripts automatically download and use a platform-specific `zstd` binary for
 
 > [!NOTE]
 >
-> `tar` is included by default in Windows 10 and Windows 11. If you're using an older version, you can install it, for example, via [Chocolatey](https://chocolatey.org/): `choco install tar`.
+> `tar` is included by default in Windows 10 and Windows 11.
+> If you're using an older version, you can install it, for example, via [Chocolatey](https://chocolatey.org/): `choco install tar`.
 
 On Linux and macOS, use the following Bash command:
 

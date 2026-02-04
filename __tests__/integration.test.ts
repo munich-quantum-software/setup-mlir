@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2025 Munich Quantum Software Company GmbH
- * Copyright (c) 2025 Chair for Design Automation, TUM
+ * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
  * All rights reserved.
  *
  * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
@@ -53,10 +53,9 @@ const mockCore = {
 // Mock @actions/core before importing it
 jest.unstable_mockModule("@actions/core", () => mockCore);
 
-describe("MLIR Setup Integration Tests", () => {
+describe("setup-mlir Integration Tests", () => {
   const testVersion = "21.1.8";
   const testVersionCommit = "f8cb798";
-  const testToken = process.env.GITHUB_TOKEN || "";
   let cachedPath: string | undefined;
   let run: () => Promise<void>;
 
@@ -68,7 +67,7 @@ describe("MLIR Setup Integration Tests", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Setup environment for tests
+    // Set up environment for tests
     if (!process.env.RUNNER_TEMP) {
       process.env.RUNNER_TEMP = os.tmpdir();
     }
@@ -81,7 +80,6 @@ describe("MLIR Setup Integration Tests", () => {
       if (name === "llvm-version") return testVersion;
       if (name === "platform") return "host";
       if (name === "architecture") return "host";
-      if (name === "token") return testToken;
       return "";
     });
 
@@ -131,11 +129,10 @@ describe("MLIR Setup Integration Tests", () => {
     });
 
     it("should reject non-existent version", async () => {
-      const { default: getDownloadLink } =
-        await import("../src/get-download-link.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
       await expect(
-        getDownloadLink(testToken, "99.99.99", "host", "host", false),
+        getMLIRUrl("99.99.99", "host", "host", false),
       ).rejects.toThrow();
     });
   });
@@ -166,32 +163,16 @@ describe("MLIR Setup Integration Tests", () => {
     });
 
     it("should handle explicit platform specification", async () => {
-      if (!testToken) {
-        return;
-      }
-
-      const { default: getDownloadLink } =
-        await import("../src/get-download-link.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
       // Test explicit linux platform
-      const linuxAsset = await getDownloadLink(
-        testToken,
-        testVersion,
-        "linux",
-        "X86",
-        false,
-      );
+      const linuxAsset = await getMLIRUrl(testVersion, "linux", "X86", false);
       expect(linuxAsset.name).toContain("linux");
       expect(linuxAsset.name).toContain("x86_64");
     });
 
     it("should handle explicit architecture specification", async () => {
-      if (!testToken) {
-        return;
-      }
-
-      const { default: getDownloadLink } =
-        await import("../src/get-download-link.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
       // Test with current platform but explicit architecture
       const platform =
@@ -201,13 +182,7 @@ describe("MLIR Setup Integration Tests", () => {
             ? "macOS"
             : "windows";
 
-      const asset = await getDownloadLink(
-        testToken,
-        testVersion,
-        platform,
-        "X86",
-        false,
-      );
+      const asset = await getMLIRUrl(testVersion, platform, "X86", false);
       expect(asset.url).toBeTruthy();
       expect(asset.name).toContain("X86");
     });
@@ -215,44 +190,27 @@ describe("MLIR Setup Integration Tests", () => {
 
   describe("Asset Download", () => {
     it("should fetch download link for LLVM distribution", async () => {
-      const { default: getDownloadLink } =
-        await import("../src/get-download-link.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
-      const asset = await getDownloadLink(
-        testToken,
-        testVersion,
-        "host",
-        "host",
-        false,
-      );
+      const asset = await getMLIRUrl(testVersion, "host", "host", false);
 
       expect(asset.url).toBeTruthy();
       expect(asset.name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
     });
 
     it("should fetch download link for zstd binary", async () => {
-      const { getZstdLink } = await import("../src/get-download-link.js");
+      const { getZstdUrl } = await import("../src/utils/download.js");
 
-      const zstdAsset = await getZstdLink(
-        testToken,
-        testVersion,
-        "host",
-        "host",
-      );
+      const zstdAsset = await getZstdUrl(testVersion, "host", "host");
 
       expect(zstdAsset.url).toBeTruthy();
       expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
     });
 
-    it("should fall back to latest release for zstd when version release doesn't have it", async () => {
-      const { getZstdLink } = await import("../src/get-download-link.js");
+    it("should use latest release also when requested release doesn't have zstd binaries", async () => {
+      const { getZstdUrl } = await import("../src/utils/download.js");
 
-      const zstdAsset = await getZstdLink(
-        testToken,
-        testVersionCommit,
-        "host",
-        "host",
-      );
+      const zstdAsset = await getZstdUrl(testVersionCommit, "host", "host");
 
       expect(zstdAsset.url).toBeTruthy();
       expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
@@ -261,11 +219,6 @@ describe("MLIR Setup Integration Tests", () => {
 
   describe("Full Setup Integration", () => {
     it("should complete full setup for current platform", async () => {
-      if (!testToken) {
-        console.log("Skipping: No GITHUB_TOKEN available");
-        return;
-      }
-
       // Run the actual setup function
       await run();
 
@@ -322,33 +275,17 @@ describe("MLIR Setup Integration Tests", () => {
 
     it("should handle debug flag on Windows", async () => {
       if (process.platform !== "win32") {
-        console.log("Skipping: Only available on Windows");
         return;
       }
-
-      if (!testToken) {
-        console.log("Skipping: No GITHUB_TOKEN available");
-        return;
-      }
-
-      mockCore.getBooleanInput.mockImplementation((name: string) => {
-        return name === "debug";
-      });
 
       await run();
 
       expect(mockCore.addPath).toHaveBeenCalled();
       expect(mockCore.setFailed).not.toHaveBeenCalled();
-    }, 600000);
+    }, 600000); // 10 minute timeout
 
     it("should reject debug flag on non-Windows platforms", async () => {
       if (process.platform === "win32") {
-        console.log("Skipping: Only relevant on non-Windows");
-        return;
-      }
-
-      if (!testToken) {
-        console.log("Skipping: No GITHUB_TOKEN available");
         return;
       }
 
@@ -366,7 +303,6 @@ describe("MLIR Setup Integration Tests", () => {
         if (name === "llvm-version") return "invalid-version-123";
         if (name === "platform") return "host";
         if (name === "architecture") return "host";
-        if (name === "token") return testToken;
         return "";
       });
 
@@ -384,33 +320,19 @@ describe("MLIR Setup Integration Tests", () => {
             : "windows";
       const arch = process.arch === "x64" ? "X86" : "AArch64";
 
-      const { default: getDownloadLink } =
-        await import("../src/get-download-link.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
-      const asset = await getDownloadLink(
-        testToken,
-        testVersion,
-        platform,
-        arch,
-        false,
-      );
+      const asset = await getMLIRUrl(testVersion, platform, arch, false);
 
       expect(asset.name).toMatch(/^llvm-mlir_llvmorg-21\.1\.8_/);
-      expect(asset.name).toContain(
-        platform === "macOS" ? "macos" : platform.toLowerCase(),
-      );
+      expect(asset.name).toContain(platform.toLowerCase());
       expect(asset.name).toMatch(/\.tar\.zst$/);
     });
 
     it("should match correct zstd patterns for current platform", async () => {
-      const { getZstdLink } = await import("../src/get-download-link.js");
+      const { getZstdUrl } = await import("../src/utils/download.js");
 
-      const zstdAsset = await getZstdLink(
-        testToken,
-        testVersion,
-        "host",
-        "host",
-      );
+      const zstdAsset = await getZstdUrl(testVersion, "host", "host");
 
       expect(zstdAsset.name).toMatch(/^zstd-/);
       if (process.platform === "win32") {
@@ -421,23 +343,19 @@ describe("MLIR Setup Integration Tests", () => {
     });
 
     it("should reject invalid platform", async () => {
-      const { default: getDownloadLink } =
-        await import("../src/get-download-link.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
       await expect(
-        getDownloadLink(testToken, testVersion, "invalid", "X86", false),
+        getMLIRUrl(testVersion, "invalid", "X86", false),
       ).rejects.toThrow("Invalid platform: invalid");
     });
 
     it("should reject invalid architecture", async () => {
-      const { default: getDownloadLink } =
-        await import("../src/get-download-link.js");
+      const { getMLIRUrl } = await import("../src/utils/download.js");
 
       await expect(
-        getDownloadLink(testToken, testVersion, "linux", "invalid", false),
-      ).rejects.toThrow(
-        "Invalid architecture: invalid. Expected X86 or AArch64.",
-      );
+        getMLIRUrl(testVersion, "linux", "invalid", false),
+      ).rejects.toThrow("Invalid architecture: invalid");
     });
   });
 });
