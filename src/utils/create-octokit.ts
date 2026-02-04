@@ -19,7 +19,7 @@ import { Octokit, OctokitOptions } from "@octokit/core";
 
 /**
  * Create an Octokit instance with optional authentication
- * @param token - GitHub token (optional)
+ * @param token - GitHub token
  * @returns Octokit instance
  */
 export function createOctokit(token: string): Octokit {

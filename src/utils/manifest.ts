@@ -17,7 +17,7 @@
 
 import * as core from "@actions/core";
 import { promises as fs } from "node:fs";
-import { createOctokit } from "./create-oktokit.js";
+import { createOctokit } from "./create-octokit.js";
 import {
   MANIFEST_FILE,
   README_FILE,

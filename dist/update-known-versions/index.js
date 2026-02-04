@@ -32031,7 +32031,7 @@ class Octokit {
 }
 
 
-;// CONCATENATED MODULE: ./src/utils/create-oktokit.ts
+;// CONCATENATED MODULE: ./src/utils/create-octokit.ts
 /*
  * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
  * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
@@ -32051,7 +32051,7 @@ class Octokit {
 
 /**
  * Create an Octokit instance with optional authentication
- * @param token - GitHub token (optional)
+ * @param token - GitHub token
  * @returns Octokit instance
  */
 function createOctokit(token) {
