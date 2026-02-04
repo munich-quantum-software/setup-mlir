@@ -25,9 +25,7 @@ import {
   REPO_OWNER,
 } from "./constants.js";
 import { Octokit } from "@octokit/core";
-import type { components } from "@octokit/openapi-types";
-
-type Release = components["schemas"]["release"];
+import type { Release } from "./types.js";
 
 const README_LIST_BEGIN = "<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
