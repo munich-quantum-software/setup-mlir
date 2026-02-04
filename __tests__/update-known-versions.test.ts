@@ -98,45 +98,55 @@ describe("Update Known Versions", () => {
     expect(Array.isArray(manifest)).toBe(true);
     expect(manifest.length).toBeGreaterThan(0);
 
-    // Verify at least one entry has valid data
-    const entry = manifest[0];
+    // Verify entries are valid
+    for (const entry of manifest) {
+      // Verify all required fields exist
+      expect(entry.architecture).toBeTruthy();
+      expect(entry.asset_name).toBeTruthy();
+      expect(typeof entry.debug).toBe("boolean");
+      expect(entry.download_url).toBeTruthy();
+      expect(entry.platform).toBeTruthy();
+      expect(entry.release_url).toBeTruthy();
+      expect(entry.tag).toBeTruthy();
+      expect(entry.version).toBeTruthy();
+      expect(entry.zstd_asset_name).toBeTruthy();
+      expect(entry.zstd_download_url).toBeTruthy();
 
-    // Check that all required fields exist
-    expect(entry.architecture).toBeTruthy();
-    expect(entry.asset_name).toBeTruthy();
-    expect(typeof entry.debug).toBe("boolean");
-    expect(entry.download_url).toBeTruthy();
-    expect(entry.platform).toBeTruthy();
-    expect(entry.release_url).toBeTruthy();
-    expect(entry.tag).toBeTruthy();
-    expect(entry.version).toBeTruthy();
+      // Verify version is either semantic version or commit hash
+      const isSemanticVersion = /^\d+\.\d+\.\d+$/.test(entry.version);
+      const isCommitHash = /^[0-9a-f]{7,40}$/i.test(entry.version);
+      expect(isSemanticVersion || isCommitHash).toBe(true);
 
-    // Verify version is either semantic version or commit hash
-    const isSemanticVersion = /^\d+\.\d+\.\d+$/.test(entry.version);
-    const isCommitHash = /^[0-9a-f]{7,40}$/i.test(entry.version);
-    expect(isSemanticVersion || isCommitHash).toBe(true);
+      // Verify tag is a calendar version (YYYY.MM.DD format)
+      const isCalendarVersion = /^\d{4}\.\d{2}\.\d{2}$/.test(entry.tag);
+      expect(isCalendarVersion).toBe(true);
 
-    // Verify tag is a calendar version (YYYY.MM.DD format)
-    const isCalendarVersion = /^\d{4}\.\d{2}\.\d{2}$/.test(entry.tag);
-    expect(isCalendarVersion).toBe(true);
+      // Verify platform is valid
+      expect(["linux", "macos", "windows"]).toContain(entry.platform);
 
-    // Verify platform is valid
-    expect(["linux", "macos", "windows"]).toContain(entry.platform);
+      // Verify architecture is valid
+      expect(["x86", "aarch64"]).toContain(entry.architecture);
 
-    // Verify architecture is valid
-    expect(["x86", "aarch64"]).toContain(entry.architecture);
+      // Verify download URL is from the correct repository
+      expect(entry.download_url).toContain(
+        "github.com/munich-quantum-software/portable-mlir-toolchain/releases/download",
+      );
 
-    // Verify download URL is from the correct repository
-    expect(entry.download_url).toContain(
-      "github.com/munich-quantum-software/portable-mlir-toolchain/releases/download",
-    );
+      // Verify release URL is from the correct repository
+      expect(entry.release_url).toContain(
+        "github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag",
+      );
 
-    // Verify release URL is from the correct repository
-    expect(entry.release_url).toContain(
-      "github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag",
-    );
+      // Verify asset name matches expected pattern
+      expect(entry.asset_name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
 
-    // Verify asset name matches expected pattern
-    expect(entry.asset_name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
+      // Verify zstd asset name matches expected pattern
+      expect(entry.zstd_asset_name).toMatch(/^zstd-.*\.(zip|tar\.gz)$/);
+
+      // Verify zstd download URL is from the correct repository
+      expect(entry.zstd_download_url).toContain(
+        "github.com/munich-quantum-software/portable-mlir-toolchain/releases/download",
+      );
+    }
   }, 600000); // 10 minute timeout
 });
