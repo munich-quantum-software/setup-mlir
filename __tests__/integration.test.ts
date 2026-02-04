@@ -29,8 +29,6 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import process from "node:process";
 
-const itIf = (condition: boolean) => (condition ? it : it.skip);
-
 // Create mock functions
 const mockGetInput =
   jest.fn<(name: string, options?: { required?: boolean }) => string>();
@@ -58,7 +56,6 @@ jest.unstable_mockModule("@actions/core", () => mockCore);
 describe("setup-mlir Integration Tests", () => {
   const testVersion = "21.1.8";
   const testVersionCommit = "f8cb798";
-  const testToken = process.env.GITHUB_TOKEN || "";
   let cachedPath: string | undefined;
   let run: () => Promise<void>;
 
@@ -83,7 +80,6 @@ describe("setup-mlir Integration Tests", () => {
       if (name === "llvm-version") return testVersion;
       if (name === "platform") return "host";
       if (name === "architecture") return "host";
-      if (name === "token") return testToken;
       return "";
     });
 
@@ -202,131 +198,111 @@ describe("setup-mlir Integration Tests", () => {
       expect(asset.name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
     });
 
-    itIf(!!testToken)(
-      "should fetch download link for zstd binary",
-      async () => {
-        const { getZstdUrl } = await import("../src/utils/download.js");
+    it("should fetch download link for zstd binary", async () => {
+      const { getZstdUrl } = await import("../src/utils/download.js");
 
-        const zstdAsset = await getZstdUrl(
-          testToken,
-          testVersion,
-          "host",
-          "host",
-        );
+      const zstdAsset = await getZstdUrl(testVersion, "host", "host");
 
-        expect(zstdAsset.url).toBeTruthy();
-        expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
-      },
-    );
+      expect(zstdAsset.url).toBeTruthy();
+      expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
+    });
 
-    itIf(!!testToken)(
-      "should fall back to latest release for zstd when version release doesn't have it",
-      async () => {
-        const { getZstdUrl } = await import("../src/utils/download.js");
+    it("should fall back to latest release for zstd when version release doesn't have it", async () => {
+      const { getZstdUrl } = await import("../src/utils/download.js");
 
-        const zstdAsset = await getZstdUrl(
-          testToken,
-          testVersionCommit,
-          "host",
-          "host",
-        );
+      const zstdAsset = await getZstdUrl(testVersionCommit, "host", "host");
 
-        expect(zstdAsset.url).toBeTruthy();
-        expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
-      },
-    );
+      expect(zstdAsset.url).toBeTruthy();
+      expect(zstdAsset.name).toMatch(/^zstd-.*\.(tar\.gz|zip)$/);
+    });
   });
 
   describe("Full Setup Integration", () => {
-    itIf(!!testToken)(
-      "should complete full setup for current platform",
-      async () => {
-        // Run the actual setup function
-        await run();
+    it("should complete full setup for current platform", async () => {
+      // Run the actual setup function
+      await run();
 
-        // Verify mocks were called correctly
-        expect(mockCore.addPath).toHaveBeenCalled();
+      // Verify mocks were called correctly
+      expect(mockCore.addPath).toHaveBeenCalled();
 
-        // Check LLVM_DIR was set correctly (normalize paths for cross-platform)
-        const llvmDirCall = mockCore.exportVariable.mock.calls.find(
-          (call) => call[0] === "LLVM_DIR",
-        );
-        expect(llvmDirCall).toBeDefined();
-        expect(llvmDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]llvm$/);
+      // Check LLVM_DIR was set correctly (normalize paths for cross-platform)
+      const llvmDirCall = mockCore.exportVariable.mock.calls.find(
+        (call) => call[0] === "LLVM_DIR",
+      );
+      expect(llvmDirCall).toBeDefined();
+      expect(llvmDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]llvm$/);
 
-        // Check MLIR_DIR was set correctly
-        const mlirDirCall = mockCore.exportVariable.mock.calls.find(
-          (call) => call[0] === "MLIR_DIR",
-        );
-        expect(mlirDirCall).toBeDefined();
-        expect(mlirDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]mlir$/);
-        expect(mockCore.setFailed).not.toHaveBeenCalled();
+      // Check MLIR_DIR was set correctly
+      const mlirDirCall = mockCore.exportVariable.mock.calls.find(
+        (call) => call[0] === "MLIR_DIR",
+      );
+      expect(mlirDirCall).toBeDefined();
+      expect(mlirDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]mlir$/);
+      expect(mockCore.setFailed).not.toHaveBeenCalled();
 
-        // Get the cached path from the addPath call
-        const addPathCall = mockCore.addPath.mock.calls[0];
-        if (addPathCall) {
-          const binPath = addPathCall[0] as string;
-          const cachedDir = path.dirname(binPath);
+      // Get the cached path from the addPath call
+      const addPathCall = mockCore.addPath.mock.calls[0];
+      if (addPathCall) {
+        const binPath = addPathCall[0] as string;
+        const cachedDir = path.dirname(binPath);
 
-          // Verify the structure
-          expect(fs.existsSync(binPath)).toBe(true);
-          expect(
-            fs.existsSync(path.join(cachedDir, "lib", "cmake", "llvm")),
-          ).toBe(true);
-          expect(
-            fs.existsSync(path.join(cachedDir, "lib", "cmake", "mlir")),
-          ).toBe(true);
+        // Verify the structure
+        expect(fs.existsSync(binPath)).toBe(true);
+        expect(
+          fs.existsSync(path.join(cachedDir, "lib", "cmake", "llvm")),
+        ).toBe(true);
+        expect(
+          fs.existsSync(path.join(cachedDir, "lib", "cmake", "mlir")),
+        ).toBe(true);
 
-          // Verify binaries exist
-          const mlirOptName =
-            process.platform === "win32" ? "mlir-opt.exe" : "mlir-opt";
-          const mlirOptPath = path.join(binPath, mlirOptName);
-          expect(fs.existsSync(mlirOptPath)).toBe(true);
+        // Verify binaries exist
+        const mlirOptName =
+          process.platform === "win32" ? "mlir-opt.exe" : "mlir-opt";
+        const mlirOptPath = path.join(binPath, mlirOptName);
+        expect(fs.existsSync(mlirOptPath)).toBe(true);
 
-          // Verify mlir-opt can run and check version
-          const { execSync } = await import("node:child_process");
-          const versionOutput = execSync(`"${mlirOptPath}" --version`, {
-            encoding: "utf8",
-          });
-          expect(versionOutput).toContain("LLVM version");
-          expect(versionOutput).toContain(testVersion);
-
-          cachedPath = cachedDir;
-        }
-      },
-      600000,
-    ); // 10 minute timeout
-
-    itIf(!!testToken && process.platform === "win32")(
-      "should handle debug flag on Windows",
-      async () => {
-        await run();
-
-        expect(mockCore.addPath).toHaveBeenCalled();
-        expect(mockCore.setFailed).not.toHaveBeenCalled();
-      },
-      600000,
-    ); // 10 minute timeout
-
-    itIf(!!testToken && process.platform !== "win32")(
-      "should reject debug flag on non-Windows platforms",
-      async () => {
-        mockCore.getBooleanInput.mockImplementation((name: string) => {
-          return name === "debug";
+        // Verify mlir-opt can run and check version
+        const { execSync } = await import("node:child_process");
+        const versionOutput = execSync(`"${mlirOptPath}" --version`, {
+          encoding: "utf8",
         });
+        expect(versionOutput).toContain("LLVM version");
+        expect(versionOutput).toContain(testVersion);
 
-        await expect(run()).rejects.toThrow(
-          "Debug builds are only available on Windows",
-        );
-      },
-    );
+        cachedPath = cachedDir;
+      }
+    }, 600000); // 10 minute timeout
+
+    it("should handle debug flag on Windows", async () => {
+      if (process.platform !== "win32") {
+        return;
+      }
+
+      await run();
+
+      expect(mockCore.addPath).toHaveBeenCalled();
+      expect(mockCore.setFailed).not.toHaveBeenCalled();
+    }, 600000); // 10 minute timeout
+
+    it("should reject debug flag on non-Windows platforms", async () => {
+      if (process.platform === "win32") {
+        return;
+      }
+
+      mockCore.getBooleanInput.mockImplementation((name: string) => {
+        return name === "debug";
+      });
+
+      await expect(run()).rejects.toThrow(
+        "Debug builds are only available on Windows",
+      );
+    });
 
     it("should reject invalid version", async () => {
       mockCore.getInput.mockImplementation((name: string) => {
         if (name === "llvm-version") return "invalid-version-123";
         if (name === "platform") return "host";
         if (name === "architecture") return "host";
-        if (name === "token") return testToken;
         return "";
       });
 
@@ -353,26 +329,18 @@ describe("setup-mlir Integration Tests", () => {
       expect(asset.name).toMatch(/\.tar\.zst$/);
     });
 
-    itIf(!!testToken)(
-      "should match correct zstd patterns for current platform",
-      async () => {
-        const { getZstdUrl } = await import("../src/utils/download.js");
+    it("should match correct zstd patterns for current platform", async () => {
+      const { getZstdUrl } = await import("../src/utils/download.js");
 
-        const zstdAsset = await getZstdUrl(
-          testToken,
-          testVersion,
-          "host",
-          "host",
-        );
+      const zstdAsset = await getZstdUrl(testVersion, "host", "host");
 
-        expect(zstdAsset.name).toMatch(/^zstd-/);
-        if (process.platform === "win32") {
-          expect(zstdAsset.name).toMatch(/\.zip$/);
-        } else {
-          expect(zstdAsset.name).toMatch(/\.tar\.gz$/);
-        }
-      },
-    );
+      expect(zstdAsset.name).toMatch(/^zstd-/);
+      if (process.platform === "win32") {
+        expect(zstdAsset.name).toMatch(/\.zip$/);
+      } else {
+        expect(zstdAsset.name).toMatch(/\.tar\.gz$/);
+      }
+    });
 
     it("should reject invalid platform", async () => {
       const { getMLIRUrl } = await import("../src/utils/download.js");

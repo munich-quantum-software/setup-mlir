@@ -16,15 +16,10 @@
  */
 
 import { promises as fs } from "node:fs";
-import { createOctokit } from "./create-oktokit.js";
 import { ManifestEntry } from "./manifest.js";
-import { MANIFEST_FILE, REPO_NAME, REPO_OWNER } from "./constants.js";
-import type { components } from "@octokit/openapi-types";
+import { MANIFEST_FILE } from "./constants.js";
 
 import { getPlatform, getArchitecture } from "./platform.js";
-
-type Release = components["schemas"]["release"];
-type ReleaseAsset = components["schemas"]["release-asset"];
 
 /**
  * Get the manifest entry for the specified arguments
@@ -60,81 +55,21 @@ async function getManifestEntry(
 }
 
 /**
- * Get the requested zstd release asset from a release
- * @param release The GitHub release containing the assets
- * @param platform The platform
- * @param architecture The architecture
- * @returns The matching release asset if found
- */
-function getZstdAsset(
-  release: Release,
-  platform: string,
-  architecture: string,
-): ReleaseAsset | undefined {
-  platform = platform.toLowerCase();
-  const extension = platform === "windows" ? "zip" : "tar.gz";
-  const pattern = RegExp(
-    `^zstd-[A-Za-z0-9._-]+_${platform}_[A-Za-z0-9._-]+_${architecture}\\.${extension}$`,
-    "i",
-  );
-  return release.assets.find((asset) => pattern.test(asset.name));
-}
-
-/**
  * Get the download URL for the requested zstd binary
- * @param token GitHub token for authentication
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
  * @returns The download URL and the asset name
  */
 export async function getZstdUrl(
-  token: string,
   version: string,
   platform: string,
   architecture: string,
 ): Promise<{ url: string; name: string }> {
-  const octokit = createOctokit(token);
-
   platform = getPlatform(platform);
   architecture = getArchitecture(architecture);
   const entry = await getManifestEntry(version, platform, architecture, false);
-
-  let asset: ReleaseAsset | undefined;
-
-  const tag = entry.tag;
-  if (!tag.match(/^\d{4}\.\d{2}\.\d{2}$/)) {
-    throw new Error(`Invalid tag in manifest: ${tag}`);
-  }
-  const release = await octokit.request(
-    "GET /repos/{owner}/{repo}/releases/tags/{tag}",
-    {
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
-      tag: tag,
-    },
-  );
-  asset = getZstdAsset(release.data, platform, architecture);
-
-  if (!asset) {
-    octokit.log.info(
-      `No zstd binary found for ${architecture} ${platform} in release ${entry.tag}.`,
-    );
-    const latestRelease = await octokit.request(
-      "GET /repos/{owner}/{repo}/releases/latest",
-      {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-      },
-    );
-    asset = getZstdAsset(latestRelease.data, platform, architecture);
-  }
-
-  if (!asset) {
-    throw new Error(`No zstd binary found for ${architecture} ${platform}.`);
-  }
-
-  return { url: asset.browser_download_url, name: asset.name };
+  return { url: entry.zstd_download_url, name: entry.zstd_asset_name };
 }
 
 /**

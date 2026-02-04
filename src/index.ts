@@ -55,12 +55,7 @@ export async function run(): Promise<void> {
   }
 
   core.debug("==> Determining zstd binary URL");
-  const zstdAsset = await getZstdUrl(
-    token,
-    llvm_version,
-    platform,
-    architecture,
-  );
+  const zstdAsset = await getZstdUrl(llvm_version, platform, architecture);
   core.debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
   const zstdFile = await tc.downloadTool(zstdAsset.url);
 

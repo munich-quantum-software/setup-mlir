@@ -28,8 +28,6 @@ import * as os from "node:os";
 import process from "node:process";
 import type { ManifestEntry } from "../src/utils/manifest.js";
 
-const itIf = (condition: boolean) => (condition ? it : it.skip);
-
 describe("Update Known Versions", () => {
   const testToken = process.env.GITHUB_TOKEN || "";
   let tempDir: string;
@@ -80,64 +78,65 @@ describe("Update Known Versions", () => {
     }
   });
 
-  itIf(!!testToken)(
-    "should generate a valid manifest with entries",
-    async () => {
-      // Call updateManifest
-      await updateManifest();
+  it("should generate a valid manifest with entries", async () => {
+    if (!testToken) {
+      console.warn("Skipping test: GITHUB_TOKEN is not set.");
+      return;
+    }
 
-      // Parse the generated manifest
-      const fileContent = await actualFsModule.readFile(
-        tempManifestPath,
-        "utf-8",
-      );
-      const manifest: ManifestEntry[] = JSON.parse(fileContent);
+    // Call updateManifest
+    await updateManifest();
 
-      // Verify manifest is an array with entries
-      expect(Array.isArray(manifest)).toBe(true);
-      expect(manifest.length).toBeGreaterThan(0);
+    // Parse the generated manifest
+    const fileContent = await actualFsModule.readFile(
+      tempManifestPath,
+      "utf-8",
+    );
+    const manifest: ManifestEntry[] = JSON.parse(fileContent);
 
-      // Verify at least one entry has valid data
-      const entry = manifest[0];
+    // Verify manifest is an array with entries
+    expect(Array.isArray(manifest)).toBe(true);
+    expect(manifest.length).toBeGreaterThan(0);
 
-      // Check that all required fields exist
-      expect(entry.architecture).toBeTruthy();
-      expect(entry.asset_name).toBeTruthy();
-      expect(typeof entry.debug).toBe("boolean");
-      expect(entry.download_url).toBeTruthy();
-      expect(entry.platform).toBeTruthy();
-      expect(entry.release_url).toBeTruthy();
-      expect(entry.tag).toBeTruthy();
-      expect(entry.version).toBeTruthy();
+    // Verify at least one entry has valid data
+    const entry = manifest[0];
 
-      // Verify version is either semantic version or commit hash
-      const isSemanticVersion = /^\d+\.\d+\.\d+$/.test(entry.version);
-      const isCommitHash = /^[0-9a-f]{7,40}$/i.test(entry.version);
-      expect(isSemanticVersion || isCommitHash).toBe(true);
+    // Check that all required fields exist
+    expect(entry.architecture).toBeTruthy();
+    expect(entry.asset_name).toBeTruthy();
+    expect(typeof entry.debug).toBe("boolean");
+    expect(entry.download_url).toBeTruthy();
+    expect(entry.platform).toBeTruthy();
+    expect(entry.release_url).toBeTruthy();
+    expect(entry.tag).toBeTruthy();
+    expect(entry.version).toBeTruthy();
 
-      // Verify tag is a calendar version (YYYY.MM.DD format)
-      const isCalendarVersion = /^\d{4}\.\d{2}\.\d{2}$/.test(entry.tag);
-      expect(isCalendarVersion).toBe(true);
+    // Verify version is either semantic version or commit hash
+    const isSemanticVersion = /^\d+\.\d+\.\d+$/.test(entry.version);
+    const isCommitHash = /^[0-9a-f]{7,40}$/i.test(entry.version);
+    expect(isSemanticVersion || isCommitHash).toBe(true);
 
-      // Verify platform is valid
-      expect(["linux", "macos", "windows"]).toContain(entry.platform);
+    // Verify tag is a calendar version (YYYY.MM.DD format)
+    const isCalendarVersion = /^\d{4}\.\d{2}\.\d{2}$/.test(entry.tag);
+    expect(isCalendarVersion).toBe(true);
 
-      // Verify architecture is valid
-      expect(["x86", "aarch64"]).toContain(entry.architecture);
+    // Verify platform is valid
+    expect(["linux", "macos", "windows"]).toContain(entry.platform);
 
-      // Verify download URL is from the correct repository
-      expect(entry.download_url).toContain(
-        "github.com/munich-quantum-software/portable-mlir-toolchain/releases/download",
-      );
+    // Verify architecture is valid
+    expect(["x86", "aarch64"]).toContain(entry.architecture);
 
-      // Verify release URL is from the correct repository
-      expect(entry.release_url).toContain(
-        "github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag",
-      );
+    // Verify download URL is from the correct repository
+    expect(entry.download_url).toContain(
+      "github.com/munich-quantum-software/portable-mlir-toolchain/releases/download",
+    );
 
-      // Verify asset name matches expected pattern
-      expect(entry.asset_name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
-    },
-    600000, // 10 minute timeout
-  );
+    // Verify release URL is from the correct repository
+    expect(entry.release_url).toContain(
+      "github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag",
+    );
+
+    // Verify asset name matches expected pattern
+    expect(entry.asset_name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
+  }, 600000); // 10 minute timeout
 });

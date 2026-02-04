@@ -32113,14 +32113,45 @@ const README_FILE = (0,external_node_path_namespaceObject.join)(constants_dirnam
 const README_LIST_BEGIN = "<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 /**
+ * Fetch all releases from the `portable-mlir-toolchain` repository
+ * @param octokit The Octokit instance
+ * @returns Array of releases sorted by creation date
+ */
+async function getReleases(octokit) {
+    const releases = [];
+    let page = 1;
+    while (true) {
+        const releasesPage = await octokit.request("GET /repos/{owner}/{repo}/releases", {
+            owner: REPO_OWNER,
+            repo: REPO_NAME,
+            per_page: 100,
+            page: page,
+        });
+        if (releasesPage.data.length === 0) {
+            break;
+        }
+        releases.push(...releasesPage.data);
+        if (releasesPage.data.length < 100) {
+            break;
+        }
+        page++;
+    }
+    releases.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return releases;
+}
+/**
  * Extract platform, architecture, and debug from the name of a release asset
  * @param assetName - Name of the release asset
  * @returns Tuple of platform, architecture, and debug
  */
 function getMetadata(assetName) {
-    const platformMatch = assetName.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(X86|AArch64)(_debug)?\./i);
+    const platformMatch = assetName.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\./i);
     if (platformMatch) {
-        return [platformMatch[2], platformMatch[4], Boolean(platformMatch[5])];
+        return [
+            platformMatch[2].toLowerCase(),
+            platformMatch[4].toLowerCase(),
+            Boolean(platformMatch[5]),
+        ];
     }
     throw new Error(`Could not extract metadata from asset name: ${assetName}`);
 }
@@ -32200,47 +32231,49 @@ async function updateManifest() {
         warning("GITHUB_TOKEN is not set. API rate limits may apply.");
     }
     const octokit = createOctokit(token);
-    const releases = [];
-    let page = 1;
-    while (true) {
-        const releasesPage = await octokit.request("GET /repos/{owner}/{repo}/releases", {
-            owner: REPO_OWNER,
-            repo: REPO_NAME,
-            per_page: 100,
-            page: page,
-        });
-        if (releasesPage.data.length === 0) {
-            break;
-        }
-        releases.push(...releasesPage.data);
-        if (releasesPage.data.length < 100) {
-            break;
-        }
-        page++;
-    }
-    // Sort releases by creation date
-    releases.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const releases = await getReleases(octokit);
     const versions = new Set();
     const manifest = [];
+    const latestZstdInfo = {};
     for (const release of releases) {
         let version = undefined;
         for (const asset of release.assets) {
+            if (asset.name.startsWith("zstd-")) {
+                const match = asset.name.match(/zstd-(.+?)_(.+?)_(.+)_(x86|aarch64)\./i);
+                if (match) {
+                    const platform = match[2].toLowerCase();
+                    const architecture = match[4].toLowerCase();
+                    latestZstdInfo[`asset_name_${platform}_${architecture}`] = asset.name;
+                    latestZstdInfo[`download_url_${platform}_${architecture}`] = asset.browser_download_url;
+                }
+            }
+        }
+        for (const asset of release.assets) {
             if (asset.name.startsWith("llvm-mlir")) {
                 try {
-                    const [platform, architecture, debug] = getMetadata(asset.name);
                     version = getVersionFromAssetName(asset.name);
                     if (versions.has(version)) {
                         continue;
                     }
+                    const [platform, architecture, debug] = getMetadata(asset.name);
+                    const zstdAssetNameKey = `asset_name_${platform}_${architecture}`;
+                    const zstdDownloadUrlKey = `download_url_${platform}_${architecture}`;
+                    const zstdAssetName = latestZstdInfo[zstdAssetNameKey];
+                    const zstdDownloadUrl = latestZstdInfo[zstdDownloadUrlKey];
+                    if (!zstdAssetName || !zstdDownloadUrl) {
+                        throw new Error(`No zstd binary found for ${asset.name}.`);
+                    }
                     manifest.push({
-                        architecture: architecture.toLowerCase(),
+                        architecture: architecture,
                         asset_name: asset.name,
                         debug: debug,
                         download_url: asset.browser_download_url,
-                        platform: platform.toLowerCase(),
+                        platform: platform,
                         release_url: release.html_url,
                         tag: release.tag_name,
                         version: version,
+                        zstd_asset_name: zstdAssetName,
+                        zstd_download_url: zstdDownloadUrl,
                     });
                 }
                 catch (error) {
