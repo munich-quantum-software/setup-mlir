@@ -96,6 +96,23 @@ async function getReleases(octokit: Octokit): Promise<Release[]> {
 }
 
 /**
+ * Extract version from the name of a release asset
+ * @param assetName - Name of the release asset
+ * @returns Version string
+ */
+function getVersionFromAssetName(assetName: string): string {
+  const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
+  if (versionMatch) {
+    return versionMatch[1].toLowerCase();
+  }
+  const hashMatch = assetName.match(/llvm-mlir_([0-9a-f]{7,40})_/i);
+  if (hashMatch) {
+    return hashMatch[1].toLowerCase();
+  }
+  throw new Error(`Could not extract version from asset name: ${assetName}`);
+}
+
+/**
  * Extract platform, architecture, and debug from the name of a release asset
  * @param assetName - Name of the release asset
  * @returns Tuple of platform, architecture, and debug
@@ -112,23 +129,6 @@ function getMetadata(assetName: string): [string, string, boolean] {
     ];
   }
   throw new Error(`Could not extract metadata from asset name: ${assetName}`);
-}
-
-/**
- * Extract version from the name of a release asset
- * @param assetName - Name of the release asset
- * @returns Version string
- */
-function getVersionFromAssetName(assetName: string): string {
-  const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
-  if (versionMatch) {
-    return versionMatch[1];
-  }
-  const hashMatch = assetName.match(/llvm-mlir_([0-9a-f]{7,40})_/i);
-  if (hashMatch) {
-    return hashMatch[1];
-  }
-  throw new Error(`Could not extract version from asset name: ${assetName}`);
 }
 
 /**

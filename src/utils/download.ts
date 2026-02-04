@@ -35,14 +35,19 @@ async function getManifestEntry(
   architecture: string,
   debug: boolean,
 ): Promise<ManifestEntry> {
+  // Normalize inputs
+  version = version.toLowerCase();
+  platform = getPlatform(platform);
+  architecture = getArchitecture(architecture);
+
   const fileContent = await fs.readFile(MANIFEST_FILE, "utf-8");
   const manifest: ManifestEntry[] = JSON.parse(fileContent);
 
   const entry = manifest.find(
     (entry) =>
       entry.version.startsWith(version) &&
-      entry.platform === platform.toLowerCase() &&
-      entry.architecture === architecture.toLowerCase() &&
+      entry.platform === platform &&
+      entry.architecture === architecture &&
       entry.debug === debug,
   );
 
@@ -66,8 +71,6 @@ export async function getZstdUrl(
   platform: string,
   architecture: string,
 ): Promise<{ url: string; name: string }> {
-  platform = getPlatform(platform);
-  architecture = getArchitecture(architecture);
   const entry = await getManifestEntry(version, platform, architecture, false);
   return { url: entry.zstd_download_url, name: entry.zstd_asset_name };
 }
@@ -86,8 +89,6 @@ export async function getMLIRUrl(
   architecture: string,
   debug: boolean,
 ): Promise<{ url: string; name: string }> {
-  platform = getPlatform(platform);
-  architecture = getArchitecture(architecture);
   const entry = await getManifestEntry(version, platform, architecture, debug);
   return { url: entry.download_url, name: entry.asset_name };
 }

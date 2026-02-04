@@ -34378,9 +34378,10 @@ const README_FILE = (0,external_node_path_namespaceObject.join)(constants_dirnam
  * @returns The normalized platform string
  */
 function getPlatform(platform) {
+    platform = platform.toLowerCase();
     if (platform !== "host" &&
         platform !== "linux" &&
-        platform !== "macOS" &&
+        platform !== "macos" &&
         platform !== "windows") {
         throw new Error(`Invalid platform: ${platform}. Expected host, linux, macOS, or windows.`);
     }
@@ -34395,9 +34396,10 @@ function getPlatform(platform) {
  * @returns The normalized architecture string
  */
 function getArchitecture(architecture) {
+    architecture = architecture.toLowerCase();
     if (architecture !== "host" &&
-        architecture !== "X86" &&
-        architecture !== "AArch64") {
+        architecture !== "x86" &&
+        architecture !== "aarch64") {
         throw new Error(`Invalid architecture: ${architecture}. Expected host, X86, or AArch64.`);
     }
     if (architecture === "host") {
@@ -34414,7 +34416,7 @@ function determinePlatform() {
         return "linux";
     }
     else if (process.platform === "darwin") {
-        return "macOS";
+        return "macos";
     }
     else if (process.platform === "win32") {
         return "windows";
@@ -34429,10 +34431,10 @@ function determinePlatform() {
  */
 function determineArchitecture() {
     if (process.arch === "x64") {
-        return "X86";
+        return "x86";
     }
     else if (process.arch === "arm64") {
-        return "AArch64";
+        return "aarch64";
     }
     else {
         throw new Error(`Unsupported architecture: ${process.arch}`);
@@ -34468,11 +34470,15 @@ function determineArchitecture() {
  * @returns The manifest entry
  */
 async function getManifestEntry(version, platform, architecture, debug) {
+    // Normalize inputs
+    version = version.toLowerCase();
+    platform = getPlatform(platform);
+    architecture = getArchitecture(architecture);
     const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE, "utf-8");
     const manifest = JSON.parse(fileContent);
     const entry = manifest.find((entry) => entry.version.startsWith(version) &&
-        entry.platform === platform.toLowerCase() &&
-        entry.architecture === architecture.toLowerCase() &&
+        entry.platform === platform &&
+        entry.architecture === architecture &&
         entry.debug === debug);
     if (!entry) {
         throw new Error(`No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`);
@@ -34487,8 +34493,6 @@ async function getManifestEntry(version, platform, architecture, debug) {
  * @returns The download URL and the asset name
  */
 async function getZstdUrl(version, platform, architecture) {
-    platform = getPlatform(platform);
-    architecture = getArchitecture(architecture);
     const entry = await getManifestEntry(version, platform, architecture, false);
     return { url: entry.zstd_download_url, name: entry.zstd_asset_name };
 }
@@ -34501,8 +34505,6 @@ async function getZstdUrl(version, platform, architecture) {
  * @returns The download URL and the asset name
  */
 async function getMLIRUrl(version, platform, architecture, debug) {
-    platform = getPlatform(platform);
-    architecture = getArchitecture(architecture);
     const entry = await getManifestEntry(version, platform, architecture, debug);
     return { url: entry.download_url, name: entry.asset_name };
 }

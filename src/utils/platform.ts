@@ -21,10 +21,12 @@
  * @returns The normalized platform string
  */
 export function getPlatform(platform: string): string {
+  platform = platform.toLowerCase();
+
   if (
     platform !== "host" &&
     platform !== "linux" &&
-    platform !== "macOS" &&
+    platform !== "macos" &&
     platform !== "windows"
   ) {
     throw new Error(
@@ -45,10 +47,12 @@ export function getPlatform(platform: string): string {
  * @returns The normalized architecture string
  */
 export function getArchitecture(architecture: string): string {
+  architecture = architecture.toLowerCase();
+
   if (
     architecture !== "host" &&
-    architecture !== "X86" &&
-    architecture !== "AArch64"
+    architecture !== "x86" &&
+    architecture !== "aarch64"
   ) {
     throw new Error(
       `Invalid architecture: ${architecture}. Expected host, X86, or AArch64.`,
@@ -70,7 +74,7 @@ function determinePlatform(): string {
   if (process.platform === "linux") {
     return "linux";
   } else if (process.platform === "darwin") {
-    return "macOS";
+    return "macos";
   } else if (process.platform === "win32") {
     return "windows";
   } else {
@@ -84,9 +88,9 @@ function determinePlatform(): string {
  */
 function determineArchitecture(): string {
   if (process.arch === "x64") {
-    return "X86";
+    return "x86";
   } else if (process.arch === "arm64") {
-    return "AArch64";
+    return "aarch64";
   } else {
     throw new Error(`Unsupported architecture: ${process.arch}`);
   }
