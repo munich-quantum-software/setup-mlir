@@ -79,7 +79,7 @@ $matching_entry = $manifest_json | Where-Object {
     $_.platform -eq $platform -and
     $_.architecture -eq $architecture -and
     $_.debug -eq $debug -and
-    $_.version -eq $llvm_version
+    $_.version -like "${llvm_version}*"
 } | Select-Object -First 1
 
 if (-not $matching_entry) {

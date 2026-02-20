@@ -82,15 +82,15 @@ fetch_manifest_json() {
   curl -fsSL "$url"
 }
 
-# Helper function to find asset URL in releases JSON
+# Helper function to find asset URL in version-manifest.json
 find_asset_url() {
-  local releases_json=$1
+  local manifest_json=$1
   local pattern=$2
   local version_pattern=$3
 
   if [ -n "$version_pattern" ]; then
     # Filter by version pattern first (for LLVM assets)
-    echo "$releases_json" | \
+    echo "$manifest_json" | \
       grep -o '"download_url": "[^"]*"' | \
       sed 's/"download_url": "//;s/"$//' | \
       grep -F "$version_pattern" | \
@@ -98,7 +98,7 @@ find_asset_url() {
       head -n 1
   else
     # No version filtering (for zstd assets)
-    echo "$releases_json" | \
+    echo "$manifest_json" | \
       grep -o '"zstd_download_url": "[^"]*"' | \
       sed 's/"zstd_download_url": "//;s/"$//' | \
       grep -E "$pattern" | \
@@ -142,7 +142,7 @@ fi
 
 # Download zstd binary
 echo "Downloading zstd binary..."
-ZSTD_URL=$(find_asset_url "$RELEASES_JSON" "$ZSTD_PATTERN" "")
+ZSTD_URL=$(find_asset_url "$MANIFEST_JSON" "$ZSTD_PATTERN" "")
 
 if [ -z "$ZSTD_URL" ]; then
   echo "Error: No zstd binary found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
@@ -172,7 +172,7 @@ chmod +x "$ZSTD_BIN"
 
 # Download LLVM distribution
 echo "Downloading LLVM distribution..."
-LLVM_URL=$(find_asset_url "$RELEASES_JSON" "$LLVM_PATTERN" "$MATCH_PATTERN")
+LLVM_URL=$(find_asset_url "$MANIFEST_JSON" "$LLVM_PATTERN" "$MATCH_PATTERN")
 
 if [ -z "$LLVM_URL" ]; then
   echo "Error: No release with LLVM $LLVM_VERSION found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
