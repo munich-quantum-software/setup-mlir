@@ -79,7 +79,10 @@ fi
 # Helper function to fetch version-manifest.json
 fetch_manifest_json() {
   local url=$1
-  curl -fsSL "$url"
+  if ! curl -fsSL "$url"; then
+    echo "Error: Download failed." >&2
+    exit 1
+  fi
 }
 
 # Helper function to find asset URL in version-manifest.json
