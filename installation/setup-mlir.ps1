@@ -64,9 +64,13 @@ function Download-Asset {
 $manifest_url = "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json"
 $manifest_json = Invoke-RestMethod -Uri $manifest_url
 
-$architecture = switch ($arch) {
-    x64 { "x86" }
-    arm64 { "aarch64" }
+switch ($arch) {
+    x64 {
+        $architecture = "x86"
+    }
+    arm64 {
+        $architecture = "aarch64"
+    }
     default {
         Write-Error "Unsupported architecture: $arch"
         exit 1
@@ -90,7 +94,7 @@ if (-not $matching_entry) {
 # Download zstd binary
 Write-Host "Downloading zstd binary..."
 if (-not (Download-Asset -Url $matching_entry.zstd_download_url -OutputFile "zstd.zip")) {
-    Write-Error "No zstd binary found for Windows/${arch}."
+    Write-Error "Download of zstd binary failed."
     exit 1
 }
 
@@ -120,7 +124,7 @@ if (-not (Test-Path $zstdBinPath)) {
 # Download LLVM distribution
 Write-Host "Downloading LLVM distribution..."
 if (-not (Download-Asset -Url $matching_entry.download_url -OutputFile "llvm.tar.zst")) {
-    Write-Error "No release with LLVM $llvm_version found for Windows/${arch}$(if ($use_debug) { ' (debug)' } else { '' })."
+    Write-Error "Download of LLVM distribution failed."
     exit 1
 }
 
