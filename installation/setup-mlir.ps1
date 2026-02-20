@@ -20,7 +20,6 @@ param(
     [string]$llvm_version,
     [Parameter(Mandatory=$true)]
     [string]$install_prefix,
-    [string]$token,
     [switch]$use_debug
 )
 
@@ -41,33 +40,20 @@ pushd $install_prefix > $null
 # Detect architecture
 $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
 
-# Determine whether version is version or commit SHA
-if ($llvm_version -match '^\d+\.\d+\.\d+$') {
-    $match_pattern = "llvm-mlir_llvmorg-${llvm_version}_"
-} elseif ($llvm_version -match '^[0-9a-f]{7,40}$') {
-    $match_pattern = "llvm-mlir_${llvm_version}"
-} else {
-    Write-Error "Invalid LLVM version format: $llvm_version. Must be a version (e.g., 21.1.8) or a commit SHA."
-    exit 1
-}
-
-# Helper function to download asset from GitHub releases
+# Helper function to download asset from a URL
 function Download-Asset {
     param(
-        [string]$Pattern,
-        [string]$OutputFile,
-        [object[]]$Assets
+        [string]$Url,
+        [string]$OutputFile
     )
 
-    $asset = $Assets | Where-Object { $_.name -match $Pattern } | Select-Object -First 1
-
-    if (-not $asset) {
+    if (-not $Url) {
         return $false
     }
 
-    Write-Host "Downloading from $($asset.browser_download_url) ..."
+    Write-Host "Downloading from $Url ..."
     try {
-        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $OutputFile
+        Invoke-WebRequest -Uri $Url -OutFile $OutputFile
         return $true
     } catch {
         Write-Error "Download failed: $_"
@@ -75,58 +61,46 @@ function Download-Asset {
     }
 }
 
-# Setup headers for GitHub API
-$headers = @{
-    "Accept" = "application/vnd.github+json"
-    "X-GitHub-Api-Version" = "2022-11-28"
-}
-if ($token) {
-    $headers["Authorization"] = "Bearer $token"
-}
-
-$releases_url = "https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases?per_page=100"
-$releases_json = Invoke-RestMethod -Uri $releases_url -Headers $headers
-
-$matching_releases = $releases_json | Where-Object {
-    $_.assets -and ($_.assets | Where-Object { $_.name -and $_.name -like "*${match_pattern}*" })
-}
-if (-not $matching_releases) {
-    Write-Error "No release with LLVM $llvm_version found."
+$manifest_url = "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json"
+try {
+    $manifest_json = Invoke-RestMethod -Uri $manifest_url
+} catch {
+    Write-Error "Failed to fetch version manifest from ${manifest_url}: $_"
     exit 1
 }
-$newest_release = $matching_releases | Sort-Object -Property published_at -Descending | Select-Object -First 1
-$assets = $newest_release.assets
-
-# Determine asset patterns based on architecture and debug flag
-$debugSuffix = if ($use_debug) { "_debug" } else { "" }
 
 switch ($arch) {
     x64 {
-        $llvmPattern = "llvm-mlir_.*_windows_X64_X86${debugSuffix}\.tar\.zst$"
-        $zstdPattern = "^zstd-.*_windows_X64_X86\.zip$"
+        $architecture = "x86"
     }
     arm64 {
-        $llvmPattern = "llvm-mlir_.*_windows_Arm64_AArch64${debugSuffix}\.tar\.zst$"
-        $zstdPattern = "^zstd-.*_windows_Arm64_AArch64\.zip$"
+        $architecture = "aarch64"
     }
     default {
         Write-Error "Unsupported architecture: $arch"
         exit 1
     }
 }
+$debug = [bool]$use_debug
+$platform = "windows"
+
+$matching_entry = $manifest_json | Where-Object {
+    $_.platform -eq $platform -and
+    $_.architecture -eq $architecture -and
+    $_.debug -eq $debug -and
+    $_.version -like "${llvm_version}*"
+} | Select-Object -First 1
+
+if (-not $matching_entry) {
+    Write-Error "No release with LLVM $llvm_version found for Windows/${arch}$(if ($use_debug) { ' (debug)' } else { '' })."
+    exit 1
+}
 
 # Download zstd binary
 Write-Host "Downloading zstd binary..."
-if (-not (Download-Asset -Pattern $zstdPattern -OutputFile "zstd.zip" -Assets $assets)) {
-    # If zstd is not found in the LLVM version release, try the latest release
-    Write-Host "zstd not found in LLVM version release, trying latest release..."
-    $latest_url = "https://api.github.com/repos/munich-quantum-software/portable-mlir-toolchain/releases/latest"
-    $latest_release = Invoke-RestMethod -Uri $latest_url -Headers $headers
-
-    if (-not (Download-Asset -Pattern $zstdPattern -OutputFile "zstd.zip" -Assets $latest_release.assets)) {
-        Write-Error "No zstd binary found for Windows/${arch}."
-        exit 1
-    }
+if (-not (Download-Asset -Url $matching_entry.zstd_download_url -OutputFile "zstd.zip")) {
+    Write-Error "Download of zstd binary failed."
+    exit 1
 }
 
 # Extract zstd binary
@@ -154,8 +128,8 @@ if (-not (Test-Path $zstdBinPath)) {
 
 # Download LLVM distribution
 Write-Host "Downloading LLVM distribution..."
-if (-not (Download-Asset -Pattern $llvmPattern -OutputFile "llvm.tar.zst" -Assets $assets)) {
-    Write-Error "No release with LLVM $llvm_version found for Windows/${arch}$(if ($use_debug) { ' (debug)' } else { '' })."
+if (-not (Download-Asset -Url $matching_entry.download_url -OutputFile "llvm.tar.zst")) {
+    Write-Error "Download of LLVM distribution failed."
     exit 1
 }
 
