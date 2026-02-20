@@ -49,7 +49,7 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          installation/setup-mlir.sh -v ${{ matrix.version }} -p /tmp/mlir-install -t ${{ github.token }}
+          installation/setup-mlir.sh -v ${{ matrix.version }} -p /tmp/mlir-install
 
           # Verify installation
           if [ ! -d "/tmp/mlir-install/bin" ]; then
@@ -85,7 +85,7 @@ jobs:
         run: |
           $install_dir = Join-Path $env:TEMP "mlir-install"
 
-          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir -token ${{ github.token }} ${{ matrix.debug && '-use_debug' || '' }}
+          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir ${{ matrix.debug && '-use_debug' || '' }}
 
           # Verify installation
           if (-not (Test-Path "$install_dir\bin")) {
