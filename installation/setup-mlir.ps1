@@ -62,7 +62,12 @@ function Download-Asset {
 }
 
 $manifest_url = "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json"
-$manifest_json = Invoke-RestMethod -Uri $manifest_url
+try {
+    $manifest_json = Invoke-RestMethod -Uri $manifest_url
+} catch {
+    Write-Error "Failed to fetch version manifest from ${manifest_url}: $_"
+    exit 1
+}
 
 switch ($arch) {
     x64 {
