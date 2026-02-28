@@ -112,21 +112,6 @@ function getVersionFromAssetName(assetName: string): string {
 }
 
 /**
- * Extract platform and architecture from the name of a release asset
- * @param assetName - Name of the release asset
- * @returns Tuple of platform and architecture
- */
-function getMetadata(assetName: string): [string, string] {
-  const platformMatch = assetName.match(
-    /llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)\./i,
-  );
-  if (platformMatch) {
-    return [platformMatch[2].toLowerCase(), platformMatch[4].toLowerCase()];
-  }
-  throw new Error(`Could not extract metadata from asset name: ${assetName}`);
-}
-
-/**
  * Update README.md file with a list of available versions
  * @param versions The available versions
  */
@@ -218,13 +203,17 @@ export async function updateManifest(): Promise<void> {
       }
     }
     for (const asset of release.assets) {
-      if (asset.name.startsWith("llvm-mlir")) {
+      const match = asset.name.match(
+        /llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)\./i,
+      );
+      if (match) {
         try {
           version = getVersionFromAssetName(asset.name);
           if (versions.has(version)) {
             continue;
           }
-          const [platform, architecture] = getMetadata(asset.name);
+          const platform = match[2].toLowerCase();
+          const architecture = match[4].toLowerCase();
           const zstdAssetNameKey =
             `asset_name_${platform}_${architecture}` as keyof ZstdInfo;
           const zstdDownloadUrlKey =
