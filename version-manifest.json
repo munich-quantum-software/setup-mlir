@@ -2,7 +2,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_linux_aarch64_AArch64.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_linux_aarch64_AArch64.tar.zst",
     "platform": "linux",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.13",
@@ -14,7 +13,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_linux_x86_64_X86.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_linux_x86_64_X86.tar.zst",
     "platform": "linux",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.13",
@@ -26,7 +24,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_macos_arm64_AArch64.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_macos_arm64_AArch64.tar.zst",
     "platform": "macos",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.13",
@@ -38,7 +35,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_macos_x86_64_X86.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_macos_x86_64_X86.tar.zst",
     "platform": "macos",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.13",
@@ -50,7 +46,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_windows_Arm64_AArch64.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_windows_Arm64_AArch64.tar.zst",
     "platform": "windows",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.13",
@@ -62,7 +57,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_windows_Arm64_AArch64_debug.tar.zst",
-    "debug": true,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_windows_Arm64_AArch64_debug.tar.zst",
     "platform": "windows",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.13",
@@ -74,7 +68,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_windows_X64_X86.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_windows_X64_X86.tar.zst",
     "platform": "windows",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.13",
@@ -86,7 +79,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_windows_X64_X86_debug.tar.zst",
-    "debug": true,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.13/llvm-mlir_113f01aa82d055410f22a9d03b3468fa68600589_windows_X64_X86_debug.tar.zst",
     "platform": "windows",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.13",
@@ -98,7 +90,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_llvmorg-21.1.8_linux_aarch64_AArch64.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/llvm-mlir_llvmorg-21.1.8_linux_aarch64_AArch64.tar.zst",
     "platform": "linux",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.08",
@@ -110,7 +101,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_llvmorg-21.1.8_linux_x86_64_X86.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/llvm-mlir_llvmorg-21.1.8_linux_x86_64_X86.tar.zst",
     "platform": "linux",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.08",
@@ -122,7 +112,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_llvmorg-21.1.8_macos_arm64_AArch64.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/llvm-mlir_llvmorg-21.1.8_macos_arm64_AArch64.tar.zst",
     "platform": "macos",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.08",
@@ -134,7 +123,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_llvmorg-21.1.8_macos_x86_64_X86.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/llvm-mlir_llvmorg-21.1.8_macos_x86_64_X86.tar.zst",
     "platform": "macos",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.08",
@@ -146,7 +134,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_llvmorg-21.1.8_windows_Arm64_AArch64.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/llvm-mlir_llvmorg-21.1.8_windows_Arm64_AArch64.tar.zst",
     "platform": "windows",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.08",
@@ -158,7 +145,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_llvmorg-21.1.8_windows_Arm64_AArch64_debug.tar.zst",
-    "debug": true,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/llvm-mlir_llvmorg-21.1.8_windows_Arm64_AArch64_debug.tar.zst",
     "platform": "windows",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.08",
@@ -170,7 +156,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_llvmorg-21.1.8_windows_X64_X86.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/llvm-mlir_llvmorg-21.1.8_windows_X64_X86.tar.zst",
     "platform": "windows",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.08",
@@ -182,7 +167,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_llvmorg-21.1.8_windows_X64_X86_debug.tar.zst",
-    "debug": true,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2026.01.08/llvm-mlir_llvmorg-21.1.8_windows_X64_X86_debug.tar.zst",
     "platform": "windows",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2026.01.08",
@@ -194,7 +178,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_linux_aarch64_AArch64.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2025.12.23/llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_linux_aarch64_AArch64.tar.zst",
     "platform": "linux",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2025.12.23",
@@ -206,7 +189,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_linux_x86_64_X86.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2025.12.23/llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_linux_x86_64_X86.tar.zst",
     "platform": "linux",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2025.12.23",
@@ -218,7 +200,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_macos_arm64_AArch64.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2025.12.23/llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_macos_arm64_AArch64.tar.zst",
     "platform": "macos",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2025.12.23",
@@ -230,7 +211,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_macos_x86_64_X86.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2025.12.23/llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_macos_x86_64_X86.tar.zst",
     "platform": "macos",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2025.12.23",
@@ -242,7 +222,6 @@
   {
     "architecture": "aarch64",
     "asset_name": "llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_windows_Arm64_AArch64.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2025.12.23/llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_windows_Arm64_AArch64.tar.zst",
     "platform": "windows",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2025.12.23",
@@ -254,7 +233,6 @@
   {
     "architecture": "x86",
     "asset_name": "llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_windows_X64_X86.tar.zst",
-    "debug": false,
     "download_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/download/2025.12.23/llvm-mlir_f8cb7987c64dcffb72414a40560055cb717dbf74_windows_X64_X86.tar.zst",
     "platform": "windows",
     "release_url": "https://github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag/2025.12.23",

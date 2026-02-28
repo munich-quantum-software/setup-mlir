@@ -26,14 +26,12 @@ import { getPlatform, getArchitecture } from "./platform.js";
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
- * @param debug Whether to get a debug build
  * @returns The manifest entry
  */
 async function getManifestEntry(
   version: string,
   platform: string,
   architecture: string,
-  debug: boolean,
 ): Promise<ManifestEntry> {
   // Normalize inputs
   version = version.toLowerCase();
@@ -47,13 +45,12 @@ async function getManifestEntry(
     (entry) =>
       entry.version.startsWith(version) &&
       entry.platform === platform &&
-      entry.architecture === architecture &&
-      entry.debug === debug,
+      entry.architecture === architecture,
   );
 
   if (!entry) {
     throw new Error(
-      `No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`,
+      `No ${architecture} ${platform} archive found for LLVM ${version}.`,
     );
   }
   return entry;
@@ -71,7 +68,7 @@ export async function getZstdUrl(
   platform: string,
   architecture: string,
 ): Promise<{ url: string; name: string }> {
-  const entry = await getManifestEntry(version, platform, architecture, false);
+  const entry = await getManifestEntry(version, platform, architecture);
   return { url: entry.zstd_download_url, name: entry.zstd_asset_name };
 }
 
@@ -80,15 +77,13 @@ export async function getZstdUrl(
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
- * @param debug Whether to get a debug build
  * @returns The download URL and the asset name
  */
 export async function getMLIRUrl(
   version: string,
   platform: string,
   architecture: string,
-  debug: boolean,
 ): Promise<{ url: string; name: string }> {
-  const entry = await getManifestEntry(version, platform, architecture, debug);
+  const entry = await getManifestEntry(version, platform, architecture);
   return { url: entry.download_url, name: entry.asset_name };
 }

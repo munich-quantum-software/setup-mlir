@@ -36,7 +36,6 @@ const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 export interface ManifestEntry {
   architecture: string;
   asset_name: string;
-  debug: boolean;
   download_url: string;
   platform: string;
   release_url: string;
@@ -113,20 +112,16 @@ function getVersionFromAssetName(assetName: string): string {
 }
 
 /**
- * Extract platform, architecture, and debug from the name of a release asset
+ * Extract platform and architecture from the name of a release asset
  * @param assetName - Name of the release asset
- * @returns Tuple of platform, architecture, and debug
+ * @returns Tuple of platform and architecture
  */
-function getMetadata(assetName: string): [string, string, boolean] {
+function getMetadata(assetName: string): [string, string] {
   const platformMatch = assetName.match(
     /llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\./i,
   );
   if (platformMatch) {
-    return [
-      platformMatch[2].toLowerCase(),
-      platformMatch[4].toLowerCase(),
-      Boolean(platformMatch[5]),
-    ];
+    return [platformMatch[2].toLowerCase(), platformMatch[4].toLowerCase()];
   }
   throw new Error(`Could not extract metadata from asset name: ${assetName}`);
 }
@@ -229,7 +224,7 @@ export async function updateManifest(): Promise<void> {
           if (versions.has(version)) {
             continue;
           }
-          const [platform, architecture, debug] = getMetadata(asset.name);
+          const [platform, architecture] = getMetadata(asset.name);
           const zstdAssetNameKey =
             `asset_name_${platform}_${architecture}` as keyof ZstdInfo;
           const zstdDownloadUrlKey =
@@ -242,7 +237,6 @@ export async function updateManifest(): Promise<void> {
           manifest.push({
             architecture: architecture,
             asset_name: asset.name,
-            debug: debug,
             download_url: asset.browser_download_url,
             platform: platform,
             release_url: release.html_url,

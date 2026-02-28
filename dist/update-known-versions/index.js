@@ -32298,9 +32298,9 @@ function getVersionFromAssetName(assetName) {
     throw new Error(`Could not extract version from asset name: ${assetName}`);
 }
 /**
- * Extract platform, architecture, and debug from the name of a release asset
+ * Extract platform and architecture from the name of a release asset
  * @param assetName - Name of the release asset
- * @returns Tuple of platform, architecture, and debug
+ * @returns Tuple of platform and architecture
  */
 function getMetadata(assetName) {
     const platformMatch = assetName.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\./i);
@@ -32308,7 +32308,6 @@ function getMetadata(assetName) {
         return [
             platformMatch[2].toLowerCase(),
             platformMatch[4].toLowerCase(),
-            Boolean(platformMatch[5]),
         ];
     }
     throw new Error(`Could not extract metadata from asset name: ${assetName}`);
@@ -32401,7 +32400,7 @@ async function updateManifest() {
                     if (versions.has(version)) {
                         continue;
                     }
-                    const [platform, architecture, debug] = getMetadata(asset.name);
+                    const [platform, architecture] = getMetadata(asset.name);
                     const zstdAssetNameKey = `asset_name_${platform}_${architecture}`;
                     const zstdDownloadUrlKey = `download_url_${platform}_${architecture}`;
                     const zstdAssetName = zstdInfo[zstdAssetNameKey];
@@ -32412,7 +32411,6 @@ async function updateManifest() {
                     manifest.push({
                         architecture: architecture,
                         asset_name: asset.name,
-                        debug: debug,
                         download_url: asset.browser_download_url,
                         platform: platform,
                         release_url: release.html_url,
