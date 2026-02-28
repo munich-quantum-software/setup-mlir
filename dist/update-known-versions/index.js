@@ -32305,10 +32305,7 @@ function getVersionFromAssetName(assetName) {
 function getMetadata(assetName) {
     const platformMatch = assetName.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\./i);
     if (platformMatch) {
-        return [
-            platformMatch[2].toLowerCase(),
-            platformMatch[4].toLowerCase(),
-        ];
+        return [platformMatch[2].toLowerCase(), platformMatch[4].toLowerCase()];
     }
     throw new Error(`Could not extract metadata from asset name: ${assetName}`);
 }
