@@ -9,7 +9,7 @@ The MLIR binaries are built and distributed in the [`portable-mlir-toolchain`](h
 List of available LLVM versions:
 
 - `22.1.0`
-- `21.1.8`
+- `22.1.0`
 
 List of available LLVM commit hashes:
 
@@ -24,9 +24,9 @@ For more information on the available LLVM versions and commit hashes, see [`ver
 
 ```yaml
 - name: Set up MLIR
-  uses: munich-quantum-software/setup-mlir@v1.1.0
+  uses: munich-quantum-software/setup-mlir@v1.2.0
   with:
-    llvm-version: 21.1.8
+    llvm-version: 22.1.0
 ```
 
 This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and defines `$LLVM_DIR` and `$MLIR_DIR`.
@@ -34,7 +34,7 @@ This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and d
 ## Installation Scripts
 
 If you want to use the pre-built MLIR installations locally, we also provide installation scripts.
-The scripts require the LLVM version or commit hash (e.g., `21.1.8` or `f8cb798`) and the desired installation directory to be passed.
+The scripts require the LLVM version or commit hash (e.g., `22.1.0` or `f8cb798`) and the desired installation directory to be passed.
 The scripts automatically download and use a platform-specific `zstd` binary for decompression, so only `tar` needs to be installed on the host system.
 
 > [!NOTE]
@@ -45,11 +45,11 @@ The scripts automatically download and use a platform-specific `zstd` binary for
 On Linux and macOS, use the following Bash command:
 
 ```bash
-curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -v 21.1.8 -p /path/to/installation
+curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -v 22.1.0 -p /path/to/installation
 ```
 
 On Windows, use the following PowerShell command:
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 21.1.8 -install_prefix /path/to/installation"
+powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 22.1.0 -install_prefix /path/to/installation"
 ```

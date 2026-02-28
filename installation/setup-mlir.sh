@@ -72,7 +72,7 @@ if [[ "$LLVM_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 elif [[ "$LLVM_VERSION" =~ ^[0-9a-f]{7,40}$ ]]; then
   MATCH_PATTERN="llvm-mlir_${LLVM_VERSION}"
 else
-  echo "Error: Invalid LLVM version format: $LLVM_VERSION. Must be a version (e.g., 21.1.8) or a commit SHA." >&2
+  echo "Error: Invalid LLVM version format: $LLVM_VERSION. Must be a version (e.g., 22.1.0) or a commit SHA." >&2
   exit 1
 fi
 

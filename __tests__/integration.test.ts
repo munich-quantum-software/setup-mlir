@@ -54,7 +54,7 @@ const mockCore = {
 jest.unstable_mockModule("@actions/core", () => mockCore);
 
 describe("setup-mlir Integration Tests", () => {
-  const testVersion = "21.1.8";
+  const testVersion = "22.1.0";
   const testVersionCommit = "f8cb798";
   let cachedPath: string | undefined;
   let run: () => Promise<void>;
