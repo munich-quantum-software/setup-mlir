@@ -19,7 +19,7 @@ description: "Set up a specific version of the MLIR toolchain"
 
 inputs:
   llvm-version:
-    description: "The LLVM version to install (e.g., 21.1.8) or commit hash (e.g., f8cb798)."
+    description: "The LLVM version to install (e.g., 22.1.0) or commit hash (e.g., f8cb798)."
     required: true
   platform:
     description: "The platform to install the MLIR toolchain for (either linux, macOS, windows, or host). Defaults to host."
