@@ -118,7 +118,7 @@ function getVersionFromAssetName(assetName: string): string {
  */
 function getMetadata(assetName: string): [string, string] {
   const platformMatch = assetName.match(
-    /llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\./i,
+    /llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)\./i,
   );
   if (platformMatch) {
     return [platformMatch[2].toLowerCase(), platformMatch[4].toLowerCase()];

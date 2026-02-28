@@ -32303,7 +32303,7 @@ function getVersionFromAssetName(assetName) {
  * @returns Tuple of platform and architecture
  */
 function getMetadata(assetName) {
-    const platformMatch = assetName.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\./i);
+    const platformMatch = assetName.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)\./i);
     if (platformMatch) {
         return [platformMatch[2].toLowerCase(), platformMatch[4].toLowerCase()];
     }
