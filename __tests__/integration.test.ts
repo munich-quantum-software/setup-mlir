@@ -191,6 +191,57 @@ describe("setup-mlir Integration Tests", () => {
       expect(asset.name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
     });
 
+    it("should fall back to remote manifest when local file is missing", async () => {
+      const { getMLIRUrl } = await import("../src/utils/download.js");
+      const readFileSpy = jest
+        .spyOn(fs.promises, "readFile")
+        .mockRejectedValueOnce(
+          Object.assign(new Error("missing"), { code: "ENOENT" }),
+        );
+
+      const manifest = [
+        {
+          version: testVersion,
+          platform: "linux",
+          architecture: "x86",
+          asset_name: "llvm-mlir_llvmorg-22.1.0_linux_x86_64_X86.tar.zst",
+          download_url: "https://example.com/llvm.tar.zst",
+          release_url: "https://example.com/release",
+          tag: "v22.1.0",
+          zstd_asset_name: "zstd-linux-x86.tar.gz",
+          zstd_download_url: "https://example.com/zstd.tar.gz",
+        },
+      ];
+
+      const fetchMock: jest.MockedFunction<typeof fetch> = jest.fn(
+        async (..._args: Parameters<typeof fetch>) =>
+          new Response(JSON.stringify(manifest), {
+            status: 200,
+            statusText: "OK",
+          }),
+      );
+
+      const originalFetch = global.fetch;
+      global.fetch = fetchMock as typeof fetch;
+      process.env.GITHUB_ACTION_REPOSITORY =
+        "munich-quantum-software/setup-mlir";
+      process.env.GITHUB_ACTION_REF = "test-ref";
+
+      try {
+        const asset = await getMLIRUrl(testVersion, "linux", "X86");
+        expect(asset.url).toBe("https://example.com/llvm.tar.zst");
+        expect(fetchMock).toHaveBeenCalledWith(
+          "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/test-ref/version-manifest.json",
+          { redirect: "follow" },
+        );
+      } finally {
+        readFileSpy.mockRestore();
+        global.fetch = originalFetch;
+        delete process.env.GITHUB_ACTION_REPOSITORY;
+        delete process.env.GITHUB_ACTION_REF;
+      }
+    });
+
     it("should fetch download link for zstd binary", async () => {
       const { getZstdUrl } = await import("../src/utils/download.js");
 
