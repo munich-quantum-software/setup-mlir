@@ -292,7 +292,7 @@ describe("setup-mlir Integration Tests", () => {
 
       const asset = await getMLIRUrl(testVersion, platform, arch);
 
-      expect(asset.name).toMatch(/^llvm-mlir_llvmorg-21\.1\.8_/);
+      expect(asset.name).toMatch(/^llvm-mlir_llvmorg-22\.1\.0_/);
       expect(asset.name).toContain(platform.toLowerCase());
       expect(asset.name).toMatch(/\.tar\.zst$/);
     });
