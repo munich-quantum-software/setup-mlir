@@ -29,9 +29,15 @@ jobs:
         run: node dist/update-known-versions/index.js
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - id: create-token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Create pull request
         uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
         with:
+          token: ${{ steps.create-token.outputs.token }}
           commit-message: 👷 Update known versions
           title: 👷 Update known versions for ${{ steps.update-known-versions.outputs.latest-tag }}
           body: This PR updates the known versions to include `${{ steps.update-known-versions.outputs.latest-tag }}`.
@@ -39,3 +45,4 @@ jobs:
           labels: "documentation"
           branch: update-known-versions
           delete-branch: true
+          sign-commits: true
