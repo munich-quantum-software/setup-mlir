@@ -19,7 +19,7 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$llvm_version,
     [Parameter(Mandatory=$true)]
-    [string]$install_prefix,
+    [string]$install_prefix
 )
 
 $ErrorActionPreference = "Stop"
