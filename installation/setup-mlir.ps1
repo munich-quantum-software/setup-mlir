@@ -13,14 +13,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory> [-token <GitHub token>] [-use_debug]
+# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory>
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$llvm_version,
     [Parameter(Mandatory=$true)]
-    [string]$install_prefix,
-    [switch]$use_debug
+    [string]$install_prefix
 )
 
 $ErrorActionPreference = "Stop"
@@ -81,18 +80,16 @@ switch ($arch) {
         exit 1
     }
 }
-$debug = [bool]$use_debug
 $platform = "windows"
 
 $matching_entry = $manifest_json | Where-Object {
     $_.platform -eq $platform -and
     $_.architecture -eq $architecture -and
-    $_.debug -eq $debug -and
     $_.version -like "${llvm_version}*"
 } | Select-Object -First 1
 
 if (-not $matching_entry) {
-    Write-Error "No release with LLVM $llvm_version found for Windows/${arch}$(if ($use_debug) { ' (debug)' } else { '' })."
+    Write-Error "No release with LLVM $llvm_version found for Windows/${arch}."
     exit 1
 }
 

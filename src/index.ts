@@ -34,15 +34,6 @@ export async function run(): Promise<void> {
   const llvm_version = core.getInput("llvm-version", { required: true });
   const platform = core.getInput("platform", { required: true });
   const architecture = core.getInput("architecture", { required: true });
-  const debug = core.getBooleanInput("debug", { required: false });
-
-  // Validate debug flag is only used on Windows
-  const isWindows =
-    platform === "windows" ||
-    (platform === "host" && process.platform === "win32");
-  if (debug && !isWindows) {
-    throw new Error("Debug builds are only available on Windows.");
-  }
 
   // Validate LLVM version (either X.Y.Z format or commit hash)
   const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
@@ -80,7 +71,7 @@ export async function run(): Promise<void> {
   }
 
   core.debug("==> Determining LLVM asset URL");
-  const asset = await getMLIRUrl(llvm_version, platform, architecture, debug);
+  const asset = await getMLIRUrl(llvm_version, platform, architecture);
   core.debug(`==> Downloading LLVM asset: ${asset.url}`);
   const file = await tc.downloadTool(asset.url);
 

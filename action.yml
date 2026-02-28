@@ -29,10 +29,6 @@ inputs:
     description: "The architecture to install the MLIR toolchain for (either X86, AArch64, or host). Defaults to host."
     required: false
     default: "host"
-  debug:
-    description: "Whether to install the debug build (Windows only). Defaults to false."
-    required: false
-    default: "false"
 
 runs:
   using: node24

@@ -34466,10 +34466,9 @@ function determineArchitecture() {
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
- * @param debug Whether to get a debug build
  * @returns The manifest entry
  */
-async function getManifestEntry(version, platform, architecture, debug) {
+async function getManifestEntry(version, platform, architecture) {
     // Normalize inputs
     version = version.toLowerCase();
     platform = getPlatform(platform);
@@ -34478,10 +34477,9 @@ async function getManifestEntry(version, platform, architecture, debug) {
     const manifest = JSON.parse(fileContent);
     const entry = manifest.find((entry) => entry.version.startsWith(version) &&
         entry.platform === platform &&
-        entry.architecture === architecture &&
-        entry.debug === debug);
+        entry.architecture === architecture);
     if (!entry) {
-        throw new Error(`No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`);
+        throw new Error(`No ${architecture} ${platform} archive found for LLVM ${version}.`);
     }
     return entry;
 }
@@ -34493,7 +34491,7 @@ async function getManifestEntry(version, platform, architecture, debug) {
  * @returns The download URL and the asset name
  */
 async function getZstdUrl(version, platform, architecture) {
-    const entry = await getManifestEntry(version, platform, architecture, false);
+    const entry = await getManifestEntry(version, platform, architecture);
     return { url: entry.zstd_download_url, name: entry.zstd_asset_name };
 }
 /**
@@ -34501,11 +34499,10 @@ async function getZstdUrl(version, platform, architecture) {
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
- * @param debug Whether to get a debug build
  * @returns The download URL and the asset name
  */
-async function getMLIRUrl(version, platform, architecture, debug) {
-    const entry = await getManifestEntry(version, platform, architecture, debug);
+async function getMLIRUrl(version, platform, architecture) {
+    const entry = await getManifestEntry(version, platform, architecture);
     return { url: entry.download_url, name: entry.asset_name };
 }
 
@@ -34552,13 +34549,6 @@ async function run() {
     const llvm_version = getInput("llvm-version", { required: true });
     const platform = getInput("platform", { required: true });
     const architecture = getInput("architecture", { required: true });
-    const debug = getBooleanInput("debug", { required: false });
-    // Validate debug flag is only used on Windows
-    const isWindows = platform === "windows" ||
-        (platform === "host" && (external_node_process_default()).platform === "win32");
-    if (debug && !isWindows) {
-        throw new Error("Debug builds are only available on Windows.");
-    }
     // Validate LLVM version (either X.Y.Z format or commit hash)
     const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
     const isCommitHash = RegExp("^[0-9a-f]{7,40}$", "i").test(llvm_version);
@@ -34588,7 +34578,7 @@ async function run() {
         await exec_exec("chmod", ["+x", zstdPath]);
     }
     core_debug("==> Determining LLVM asset URL");
-    const asset = await getMLIRUrl(llvm_version, platform, architecture, debug);
+    const asset = await getMLIRUrl(llvm_version, platform, architecture);
     core_debug(`==> Downloading LLVM asset: ${asset.url}`);
     const file = await downloadTool(asset.url);
     core_debug("==> Decompressing and extracting LLVM distribution");

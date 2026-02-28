@@ -36,7 +36,6 @@ const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 export interface ManifestEntry {
   architecture: string;
   asset_name: string;
-  debug: boolean;
   download_url: string;
   platform: string;
   release_url: string;
@@ -110,25 +109,6 @@ function getVersionFromAssetName(assetName: string): string {
     return hashMatch[1].toLowerCase();
   }
   throw new Error(`Could not extract version from asset name: ${assetName}`);
-}
-
-/**
- * Extract platform, architecture, and debug from the name of a release asset
- * @param assetName - Name of the release asset
- * @returns Tuple of platform, architecture, and debug
- */
-function getMetadata(assetName: string): [string, string, boolean] {
-  const platformMatch = assetName.match(
-    /llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\./i,
-  );
-  if (platformMatch) {
-    return [
-      platformMatch[2].toLowerCase(),
-      platformMatch[4].toLowerCase(),
-      Boolean(platformMatch[5]),
-    ];
-  }
-  throw new Error(`Could not extract metadata from asset name: ${assetName}`);
 }
 
 /**
@@ -223,13 +203,17 @@ export async function updateManifest(): Promise<void> {
       }
     }
     for (const asset of release.assets) {
-      if (asset.name.startsWith("llvm-mlir")) {
+      const match = asset.name.match(
+        /llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)\./i,
+      );
+      if (match) {
         try {
           version = getVersionFromAssetName(asset.name);
           if (versions.has(version)) {
             continue;
           }
-          const [platform, architecture, debug] = getMetadata(asset.name);
+          const platform = match[2].toLowerCase();
+          const architecture = match[4].toLowerCase();
           const zstdAssetNameKey =
             `asset_name_${platform}_${architecture}` as keyof ZstdInfo;
           const zstdDownloadUrlKey =
@@ -242,7 +226,6 @@ export async function updateManifest(): Promise<void> {
           manifest.push({
             architecture: architecture,
             asset_name: asset.name,
-            debug: debug,
             download_url: asset.browser_download_url,
             platform: platform,
             release_url: release.html_url,
