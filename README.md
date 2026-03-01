@@ -24,7 +24,7 @@ For more information on the available LLVM versions and commit hashes, see [`ver
 
 ```yaml
 - name: Set up MLIR
-  uses: munich-quantum-software/setup-mlir@v1.2.0
+  uses: munich-quantum-software/setup-mlir@v1.2.1
   with:
     llvm-version: 22.1.0
 ```
