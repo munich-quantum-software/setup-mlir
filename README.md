@@ -8,8 +8,8 @@ The MLIR binaries are built and distributed in the [`portable-mlir-toolchain`](h
 
 List of available LLVM versions:
 
-- `21.1.8`
 - `22.1.0`
+- `21.1.8`
 
 List of available LLVM commit hashes:
 
