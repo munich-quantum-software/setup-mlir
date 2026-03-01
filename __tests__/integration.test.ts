@@ -232,13 +232,67 @@ describe("setup-mlir Integration Tests", () => {
         expect(asset.url).toBe("https://example.com/llvm.tar.zst");
         expect(fetchMock).toHaveBeenCalledWith(
           "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/test-ref/version-manifest.json",
-          { redirect: "follow" },
+          expect.objectContaining({
+            redirect: "follow",
+            signal: expect.any(AbortSignal),
+          }),
         );
       } finally {
         readFileSpy.mockRestore();
         global.fetch = originalFetch;
         delete process.env.GITHUB_ACTION_REPOSITORY;
         delete process.env.GITHUB_ACTION_REF;
+      }
+    });
+
+    it("should surface a remote manifest fetch failure", async () => {
+      const { getMLIRUrl } = await import("../src/utils/download.js");
+      const readFileSpy = jest
+        .spyOn(fs.promises, "readFile")
+        .mockRejectedValueOnce(
+          Object.assign(new Error("missing"), { code: "ENOENT" }),
+        );
+
+      const fetchMock: jest.MockedFunction<typeof fetch> = jest.fn(
+        async (..._args: Parameters<typeof fetch>) =>
+          new Response("nope", {
+            status: 404,
+            statusText: "Not Found",
+          }),
+      );
+
+      const originalFetch = global.fetch;
+      global.fetch = fetchMock as typeof fetch;
+      process.env.GITHUB_ACTION_REPOSITORY =
+        "munich-quantum-software/setup-mlir";
+      process.env.GITHUB_ACTION_REF = "bad-ref";
+
+      try {
+        await expect(getMLIRUrl(testVersion, "linux", "X86")).rejects.toThrow(
+          "Failed to fetch version manifest",
+        );
+      } finally {
+        readFileSpy.mockRestore();
+        global.fetch = originalFetch;
+        delete process.env.GITHUB_ACTION_REPOSITORY;
+        delete process.env.GITHUB_ACTION_REF;
+      }
+    });
+
+    it("should surface non-ENOENT read errors", async () => {
+      const { getMLIRUrl } = await import("../src/utils/download.js");
+      const readFileSpy = jest
+        .spyOn(fs.promises, "readFile")
+        .mockRejectedValueOnce(
+          Object.assign(new Error("permission denied"), { code: "EACCES" }),
+        );
+
+      try {
+        await expect(getMLIRUrl(testVersion, "host", "host")).rejects.toThrow(
+          "permission denied",
+        );
+      } finally {
+        readFileSpy.mockRestore();
       }
     });
 
