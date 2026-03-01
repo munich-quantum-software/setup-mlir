@@ -9,6 +9,12 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-03-01
+
+### Fixed
+
+- 🐛 Fix loading of `version-manifest` in action runs ([#111]) ([**@burgholzer**])
+
 ## [1.2.0] - 2026-02-28
 
 ### Added
@@ -60,7 +66,8 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- Version links -->
 
-[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.2.0...HEAD
+[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.2.1
 [1.2.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.2.0
 [1.1.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.1.0
 [1.0.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.0.1
@@ -68,6 +75,7 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#111]: https://github.com/munich-quantum-software/setup-mlir/pull/111
 [#106]: https://github.com/munich-quantum-software/setup-mlir/pull/106
 [#97]: https://github.com/munich-quantum-software/setup-mlir/pull/97
 [#79]: https://github.com/munich-quantum-software/setup-mlir/pull/79

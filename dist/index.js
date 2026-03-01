@@ -34473,8 +34473,7 @@ async function getManifestEntry(version, platform, architecture) {
     version = version.toLowerCase();
     platform = getPlatform(platform);
     architecture = getArchitecture(architecture);
-    const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE, "utf-8");
-    const manifest = JSON.parse(fileContent);
+    const manifest = await loadManifest();
     const entry = manifest.find((entry) => entry.version.startsWith(version) &&
         entry.platform === platform &&
         entry.architecture === architecture);
@@ -34482,6 +34481,33 @@ async function getManifestEntry(version, platform, architecture) {
         throw new Error(`No ${architecture} ${platform} archive found for LLVM ${version}.`);
     }
     return entry;
+}
+/**
+ * Load the manifest from the local file system or remote URL
+ * @returns The manifest entries
+ */
+async function loadManifest() {
+    try {
+        const fileContent = await external_node_fs_namespaceObject.promises.readFile(MANIFEST_FILE, "utf-8");
+        return JSON.parse(fileContent);
+    }
+    catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+            const actionRepo = process.env.GITHUB_ACTION_REPOSITORY ??
+                "munich-quantum-software/setup-mlir";
+            const actionRef = process.env.GITHUB_ACTION_REF ?? "main";
+            const manifestUrl = `https://raw.githubusercontent.com/${actionRepo}/${actionRef}/version-manifest.json`;
+            const response = await fetch(manifestUrl, {
+                redirect: "follow",
+                signal: AbortSignal.timeout(30000), // 30 second timeout
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to fetch version manifest from ${manifestUrl}: ${response.status} ${response.statusText}`);
+            }
+            return (await response.json());
+        }
+        throw error;
+    }
 }
 /**
  * Get the download URL for the requested zstd binary

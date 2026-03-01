@@ -38,8 +38,7 @@ async function getManifestEntry(
   platform = getPlatform(platform);
   architecture = getArchitecture(architecture);
 
-  const fileContent = await fs.readFile(MANIFEST_FILE, "utf-8");
-  const manifest: ManifestEntry[] = JSON.parse(fileContent);
+  const manifest = await loadManifest();
 
   const entry = manifest.find(
     (entry) =>
@@ -54,6 +53,37 @@ async function getManifestEntry(
     );
   }
   return entry;
+}
+
+/**
+ * Load the manifest from the local file system or remote URL
+ * @returns The manifest entries
+ */
+async function loadManifest(): Promise<ManifestEntry[]> {
+  try {
+    const fileContent = await fs.readFile(MANIFEST_FILE, "utf-8");
+    return JSON.parse(fileContent) as ManifestEntry[];
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      const actionRepo =
+        process.env.GITHUB_ACTION_REPOSITORY ??
+        "munich-quantum-software/setup-mlir";
+      const actionRef = process.env.GITHUB_ACTION_REF ?? "main";
+      const manifestUrl = `https://raw.githubusercontent.com/${actionRepo}/${actionRef}/version-manifest.json`;
+
+      const response = await fetch(manifestUrl, {
+        redirect: "follow",
+        signal: AbortSignal.timeout(30000), // 30 second timeout
+      });
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch version manifest from ${manifestUrl}: ${response.status} ${response.statusText}`,
+        );
+      }
+      return (await response.json()) as ManifestEntry[];
+    }
+    throw error;
+  }
 }
 
 /**
