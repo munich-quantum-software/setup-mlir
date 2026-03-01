@@ -34497,7 +34497,10 @@ async function loadManifest() {
                 "munich-quantum-software/setup-mlir";
             const actionRef = process.env.GITHUB_ACTION_REF ?? "main";
             const manifestUrl = `https://raw.githubusercontent.com/${actionRepo}/${actionRef}/version-manifest.json`;
-            const response = await fetch(manifestUrl, { redirect: "follow" });
+            const response = await fetch(manifestUrl, {
+                redirect: "follow",
+                signal: AbortSignal.timeout(30000), // 30 second timeout
+            });
             if (!response.ok) {
                 throw new Error(`Failed to fetch version manifest from ${manifestUrl}: ${response.status} ${response.statusText}`);
             }
