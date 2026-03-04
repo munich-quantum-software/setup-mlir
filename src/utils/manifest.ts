@@ -26,6 +26,7 @@ import {
 } from "./constants.js";
 import { Octokit } from "@octokit/core";
 import type { Release } from "./types.js";
+import { compare } from "semver";
 
 const README_LIST_BEGIN = "<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
@@ -137,15 +138,7 @@ async function updateReadme(versions: Set<string>): Promise<void> {
   let body = "";
   if (tags.length > 0) {
     body += `List of available LLVM versions:\n\n`;
-    tags.sort((a, b) => {
-      const pa = a.split(".").map(Number);
-      const pb = b.split(".").map(Number);
-      for (let i = 0; i < 3; i++) {
-        const diff = (pb[i] ?? 0) - (pa[i] ?? 0);
-        if (diff !== 0) return diff;
-      }
-      return 0;
-    });
+    tags.sort(compare);
     for (const tag of tags) {
       body += `- \`${tag}\`\n`;
     }
