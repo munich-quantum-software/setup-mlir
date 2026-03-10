@@ -106,7 +106,7 @@ export async function run(): Promise<void> {
     // input), zstd may receive SIGPIPE and exit non-zero, which is acceptable.
     // In practice, both processes typically complete successfully.
     await new Promise<void>((resolve, reject) => {
-      const zstd = spawn(zstdPath, ["-d", file, "--long=30", "--stdout"]);
+      const zstd = spawn(zstdPath, ["-d", file, "--long=31", "--stdout"]);
       const tar = spawn("tar", ["-x", "-f", "-", "-C", extractedDir]);
 
       // Pipe zstd stdout to tar stdin
