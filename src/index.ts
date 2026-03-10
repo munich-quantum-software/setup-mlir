@@ -80,8 +80,9 @@ export async function run(): Promise<void> {
   }
 
   core.debug("==> Determining download URL for LLVM distribution");
-  const urls = await getMLIRUrls(llvm_version, platform, architecture, debug);
+  const assets = await getMLIRUrls(llvm_version, platform, architecture, debug);
 
+  const urls = assets.map((asset) => asset.url);
   const file = await downloadLLVMDistribution(urls, isWindows && debug);
 
   core.debug("==> Decompressing and extracting LLVM distribution");

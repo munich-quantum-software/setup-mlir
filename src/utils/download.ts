@@ -126,12 +126,15 @@ export async function getMLIRUrls(
   platform: string,
   architecture: string,
   debug: boolean,
-): Promise<string[]> {
+): Promise<{ url: string; name: string }[]> {
   const entries = await getManifestEntries(
     version,
     platform,
     architecture,
     debug,
   );
-  return entries.map((entry) => entry.download_url);
+  return entries.map((entry) => ({
+    url: entry.download_url,
+    name: entry.asset_name,
+  }));
 }
