@@ -34710,8 +34710,8 @@ async function downloadLLVMDistribution(urls, isWindowsDebug) {
             for (const part of parts) {
                 await new Promise((resolve, reject) => {
                     const readStream = external_node_fs_default().createReadStream(part);
+                    readStream.on("close", resolve);
                     readStream.on("error", reject);
-                    readStream.on("end", resolve);
                     readStream.pipe(writeStream, { end: false });
                 });
             }

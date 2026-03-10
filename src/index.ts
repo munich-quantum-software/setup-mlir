@@ -202,8 +202,8 @@ async function downloadLLVMDistribution(
       for (const part of parts) {
         await new Promise<void>((resolve, reject) => {
           const readStream = fs.createReadStream(part);
+          readStream.on("close", resolve);
           readStream.on("error", reject);
-          readStream.on("end", resolve);
           readStream.pipe(writeStream, { end: false });
         });
       }
