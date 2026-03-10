@@ -137,23 +137,23 @@ if ($matching_entries.Count -eq 1) {
     }
 } else {
     Write-Host "Downloading LLVM distribution in $($matching_entries.Count) parts..."
-    $partFiles = @()
+    $parts = @()
     foreach ($entry in $matching_entries) {
-        $partFile = $entry.asset_name
-        if (-not (Download-Asset -Url $entry.download_url -OutputFile $partFile)) {
+        $part = $entry.asset_name
+        if (-not (Download-Asset -Url $entry.download_url -OutputFile $part)) {
             Write-Error "Download of LLVM distribution failed."
             exit 1
         }
-        $partFiles += $partFile
+        $parts += $part
     }
 
     Write-Host "Concatenating parts..."
-    $out = "llvm.tar.zst"
+    $out = Join-Path (Get-Location) "llvm.tar.zst"
     if (Test-Path $out) { Remove-Item $out -Force }
     $target = [System.IO.File]::Open($out, [System.IO.FileMode]::CreateNew)
     try {
-        foreach ($p in ($partFiles | Sort-Object)) {
-            $in = [System.IO.File]::OpenRead((Resolve-Path $p).Path)
+        foreach ($part in $parts) {
+            $in = [System.IO.File]::OpenRead($(Join-Path (Get-Location) $part))
             try { $in.CopyTo($target) } finally { $in.Dispose() }
         }
     } finally {
@@ -161,8 +161,8 @@ if ($matching_entries.Count -eq 1) {
     }
 
     # Clean up
-    foreach ($p in $partFiles) {
-        Remove-Item $p -Force
+    foreach ($part in $parts) {
+        Remove-Item $part -Force
     }
 }
 
