@@ -9,6 +9,16 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-03-11
+
+### Added
+
+- ♻️ Re-add support for Windows Debug builds ([#122]) ([**@denialhaag**])
+
+### Changed
+
+- ♻️ Support new asset names ([#122]) ([**@denialhaag**])
+
 ## [1.2.1] - 2026-03-01
 
 ### Fixed
@@ -23,7 +33,7 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ### Removed
 
-- 🔥 Remove support for Debug builds on Windows ([#106]) ([**@denialhaag**])
+- 🔥 Remove support for Windows Debug builds ([#106]) ([**@denialhaag**])
 
 ## [1.1.0] - 2026-01-07
 
@@ -66,7 +76,8 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- Version links -->
 
-[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.2.1...HEAD
+[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.3.0
 [1.2.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.2.1
 [1.2.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.2.0
 [1.1.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.1.0
@@ -75,6 +86,7 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#122]: https://github.com/munich-quantum-software/setup-mlir/pull/122
 [#111]: https://github.com/munich-quantum-software/setup-mlir/pull/111
 [#106]: https://github.com/munich-quantum-software/setup-mlir/pull/106
 [#97]: https://github.com/munich-quantum-software/setup-mlir/pull/97
