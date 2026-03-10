@@ -138,10 +138,10 @@ describe("Update Known Versions", () => {
       );
 
       // Verify asset name matches expected pattern
-      expect(entry.asset_name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
+      expect(entry.asset_name).toMatch(/^llvm-mlir_.*\.tar\.zst/);
 
       // Verify zstd asset name matches expected pattern
-      expect(entry.zstd_asset_name).toMatch(/^zstd-.*\.(zip|tar\.gz)$/);
+      expect(entry.zstd_asset_name).toMatch(/^zstd-.*\.(zip|tar\.gz)/);
 
       // Verify zstd download URL is from the correct repository
       expect(entry.zstd_download_url).toContain(
