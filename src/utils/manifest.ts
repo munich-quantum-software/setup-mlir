@@ -27,8 +27,6 @@ import {
 import { Octokit } from "@octokit/core";
 import type { Asset, Release } from "./types.js";
 import { compare } from "semver";
-import { match } from "node:assert";
-import { arch } from "node:os";
 
 const README_LIST_BEGIN = "<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
