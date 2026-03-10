@@ -122,7 +122,7 @@ download_file() {
 }
 
 # Fetch version-manifest.json once
-MANIFEST_URL="https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json"
+MANIFEST_URL="https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/update/version-manifest.json"
 MANIFEST_JSON=$(fetch_manifest_json "$MANIFEST_URL")
 
 # Determine asset patterns based on platform/architecture
