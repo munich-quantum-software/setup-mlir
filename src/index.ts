@@ -163,6 +163,12 @@ export async function run(): Promise<void> {
   );
 }
 
+/**
+ * Download the LLVM distribution. For Windows Debug builds, this may involve downloading multiple parts and concatenating them.
+ * @param urls The download URL(s) for the LLVM distribution
+ * @param isWindowsDebug Whether this is a Windows Debug build
+ * @returns The path to the archive file containing the LLVM distribution
+ */
 async function downloadLLVMDistribution(
   urls: string[],
   isWindowsDebug: boolean,

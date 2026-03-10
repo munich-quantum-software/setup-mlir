@@ -34969,6 +34969,11 @@ async function getReleases(octokit) {
     releases.sort((a, b) => b.created_at.localeCompare(a.created_at));
     return releases;
 }
+/**
+ * Populate the `ZstdInfo` object with information from a release asset
+ * @param info The `ZstdInfo` object to populate
+ * @param asset The release asset
+ */
 function populateZstdInfo(info, asset) {
     const match_linux_x86 = asset.name.match(/zstd-(.+?)_x86_64-unknown-linux-gnu\.tar\.gz/);
     const match_linux_aarch64 = asset.name.match(/zstd-(.+?)_aarch64-unknown-linux-gnu\.tar\.gz/);
@@ -35031,6 +35036,13 @@ function getVersionFromAssetName(assetName) {
     }
     throw new Error(`Could not extract version from asset name: ${assetName}`);
 }
+/**
+ * Populate the manifest with information from a release asset
+ * @param manifest The manifest array to populate
+ * @param asset The release asset
+ * @param release The release containing the asset
+ * @param zstdInfo The `ZstdInfo` object containing information about zstd assets
+ */
 function populateManifest(manifest, asset, release, zstdInfo) {
     const match_linux_x86 = asset.name.match(/llvm-mlir_(.+?)_x86_64-unknown-linux-gnu\.tar\.zst/i);
     const match_linux_aarch64 = asset.name.match(/llvm-mlir_(.+?)_aarch64-unknown-linux-gnu\.tar\.zst/i);

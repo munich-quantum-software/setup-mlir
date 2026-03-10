@@ -48,7 +48,7 @@ export interface ManifestEntry {
 }
 
 /**
- * Interface representing zstd asset information
+ * Interface representing information about zstd assets
  */
 interface ZstdInfo {
   asset_name_linux_x86?: string;
@@ -96,6 +96,11 @@ async function getReleases(octokit: Octokit): Promise<Release[]> {
   return releases;
 }
 
+/**
+ * Populate the `ZstdInfo` object with information from a release asset
+ * @param info The `ZstdInfo` object to populate
+ * @param asset The release asset
+ */
 function populateZstdInfo(info: ZstdInfo, asset: Asset): void {
   const match_linux_x86 = asset.name.match(
     /zstd-(.+?)_x86_64-unknown-linux-gnu\.tar\.gz/,
@@ -170,6 +175,13 @@ function getVersionFromAssetName(assetName: string): string {
   throw new Error(`Could not extract version from asset name: ${assetName}`);
 }
 
+/**
+ * Populate the manifest with information from a release asset
+ * @param manifest The manifest array to populate
+ * @param asset The release asset
+ * @param release The release containing the asset
+ * @param zstdInfo The `ZstdInfo` object containing information about zstd assets
+ */
 function populateManifest(
   manifest: ManifestEntry[],
   asset: Asset,

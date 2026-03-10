@@ -34681,6 +34681,12 @@ async function run() {
     core_debug("==> Exporting MLIR_DIR");
     exportVariable("MLIR_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "mlir"));
 }
+/**
+ * Download the LLVM distribution. For Windows Debug builds, this may involve downloading multiple parts and concatenating them.
+ * @param urls The download URL(s) for the LLVM distribution
+ * @param isWindowsDebug Whether this is a Windows Debug build
+ * @returns The path to the archive file containing the LLVM distribution
+ */
 async function downloadLLVMDistribution(urls, isWindowsDebug) {
     if (!isWindowsDebug) {
         if (urls.length !== 1) {
