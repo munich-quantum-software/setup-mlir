@@ -103,6 +103,7 @@ describe("Update Known Versions", () => {
       // Verify all required fields exist
       expect(entry.architecture).toBeTruthy();
       expect(entry.asset_name).toBeTruthy();
+      expect(typeof entry.debug).toBe("boolean");
       expect(entry.download_url).toBeTruthy();
       expect(entry.platform).toBeTruthy();
       expect(entry.release_url).toBeTruthy();

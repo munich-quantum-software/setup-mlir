@@ -13,7 +13,7 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ### Fixed
 
-- 🐛 Fix loading of `version-manifest` in action runs ([#111]) ([**@burgholzer**])
+- 🐛 Fix loading of version manifest in action runs ([#111]) ([**@burgholzer**])
 
 ## [1.2.0] - 2026-02-28
 
@@ -30,7 +30,7 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 ### Added
 
 - ✨ Add support for distributed zstd binaries so that installer scripts and GitHub Action now automatically download and use platform-specific zstd binaries for decompression ([#61]) ([**@burgholzer**])
-- ✨ Add support for Debug builds on Windows with new `use_debug` option available in both installer scripts and GitHub Action ([#61]) ([**@burgholzer**])
+- ✨ Add support for debug builds on Windows with new `use_debug` option available in both installer scripts and GitHub Action ([#61]) ([**@burgholzer**])
 - ✅ Add comprehensive integration tests that exercise actual download and extraction paths ([#61]) ([**@burgholzer**])
 
 ### Changed

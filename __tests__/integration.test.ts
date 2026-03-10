@@ -83,6 +83,11 @@ describe("setup-mlir Integration Tests", () => {
       return "";
     });
 
+    mockCore.getBooleanInput.mockImplementation((name: string) => {
+      if (name === "debug") return false;
+      return false;
+    });
+
     mockCore.debug.mockImplementation(() => {});
     mockCore.addPath.mockImplementation((pathToAdd: string) => {
       // Capture the cached path for cleanup
@@ -126,7 +131,9 @@ describe("setup-mlir Integration Tests", () => {
     it("should reject non-existent version", async () => {
       const { getMLIRUrl } = await import("../src/utils/download.js");
 
-      await expect(getMLIRUrl("99.99.99", "host", "host")).rejects.toThrow();
+      await expect(
+        getMLIRUrl("99.99.99", "host", "host", false),
+      ).rejects.toThrow();
     });
   });
 
@@ -159,7 +166,7 @@ describe("setup-mlir Integration Tests", () => {
       const { getMLIRUrl } = await import("../src/utils/download.js");
 
       // Test explicit linux platform
-      const linuxAsset = await getMLIRUrl(testVersion, "linux", "X86");
+      const linuxAsset = await getMLIRUrl(testVersion, "linux", "X86", false);
       expect(linuxAsset.name).toContain("linux");
       expect(linuxAsset.name).toContain("x86_64");
     });
@@ -175,7 +182,7 @@ describe("setup-mlir Integration Tests", () => {
             ? "macOS"
             : "windows";
 
-      const asset = await getMLIRUrl(testVersion, platform, "X86");
+      const asset = await getMLIRUrl(testVersion, platform, "X86", false);
       expect(asset.url).toBeTruthy();
       expect(asset.name).toContain("X86");
     });
@@ -185,7 +192,7 @@ describe("setup-mlir Integration Tests", () => {
     it("should fetch download link for LLVM distribution", async () => {
       const { getMLIRUrl } = await import("../src/utils/download.js");
 
-      const asset = await getMLIRUrl(testVersion, "host", "host");
+      const asset = await getMLIRUrl(testVersion, "host", "host", false);
 
       expect(asset.url).toBeTruthy();
       expect(asset.name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
@@ -424,6 +431,31 @@ describe("setup-mlir Integration Tests", () => {
       }
     }, 600000); // 10 minute timeout
 
+    it("should handle debug flag on Windows", async () => {
+      if (process.platform !== "win32") {
+        return;
+      }
+
+      await run();
+
+      expect(mockCore.addPath).toHaveBeenCalled();
+      expect(mockCore.setFailed).not.toHaveBeenCalled();
+    }, 600000); // 10 minute timeout
+
+    it("should reject debug flag on non-Windows platforms", async () => {
+      if (process.platform === "win32") {
+        return;
+      }
+
+      mockCore.getBooleanInput.mockImplementation((name: string) => {
+        return name === "debug";
+      });
+
+      await expect(run()).rejects.toThrow(
+        "Debug builds are only available on Windows",
+      );
+    });
+
     it("should reject invalid version", async () => {
       mockCore.getInput.mockImplementation((name: string) => {
         if (name === "llvm-version") return "invalid-version-123";
@@ -448,7 +480,7 @@ describe("setup-mlir Integration Tests", () => {
 
       const { getMLIRUrl } = await import("../src/utils/download.js");
 
-      const asset = await getMLIRUrl(testVersion, platform, arch);
+      const asset = await getMLIRUrl(testVersion, platform, arch, false);
 
       expect(asset.name).toMatch(/^llvm-mlir_llvmorg-22\.1\.0_/);
       expect(asset.name).toContain(platform.toLowerCase());
@@ -471,17 +503,17 @@ describe("setup-mlir Integration Tests", () => {
     it("should reject invalid platform", async () => {
       const { getMLIRUrl } = await import("../src/utils/download.js");
 
-      await expect(getMLIRUrl(testVersion, "invalid", "X86")).rejects.toThrow(
-        "Invalid platform: invalid",
-      );
+      await expect(
+        getMLIRUrl(testVersion, "invalid", "X86", false),
+      ).rejects.toThrow("Invalid platform: invalid");
     });
 
     it("should reject invalid architecture", async () => {
       const { getMLIRUrl } = await import("../src/utils/download.js");
 
-      await expect(getMLIRUrl(testVersion, "linux", "invalid")).rejects.toThrow(
-        "Invalid architecture: invalid",
-      );
+      await expect(
+        getMLIRUrl(testVersion, "linux", "invalid", false),
+      ).rejects.toThrow("Invalid architecture: invalid");
     });
   });
 });
