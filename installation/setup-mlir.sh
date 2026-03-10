@@ -100,8 +100,8 @@ find_zstd_asset_url() {
 # Helper function to find LLVM asset URL in version-manifest.json
 find_llvm_asset_url() {
   local manifest_json=$1
-  local version_pattern=$3
-  local llvm_pattern=$2
+  local version_pattern=$2
+  local llvm_pattern=$3
   local legacy_llvm_pattern=$4
 
   echo "$manifest_json" | \
