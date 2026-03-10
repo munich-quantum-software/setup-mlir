@@ -84,21 +84,21 @@ switch ($arch) {
 $debug = [bool]$use_debug
 $platform = "windows"
 
-$matching_entry = $manifest_json | Where-Object {
+$matching_entries = @($manifest_json | Where-Object {
     $_.platform -eq $platform -and
     $_.architecture -eq $architecture -and
     $_.debug -eq $debug -and
     $_.version -like "${llvm_version}*"
-} | Select-Object -First 1
+})
 
-if (-not $matching_entry) {
+if ($matching_entries.Count -eq 0) {
     Write-Error "No release with LLVM $llvm_version found for Windows/${arch}$(if ($use_debug) { ' (debug)' } else { '' })."
     exit 1
 }
 
 # Download zstd binary
 Write-Host "Downloading zstd binary..."
-if (-not (Download-Asset -Url $matching_entry.zstd_download_url -OutputFile "zstd.tar.gz")) {
+if (-not (Download-Asset -Url $matching_entries[0].zstd_download_url -OutputFile "zstd.tar.gz")) {
     Write-Error "Download of zstd binary failed."
     exit 1
 }
@@ -129,10 +129,41 @@ if (-not (Test-Path $zstdBinPath)) {
 }
 
 # Download LLVM distribution
-Write-Host "Downloading LLVM distribution..."
-if (-not (Download-Asset -Url $matching_entry.download_url -OutputFile "llvm.tar.zst")) {
-    Write-Error "Download of LLVM distribution failed."
-    exit 1
+if ($matching_entries.Count -eq 1) {
+    Write-Host "Downloading LLVM distribution..."
+    if (-not (Download-Asset -Url $matching_entries[0].download_url -OutputFile "llvm.tar.zst")) {
+        Write-Error "Download of LLVM distribution failed."
+        exit 1
+    }
+} else {
+    Write-Host "Downloading LLVM distribution in $($matching_entries.Count) parts..."
+    $partFiles = @()
+    foreach ($entry in $matching_entries) {
+        $partFile = $entry.asset_name
+        if (-not (Download-Asset -Url $entry.download_url -OutputFile $partFile)) {
+            Write-Error "Download of LLVM distribution failed."
+            exit 1
+        }
+        $partFiles += $partFile
+    }
+
+    Write-Host "Concatenating parts..."
+    $out = "llvm.tar.zst"
+    if (Test-Path $out) { Remove-Item $out -Force }
+    $target = [System.IO.File]::Open($out, [System.IO.FileMode]::CreateNew)
+    try {
+        foreach ($p in ($partFiles | Sort-Object)) {
+            $in = [System.IO.File]::OpenRead((Resolve-Path $p).Path)
+            try { $in.CopyTo($target) } finally { $in.Dispose() }
+        }
+    } finally {
+        $target.Dispose()
+    }
+
+    # Clean up
+    foreach ($p in $partFiles) {
+        Remove-Item $p -Force
+    }
 }
 
 # Decompress and extract LLVM distribution
@@ -143,7 +174,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Cleanup
+# Clean up
 Remove-Item "llvm.tar.zst" -Force
 Remove-Item "zstd_temp" -Recurse -Force
 
