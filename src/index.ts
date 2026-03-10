@@ -59,12 +59,7 @@ export async function run(): Promise<void> {
   const zstdFile = await tc.downloadTool(zstdAsset.url);
 
   core.debug("==> Extracting zstd binary");
-  let zstdDir: string;
-  if (zstdAsset.name.endsWith(".zip")) {
-    zstdDir = await tc.extractZip(zstdFile);
-  } else {
-    zstdDir = await tc.extractTar(zstdFile);
-  }
+  const zstdDir = await tc.extractTar(zstdFile);
 
   // zstd archive contains a single executable file
   const zstdExecutableName = process.platform === "win32" ? "zstd.exe" : "zstd";

@@ -33997,7 +33997,7 @@ function extractZipWin(file, dest) {
         // build the powershell command
         const escapedFile = file.replace(/'/g, "''").replace(/"|\n|\r/g, ''); // double-up single quotes, remove double quotes and newlines
         const escapedDest = dest.replace(/'/g, "''").replace(/"|\n|\r/g, '');
-        const pwshPath = yield which('pwsh', false);
+        const pwshPath = yield io.which('pwsh', false);
         //To match the file overwrite behavior on nix systems, we use the overwrite = true flag for ExtractToDirectory
         //and the -Force flag for Expand-Archive as a fallback
         if (pwshPath) {
@@ -34017,8 +34017,8 @@ function extractZipWin(file, dest) {
                 '-Command',
                 pwshCommand
             ];
-            core_debug(`Using pwsh at path: ${pwshPath}`);
-            yield exec_exec(`"${pwshPath}"`, args);
+            core.debug(`Using pwsh at path: ${pwshPath}`);
+            yield exec(`"${pwshPath}"`, args);
         }
         else {
             const powershellCommand = [
@@ -34037,21 +34037,21 @@ function extractZipWin(file, dest) {
                 '-Command',
                 powershellCommand
             ];
-            const powershellPath = yield which('powershell', true);
-            core_debug(`Using powershell at path: ${powershellPath}`);
-            yield exec_exec(`"${powershellPath}"`, args);
+            const powershellPath = yield io.which('powershell', true);
+            core.debug(`Using powershell at path: ${powershellPath}`);
+            yield exec(`"${powershellPath}"`, args);
         }
     });
 }
 function extractZipNix(file, dest) {
     return tool_cache_awaiter(this, void 0, void 0, function* () {
-        const unzipPath = yield which('unzip', true);
+        const unzipPath = yield io.which('unzip', true);
         const args = [file];
-        if (!isDebug()) {
+        if (!core.isDebug()) {
             args.unshift('-q');
         }
         args.unshift('-o'); //overwrite with -o, otherwise a prompt is shown which freezes the run
-        yield exec_exec(`"${unzipPath}"`, args, { cwd: dest });
+        yield exec(`"${unzipPath}"`, args, { cwd: dest });
     });
 }
 /**
@@ -34602,13 +34602,7 @@ async function run() {
     core_debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
     const zstdFile = await downloadTool(zstdAsset.url);
     core_debug("==> Extracting zstd binary");
-    let zstdDir;
-    if (zstdAsset.name.endsWith(".zip")) {
-        zstdDir = await extractZip(zstdFile);
-    }
-    else {
-        zstdDir = await extractTar(zstdFile);
-    }
+    const zstdDir = await extractTar(zstdFile);
     // zstd archive contains a single executable file
     const zstdExecutableName = (external_node_process_default()).platform === "win32" ? "zstd.exe" : "zstd";
     const zstdPath = external_node_path_default().join(zstdDir, zstdExecutableName);

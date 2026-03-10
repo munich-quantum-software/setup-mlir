@@ -98,7 +98,7 @@ if (-not $matching_entry) {
 
 # Download zstd binary
 Write-Host "Downloading zstd binary..."
-if (-not (Download-Asset -Url $matching_entry.zstd_download_url -OutputFile "zstd.zip")) {
+if (-not (Download-Asset -Url $matching_entry.zstd_download_url -OutputFile "zstd.tar.gz")) {
     Write-Error "Download of zstd binary failed."
     exit 1
 }
@@ -106,8 +106,10 @@ if (-not (Download-Asset -Url $matching_entry.zstd_download_url -OutputFile "zst
 # Extract zstd binary
 Write-Host "Extracting zstd binary..."
 try {
-    Expand-Archive -Path "zstd.zip" -DestinationPath "zstd_temp" -Force -ErrorAction Stop
-    Remove-Item "zstd.zip" -Force
+    New-Item -ItemType Directory -Path "zstd_temp" -Force | Out-Null
+    tar -xzf "zstd.tar.gz" -C "zstd_temp"
+    if ($LASTEXITCODE -ne 0) { throw "tar exited with code $LASTEXITCODE" }
+    Remove-Item "zstd.tar.gz" -Force
 } catch {
     Write-Error "Failed to extract zstd binary: $_"
     exit 1

@@ -522,11 +522,7 @@ describe("setup-mlir Integration Tests", () => {
       const zstdAsset = await getZstdUrl(testVersion, "host", "host");
 
       expect(zstdAsset.name).toMatch(/^zstd-/);
-      if (process.platform === "win32") {
-        expect(zstdAsset.name).toMatch(/\.zip$/);
-      } else {
-        expect(zstdAsset.name).toMatch(/\.tar\.gz$/);
-      }
+      expect(zstdAsset.name).toMatch(/\.tar\.gz$/);
     });
 
     it("should reject invalid platform", async () => {
