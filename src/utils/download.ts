@@ -29,12 +29,12 @@ import { getPlatform, getArchitecture } from "./platform.js";
  * @param debug Whether to get a debug build
  * @returns The manifest entry
  */
-async function getManifestEntry(
+async function getManifestEntries(
   version: string,
   platform: string,
   architecture: string,
   debug: boolean,
-): Promise<ManifestEntry> {
+): Promise<ManifestEntry[]> {
   // Normalize inputs
   version = version.toLowerCase();
   platform = getPlatform(platform);
@@ -42,7 +42,7 @@ async function getManifestEntry(
 
   const manifest = await loadManifest();
 
-  const entry = manifest.find(
+  const entries = manifest.filter(
     (entry) =>
       entry.version.startsWith(version) &&
       entry.platform === platform &&
@@ -50,12 +50,12 @@ async function getManifestEntry(
       entry.debug === debug,
   );
 
-  if (!entry) {
+  if (entries.length === 0) {
     throw new Error(
       `No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`,
     );
   }
-  return entry;
+  return entries;
 }
 
 /**
@@ -101,8 +101,16 @@ export async function getZstdUrl(
   platform: string,
   architecture: string,
 ): Promise<{ url: string; name: string }> {
-  const entry = await getManifestEntry(version, platform, architecture, false);
-  return { url: entry.zstd_download_url, name: entry.zstd_asset_name };
+  const entries = await getManifestEntries(
+    version,
+    platform,
+    architecture,
+    false,
+  );
+  return {
+    url: entries[0].zstd_download_url,
+    name: entries[0].zstd_asset_name,
+  };
 }
 
 /**
@@ -113,12 +121,17 @@ export async function getZstdUrl(
  * @param debug Whether to get a debug build
  * @returns The download URL and the asset name
  */
-export async function getMLIRUrl(
+export async function getMLIRUrls(
   version: string,
   platform: string,
   architecture: string,
   debug: boolean,
-): Promise<{ url: string; name: string }> {
-  const entry = await getManifestEntry(version, platform, architecture, debug);
-  return { url: entry.download_url, name: entry.asset_name };
+): Promise<string[]> {
+  const entries = await getManifestEntries(
+    version,
+    platform,
+    architecture,
+    debug,
+  );
+  return entries.map((entry) => entry.download_url);
 }

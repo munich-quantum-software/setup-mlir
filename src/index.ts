@@ -19,7 +19,7 @@ import * as core from "@actions/core";
 import * as tc from "@actions/tool-cache";
 import * as exec from "@actions/exec";
 import * as io from "@actions/io";
-import { getMLIRUrl, getZstdUrl } from "./utils/download.js";
+import { getMLIRUrls, getZstdUrl } from "./utils/download.js";
 import path from "node:path";
 import process from "node:process";
 import fs from "node:fs";
@@ -80,9 +80,10 @@ export async function run(): Promise<void> {
   }
 
   core.debug("==> Determining LLVM asset URL");
-  const asset = await getMLIRUrl(llvm_version, platform, architecture, debug);
-  core.debug(`==> Downloading LLVM asset: ${asset.url}`);
-  const file = await tc.downloadTool(asset.url);
+  const urls = await getMLIRUrls(llvm_version, platform, architecture, debug);
+
+  core.debug(`==> Downloading LLVM asset: ${urls[0]}`);
+  const file = await tc.downloadTool(urls[0]);
 
   core.debug("==> Decompressing and extracting LLVM distribution");
   const extractDir = path.join(

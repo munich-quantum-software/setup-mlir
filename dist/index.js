@@ -34469,20 +34469,20 @@ function determineArchitecture() {
  * @param debug Whether to get a debug build
  * @returns The manifest entry
  */
-async function getManifestEntry(version, platform, architecture, debug) {
+async function getManifestEntries(version, platform, architecture, debug) {
     // Normalize inputs
     version = version.toLowerCase();
     platform = getPlatform(platform);
     architecture = getArchitecture(architecture);
     const manifest = await loadManifest();
-    const entry = manifest.find((entry) => entry.version.startsWith(version) &&
+    const entries = manifest.filter((entry) => entry.version.startsWith(version) &&
         entry.platform === platform &&
         entry.architecture === architecture &&
         entry.debug === debug);
-    if (!entry) {
+    if (entries.length === 0) {
         throw new Error(`No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`);
     }
-    return entry;
+    return entries;
 }
 /**
  * Load the manifest from the local file system or remote URL
@@ -34519,8 +34519,11 @@ async function loadManifest() {
  * @returns The download URL and the asset name
  */
 async function getZstdUrl(version, platform, architecture) {
-    const entry = await getManifestEntry(version, platform, architecture, false);
-    return { url: entry.zstd_download_url, name: entry.zstd_asset_name };
+    const entries = await getManifestEntries(version, platform, architecture, false);
+    return {
+        url: entries[0].zstd_download_url,
+        name: entries[0].zstd_asset_name,
+    };
 }
 /**
  * Get the download URL for the requested MLIR/LLVM binary
@@ -34530,9 +34533,9 @@ async function getZstdUrl(version, platform, architecture) {
  * @param debug Whether to get a debug build
  * @returns The download URL and the asset name
  */
-async function getMLIRUrl(version, platform, architecture, debug) {
-    const entry = await getManifestEntry(version, platform, architecture, debug);
-    return { url: entry.download_url, name: entry.asset_name };
+async function getMLIRUrls(version, platform, architecture, debug) {
+    const entries = await getManifestEntries(version, platform, architecture, debug);
+    return entries.map((entry) => entry.download_url);
 }
 
 ;// CONCATENATED MODULE: external "node:process"
@@ -34614,9 +34617,9 @@ async function run() {
         await exec_exec("chmod", ["+x", zstdPath]);
     }
     core_debug("==> Determining LLVM asset URL");
-    const asset = await getMLIRUrl(llvm_version, platform, architecture, debug);
-    core_debug(`==> Downloading LLVM asset: ${asset.url}`);
-    const file = await downloadTool(asset.url);
+    const urls = await getMLIRUrls(llvm_version, platform, architecture, debug);
+    core_debug(`==> Downloading LLVM asset: ${urls[0]}`);
+    const file = await downloadTool(urls[0]);
     core_debug("==> Decompressing and extracting LLVM distribution");
     const extractDir = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || external_node_os_default().tmpdir(), `mlir-extract-${Date.now()}`);
     await mkdirP(extractDir);
