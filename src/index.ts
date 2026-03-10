@@ -53,7 +53,7 @@ export async function run(): Promise<void> {
     );
   }
 
-  core.debug("==> Determining zstd binary URL");
+  core.debug("==> Determining download URL for zstd binary");
   const zstdAsset = await getZstdUrl(llvm_version, platform, architecture);
   core.debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
   const zstdFile = await tc.downloadTool(zstdAsset.url);
@@ -79,11 +79,10 @@ export async function run(): Promise<void> {
     await exec.exec("chmod", ["+x", zstdPath]);
   }
 
-  core.debug("==> Determining LLVM asset URL");
+  core.debug("==> Determining download URL for LLVM distribution");
   const urls = await getMLIRUrls(llvm_version, platform, architecture, debug);
 
-  core.debug(`==> Downloading LLVM asset: ${urls[0]}`);
-  const file = await tc.downloadTool(urls[0]);
+  const file = await downloadLLVMDistribution(urls, isWindows && debug);
 
   core.debug("==> Decompressing and extracting LLVM distribution");
   const extractDir = path.join(
@@ -162,6 +161,55 @@ export async function run(): Promise<void> {
     "MLIR_DIR",
     path.join(cachedPath, "lib", "cmake", "mlir"),
   );
+}
+
+async function downloadLLVMDistribution(
+  urls: string[],
+  isWindowsDebug: boolean,
+): Promise<string> {
+  if (!isWindowsDebug) {
+    if (urls.length !== 1) {
+      throw new Error(
+        `Expected exactly one download URL for non-Windows-Debug builds, but got ${urls.length}.`,
+      );
+    }
+    core.debug(`==> Downloading LLVM distribution: ${urls[0]}`);
+    return tc.downloadTool(urls[0]);
+  }
+
+  // Windows Debug builds are split into multiple parts that need to be downloaded and concatenated into a single archive
+  core.debug(`==> Downloading LLVM distribution in ${urls.length} parts`);
+  const partFiles: string[] = [];
+  for (const url of urls) {
+    core.debug(`==> Downloading part: ${url}`);
+    partFiles.push(await tc.downloadTool(url));
+  }
+
+  core.debug("==> Concatenating parts");
+  const combinedFile = path.join(
+    process.env.RUNNER_TEMP || os.tmpdir(),
+    `mlir-combined-${Date.now()}.tar.zst`,
+  );
+  const writeStream = fs.createWriteStream(combinedFile);
+  try {
+    for (const partFile of partFiles) {
+      await new Promise<void>((resolve, reject) => {
+        const readStream = fs.createReadStream(partFile);
+        readStream.on("error", reject);
+        readStream.on("end", resolve);
+        readStream.pipe(writeStream, { end: false });
+      });
+    }
+  } finally {
+    writeStream.end();
+    await new Promise<void>((resolve) => writeStream.on("finish", resolve));
+  }
+
+  for (const partFile of partFiles) {
+    fs.unlinkSync(partFile);
+  }
+
+  return combinedFile;
 }
 
 // Run if this module is executed directly (not during tests)
