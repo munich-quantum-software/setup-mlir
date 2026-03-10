@@ -84,7 +84,12 @@ describe("setup-mlir Integration Tests", () => {
     });
 
     mockCore.getBooleanInput.mockImplementation((name: string) => {
-      if (name === "debug") return false;
+      if (name === "debug") {
+        return (
+          process.platform === "win32" &&
+          process.env.TEST_DEBUG_BUILD === "true"
+        );
+      }
       return false;
     });
 
@@ -447,13 +452,12 @@ describe("setup-mlir Integration Tests", () => {
     }, 600000); // 10 minute timeout
 
     it("should handle debug flag on Windows", async () => {
-      if (process.platform !== "win32") {
+      if (
+        process.platform !== "win32" ||
+        process.env.TEST_DEBUG_BUILD !== "true"
+      ) {
         return;
       }
-
-      mockCore.getBooleanInput.mockImplementation((name: string) => {
-        return name === "debug";
-      });
 
       await run();
 

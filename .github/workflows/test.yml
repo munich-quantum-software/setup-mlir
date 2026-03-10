@@ -122,7 +122,7 @@ jobs:
           Write-Host "Installation test passed!"
 
   integration-tests:
-    name: Integration tests with coverage on ${{ matrix.os }}
+    name: Integration tests with coverage on ${{ matrix.os }}${{ matrix.debug && ' (debug)' || '' }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -139,6 +139,12 @@ jobs:
             windows-2025,
             windows-11-arm,
           ]
+        debug: [false]
+        include:
+          - os: windows-2025
+            debug: true
+          - os: windows-11-arm
+            debug: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -156,6 +162,7 @@ jobs:
         run: npm run test:coverage
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          TEST_DEBUG_BUILD: ${{ matrix.debug && 'true' || 'false' }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
