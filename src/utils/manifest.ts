@@ -98,23 +98,25 @@ async function getReleases(octokit: Octokit): Promise<Release[]> {
 
 function populateZstdInfo(info: ZstdInfo, asset: Asset): void {
   const match_linux_x86 = asset.name.match(
-    /zstd-(.+?)_x86_64-unknown-linux-gnu\./,
+    /zstd-(.+?)_x86_64-unknown-linux-gnu\.tar\.gz/,
   );
   const match_linux_aarch64 = asset.name.match(
-    /zstd-(.+?)_aarch64-unknown-linux-gnu\./,
+    /zstd-(.+?)_aarch64-unknown-linux-gnu\.tar\.gz/,
   );
-  const match_macos_x86 = asset.name.match(/zstd-(.+?)_x86_64-apple-darwin\./);
+  const match_macos_x86 = asset.name.match(
+    /zstd-(.+?)_x86_64-apple-darwin\.tar\.gz/,
+  );
   const match_macos_aarch64 = asset.name.match(
-    /zstd-(.+?)_arm64-apple-darwin\./,
+    /zstd-(.+?)_arm64-apple-darwin\.tar\.gz/,
   );
   const match_windows_x86 = asset.name.match(
-    /zstd-(.+?)_x86_64-pc-windows-msvc\./,
+    /zstd-(.+?)_x86_64-pc-windows-msvc\.tar\.gz/,
   );
   const match_windows_aarch64 = asset.name.match(
-    /zstd-(.+?)_aarch64-pc-windows-msvc\./,
+    /zstd-(.+?)_aarch64-pc-windows-msvc\.tar\.gz/,
   );
   const match_legacy = asset.name.match(
-    /zstd-(.+?)_(.+?)_(.+)_(x86|aarch64)\./i,
+    /zstd-(.+?)_(.+?)_(.+)_(x86|aarch64)\.(tar\.gz|zip)/i,
   );
 
   if (match_linux_x86) {
@@ -175,25 +177,25 @@ function populateManifest(
   zstdInfo: ZstdInfo,
 ): void {
   const match_linux_x86 = asset.name.match(
-    /llvm-mlir_(.+?)_x86_64-unknown-linux-gnu\./i,
+    /llvm-mlir_(.+?)_x86_64-unknown-linux-gnu\.tar\.zst/i,
   );
   const match_linux_aarch64 = asset.name.match(
-    /llvm-mlir_(.+?)_aarch64-unknown-linux-gnu\./i,
+    /llvm-mlir_(.+?)_aarch64-unknown-linux-gnu\.tar\.zst/i,
   );
   const match_macos_x86 = asset.name.match(
-    /llvm-mlir_(.+?)_x86_64-apple-darwin\./i,
+    /llvm-mlir_(.+?)_x86_64-apple-darwin\.tar\.zst/i,
   );
   const match_macos_aarch64 = asset.name.match(
-    /llvm-mlir_(.+?)_arm64-apple-darwin\./i,
+    /llvm-mlir_(.+?)_arm64-apple-darwin\.tar\.zst/i,
   );
   const match_windows_x86 = asset.name.match(
-    /llvm-mlir_(.+?)_x86_64-pc-windows-msvc(_debug)?\./i,
+    /llvm-mlir_(.+?)_x86_64-pc-windows-msvc(_debug)?\.tar\.zst/i,
   );
   const match_windows_aarch64 = asset.name.match(
-    /llvm-mlir_(.+?)_aarch64-pc-windows-msvc(_debug)?\./i,
+    /llvm-mlir_(.+?)_aarch64-pc-windows-msvc(_debug)?\.tar\.zst/i,
   );
   const match_legacy = asset.name.match(
-    /llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\./i,
+    /llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\.tar\.zst/i,
   );
 
   let architecture = "";

@@ -140,9 +140,13 @@ export async function run(): Promise<void> {
     core.debug("==> Adding MLIR toolchain to tool cache");
     cachedPath = await tc.cacheDir(dir, "mlir-toolchain", llvm_version);
   } finally {
-    // Cleanup temp directories (always runs, even on error)
+    // Clean up temp directories
     await io.rmRF(extractDir);
     await io.rmRF(zstdDir);
+    // Clean up archive file
+    try {
+      fs.unlinkSync(file);
+    } catch {}
   }
 
   core.debug("==> Adding MLIR toolchain to PATH");
@@ -175,37 +179,46 @@ async function downloadLLVMDistribution(
 
   // Windows Debug builds are split into multiple parts that need to be downloaded and concatenated into a single archive
   core.debug(`==> Downloading LLVM distribution in ${urls.length} parts`);
-  const partFiles: string[] = [];
-  for (const url of urls) {
-    core.debug(`==> Downloading part: ${url}`);
-    partFiles.push(await tc.downloadTool(url));
-  }
-
-  core.debug("==> Concatenating parts");
-  const combinedFile = path.join(
-    process.env.RUNNER_TEMP || os.tmpdir(),
-    `mlir-combined-${Date.now()}.tar.zst`,
-  );
-  const writeStream = fs.createWriteStream(combinedFile);
+  const parts: string[] = [];
   try {
-    for (const partFile of partFiles) {
-      await new Promise<void>((resolve, reject) => {
-        const readStream = fs.createReadStream(partFile);
-        readStream.on("error", reject);
-        readStream.on("end", resolve);
-        readStream.pipe(writeStream, { end: false });
-      });
+    for (const url of urls) {
+      core.debug(`==> Downloading part: ${url}`);
+      parts.push(await tc.downloadTool(url));
     }
+
+    core.debug("==> Concatenating parts");
+    const combined = path.join(
+      process.env.RUNNER_TEMP || os.tmpdir(),
+      `mlir-combined-${Date.now()}.tar.zst`,
+    );
+    const writeStream = fs.createWriteStream(combined);
+    try {
+      for (const part of parts) {
+        await new Promise<void>((resolve, reject) => {
+          const readStream = fs.createReadStream(part);
+          readStream.on("error", reject);
+          readStream.on("end", resolve);
+          readStream.pipe(writeStream, { end: false });
+        });
+      }
+    } catch (error) {
+      try {
+        fs.unlinkSync(combined);
+      } catch {}
+      throw error;
+    } finally {
+      writeStream.end();
+      await new Promise<void>((resolve) => writeStream.on("finish", resolve));
+    }
+
+    return combined;
   } finally {
-    writeStream.end();
-    await new Promise<void>((resolve) => writeStream.on("finish", resolve));
+    for (const part of parts) {
+      try {
+        fs.unlinkSync(part);
+      } catch {}
+    }
   }
-
-  for (const partFile of partFiles) {
-    fs.unlinkSync(partFile);
-  }
-
-  return combinedFile;
 }
 
 // Run if this module is executed directly (not during tests)

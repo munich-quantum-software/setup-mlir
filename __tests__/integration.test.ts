@@ -451,6 +451,10 @@ describe("setup-mlir Integration Tests", () => {
         return;
       }
 
+      mockCore.getBooleanInput.mockImplementation((name: string) => {
+        return name === "debug";
+      });
+
       await run();
 
       expect(mockCore.addPath).toHaveBeenCalled();

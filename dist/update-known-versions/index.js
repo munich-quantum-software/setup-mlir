@@ -34970,13 +34970,13 @@ async function getReleases(octokit) {
     return releases;
 }
 function populateZstdInfo(info, asset) {
-    const match_linux_x86 = asset.name.match(/zstd-(.+?)_x86_64-unknown-linux-gnu\./);
-    const match_linux_aarch64 = asset.name.match(/zstd-(.+?)_aarch64-unknown-linux-gnu\./);
-    const match_macos_x86 = asset.name.match(/zstd-(.+?)_x86_64-apple-darwin\./);
-    const match_macos_aarch64 = asset.name.match(/zstd-(.+?)_arm64-apple-darwin\./);
-    const match_windows_x86 = asset.name.match(/zstd-(.+?)_x86_64-pc-windows-msvc\./);
-    const match_windows_aarch64 = asset.name.match(/zstd-(.+?)_aarch64-pc-windows-msvc\./);
-    const match_legacy = asset.name.match(/zstd-(.+?)_(.+?)_(.+)_(x86|aarch64)\./i);
+    const match_linux_x86 = asset.name.match(/zstd-(.+?)_x86_64-unknown-linux-gnu\.tar\.gz/);
+    const match_linux_aarch64 = asset.name.match(/zstd-(.+?)_aarch64-unknown-linux-gnu\.tar\.gz/);
+    const match_macos_x86 = asset.name.match(/zstd-(.+?)_x86_64-apple-darwin\.tar\.gz/);
+    const match_macos_aarch64 = asset.name.match(/zstd-(.+?)_arm64-apple-darwin\.tar\.gz/);
+    const match_windows_x86 = asset.name.match(/zstd-(.+?)_x86_64-pc-windows-msvc\.tar\.gz/);
+    const match_windows_aarch64 = asset.name.match(/zstd-(.+?)_aarch64-pc-windows-msvc\.tar\.gz/);
+    const match_legacy = asset.name.match(/zstd-(.+?)_(.+?)_(.+)_(x86|aarch64)\.(tar\.gz|zip)/i);
     if (match_linux_x86) {
         info[`asset_name_linux_x86`] = asset.name;
         info[`download_url_linux_x86`] = asset.browser_download_url;
@@ -35032,13 +35032,13 @@ function getVersionFromAssetName(assetName) {
     throw new Error(`Could not extract version from asset name: ${assetName}`);
 }
 function populateManifest(manifest, asset, release, zstdInfo) {
-    const match_linux_x86 = asset.name.match(/llvm-mlir_(.+?)_x86_64-unknown-linux-gnu\./i);
-    const match_linux_aarch64 = asset.name.match(/llvm-mlir_(.+?)_aarch64-unknown-linux-gnu\./i);
-    const match_macos_x86 = asset.name.match(/llvm-mlir_(.+?)_x86_64-apple-darwin\./i);
-    const match_macos_aarch64 = asset.name.match(/llvm-mlir_(.+?)_arm64-apple-darwin\./i);
-    const match_windows_x86 = asset.name.match(/llvm-mlir_(.+?)_x86_64-pc-windows-msvc(_debug)?\./i);
-    const match_windows_aarch64 = asset.name.match(/llvm-mlir_(.+?)_aarch64-pc-windows-msvc(_debug)?\./i);
-    const match_legacy = asset.name.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\./i);
+    const match_linux_x86 = asset.name.match(/llvm-mlir_(.+?)_x86_64-unknown-linux-gnu\.tar\.zst/i);
+    const match_linux_aarch64 = asset.name.match(/llvm-mlir_(.+?)_aarch64-unknown-linux-gnu\.tar\.zst/i);
+    const match_macos_x86 = asset.name.match(/llvm-mlir_(.+?)_x86_64-apple-darwin\.tar\.zst/i);
+    const match_macos_aarch64 = asset.name.match(/llvm-mlir_(.+?)_arm64-apple-darwin\.tar\.zst/i);
+    const match_windows_x86 = asset.name.match(/llvm-mlir_(.+?)_x86_64-pc-windows-msvc(_debug)?\.tar\.zst/i);
+    const match_windows_aarch64 = asset.name.match(/llvm-mlir_(.+?)_aarch64-pc-windows-msvc(_debug)?\.tar\.zst/i);
+    const match_legacy = asset.name.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)(_debug)?\.tar\.zst/i);
     let architecture = "";
     let debug = false;
     let platform = "";

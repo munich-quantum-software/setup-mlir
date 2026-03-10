@@ -34665,9 +34665,14 @@ async function run() {
         cachedPath = await cacheDir(dir, "mlir-toolchain", llvm_version);
     }
     finally {
-        // Cleanup temp directories (always runs, even on error)
+        // Clean up temp directories
         await rmRF(extractDir);
         await rmRF(zstdDir);
+        // Clean up archive file
+        try {
+            external_node_fs_default().unlinkSync(file);
+        }
+        catch { }
     }
     core_debug("==> Adding MLIR toolchain to PATH");
     addPath(external_node_path_default().join(cachedPath, "bin"));
@@ -34686,32 +34691,46 @@ async function downloadLLVMDistribution(urls, isWindowsDebug) {
     }
     // Windows Debug builds are split into multiple parts that need to be downloaded and concatenated into a single archive
     core_debug(`==> Downloading LLVM distribution in ${urls.length} parts`);
-    const partFiles = [];
-    for (const url of urls) {
-        core_debug(`==> Downloading part: ${url}`);
-        partFiles.push(await downloadTool(url));
-    }
-    core_debug("==> Concatenating parts");
-    const combinedFile = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || external_node_os_default().tmpdir(), `mlir-combined-${Date.now()}.tar.zst`);
-    const writeStream = external_node_fs_default().createWriteStream(combinedFile);
+    const parts = [];
     try {
-        for (const partFile of partFiles) {
-            await new Promise((resolve, reject) => {
-                const readStream = external_node_fs_default().createReadStream(partFile);
-                readStream.on("error", reject);
-                readStream.on("end", resolve);
-                readStream.pipe(writeStream, { end: false });
-            });
+        for (const url of urls) {
+            core_debug(`==> Downloading part: ${url}`);
+            parts.push(await downloadTool(url));
         }
+        core_debug("==> Concatenating parts");
+        const combined = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || external_node_os_default().tmpdir(), `mlir-combined-${Date.now()}.tar.zst`);
+        const writeStream = external_node_fs_default().createWriteStream(combined);
+        try {
+            for (const part of parts) {
+                await new Promise((resolve, reject) => {
+                    const readStream = external_node_fs_default().createReadStream(part);
+                    readStream.on("error", reject);
+                    readStream.on("end", resolve);
+                    readStream.pipe(writeStream, { end: false });
+                });
+            }
+        }
+        catch (error) {
+            try {
+                external_node_fs_default().unlinkSync(combined);
+            }
+            catch { }
+            throw error;
+        }
+        finally {
+            writeStream.end();
+            await new Promise((resolve) => writeStream.on("finish", resolve));
+        }
+        return combined;
     }
     finally {
-        writeStream.end();
-        await new Promise((resolve) => writeStream.on("finish", resolve));
+        for (const part of parts) {
+            try {
+                external_node_fs_default().unlinkSync(part);
+            }
+            catch { }
+        }
     }
-    for (const partFile of partFiles) {
-        external_node_fs_default().unlinkSync(partFile);
-    }
-    return combinedFile;
 }
 // Run if this module is executed directly (not during tests)
 // Note: In production, this is bundled by ncc, so this check doesn't affect the action
