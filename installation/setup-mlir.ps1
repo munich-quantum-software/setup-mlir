@@ -61,7 +61,7 @@ function Download-Asset {
     }
 }
 
-$manifest_url = "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/update/version-manifest.json"
+$manifest_url = "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json"
 try {
     $manifest_json = Invoke-RestMethod -Uri $manifest_url
 } catch {
