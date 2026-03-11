@@ -49,7 +49,7 @@ fi
 mkdir -p "$INSTALL_PREFIX"
 
 # Turn the installation directory into an absolute path
-INSTALL_PREFIX=$(realpath "$INSTALL_PREFIX")
+INSTALL_PREFIX="$(cd "$INSTALL_PREFIX" && pwd -P)"
 
 # Change to installation directory
 pushd "$INSTALL_PREFIX" > /dev/null
