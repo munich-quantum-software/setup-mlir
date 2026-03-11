@@ -13,13 +13,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory>
+# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory> [-use_debug]
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$llvm_version,
     [Parameter(Mandatory=$true)]
-    [string]$install_prefix
+    [string]$install_prefix,
+    [switch]$use_debug
 )
 
 $ErrorActionPreference = "Stop"
@@ -80,22 +81,24 @@ switch ($arch) {
         exit 1
     }
 }
+$debug = [bool]$use_debug
 $platform = "windows"
 
-$matching_entry = $manifest_json | Where-Object {
+$matching_entries = @($manifest_json | Where-Object {
     $_.platform -eq $platform -and
     $_.architecture -eq $architecture -and
+    $_.debug -eq $debug -and
     $_.version -like "${llvm_version}*"
-} | Select-Object -First 1
+})
 
-if (-not $matching_entry) {
-    Write-Error "No release with LLVM $llvm_version found for Windows/${arch}."
+if ($matching_entries.Count -eq 0) {
+    Write-Error "No release with LLVM $llvm_version found for Windows/${arch}$(if ($use_debug) { ' (debug)' } else { '' })."
     exit 1
 }
 
 # Download zstd binary
 Write-Host "Downloading zstd binary..."
-if (-not (Download-Asset -Url $matching_entry.zstd_download_url -OutputFile "zstd.zip")) {
+if (-not (Download-Asset -Url $matching_entries[0].zstd_download_url -OutputFile "zstd.tar.gz")) {
     Write-Error "Download of zstd binary failed."
     exit 1
 }
@@ -103,8 +106,10 @@ if (-not (Download-Asset -Url $matching_entry.zstd_download_url -OutputFile "zst
 # Extract zstd binary
 Write-Host "Extracting zstd binary..."
 try {
-    Expand-Archive -Path "zstd.zip" -DestinationPath "zstd_temp" -Force -ErrorAction Stop
-    Remove-Item "zstd.zip" -Force
+    New-Item -ItemType Directory -Path "zstd_temp" -Force | Out-Null
+    tar -xzf "zstd.tar.gz" -C "zstd_temp"
+    if ($LASTEXITCODE -ne 0) { throw "tar exited with code $LASTEXITCODE" }
+    Remove-Item "zstd.tar.gz" -Force
 } catch {
     Write-Error "Failed to extract zstd binary: $_"
     exit 1
@@ -124,21 +129,52 @@ if (-not (Test-Path $zstdBinPath)) {
 }
 
 # Download LLVM distribution
-Write-Host "Downloading LLVM distribution..."
-if (-not (Download-Asset -Url $matching_entry.download_url -OutputFile "llvm.tar.zst")) {
-    Write-Error "Download of LLVM distribution failed."
-    exit 1
+if ($matching_entries.Count -eq 1) {
+    Write-Host "Downloading LLVM distribution..."
+    if (-not (Download-Asset -Url $matching_entries[0].download_url -OutputFile "llvm.tar.zst")) {
+        Write-Error "Download of LLVM distribution failed."
+        exit 1
+    }
+} else {
+    Write-Host "Downloading LLVM distribution in $($matching_entries.Count) parts..."
+    $parts = @()
+    foreach ($entry in $matching_entries) {
+        $part = $entry.asset_name
+        if (-not (Download-Asset -Url $entry.download_url -OutputFile $part)) {
+            Write-Error "Download of LLVM distribution failed."
+            exit 1
+        }
+        $parts += $part
+    }
+
+    Write-Host "Concatenating parts..."
+    $out = Join-Path (Get-Location) "llvm.tar.zst"
+    if (Test-Path $out) { Remove-Item $out -Force }
+    $target = [System.IO.File]::Open($out, [System.IO.FileMode]::CreateNew)
+    try {
+        foreach ($part in $parts) {
+            $in = [System.IO.File]::OpenRead($(Join-Path (Get-Location) $part))
+            try { $in.CopyTo($target) } finally { $in.Dispose() }
+        }
+    } finally {
+        $target.Dispose()
+    }
+
+    # Clean up
+    foreach ($part in $parts) {
+        Remove-Item $part -Force
+    }
 }
 
 # Decompress and extract LLVM distribution
 Write-Host "Extracting LLVM distribution..."
-& $zstdBinPath -d "llvm.tar.zst" --long=30 --stdout | tar -x -f - -C "$install_prefix"
+& $zstdBinPath -d "llvm.tar.zst" --long=31 --stdout | tar -x -f - -C "$install_prefix"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to extract LLVM distribution."
     exit 1
 }
 
-# Cleanup
+# Clean up
 Remove-Item "llvm.tar.zst" -Force
 Remove-Item "zstd_temp" -Recurse -Force
 

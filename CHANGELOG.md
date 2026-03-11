@@ -9,11 +9,21 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-03-11
+
+### Added
+
+- ♻️ Re-add support for Windows Debug builds by assembling multi-part artifacts ([#122]) ([**@denialhaag**])
+
+### Changed
+
+- ♻️ Support new asset names introduced in [munich-quantum-software/portable-mlir-toolchain#30] ([#122]) ([**@denialhaag**])
+
 ## [1.2.1] - 2026-03-01
 
 ### Fixed
 
-- 🐛 Fix loading of `version-manifest` in action runs ([#111]) ([**@burgholzer**])
+- 🐛 Fix loading of version manifest in action runs ([#111]) ([**@burgholzer**])
 
 ## [1.2.0] - 2026-02-28
 
@@ -23,21 +33,21 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ### Removed
 
-- 🔥 Remove support for Debug builds on Windows ([#106]) ([**@denialhaag**])
+- 🔥 Remove support for Windows Debug builds ([#106]) ([**@denialhaag**])
 
 ## [1.1.0] - 2026-01-07
 
 ### Added
 
-- ✨ Add support for distributed zstd binaries so that installer scripts and GitHub Action now automatically download and use platform-specific zstd binaries for decompression ([#61]) ([**@burgholzer**])
-- ✨ Add support for Debug builds on Windows with new `use_debug` option available in both installer scripts and GitHub Action ([#61]) ([**@burgholzer**])
+- ✨ Add support for distributed `zstd` binaries so that the action and the installation scripts automatically download and use platform-specific `zstd` binaries for decompression ([#61]) ([**@burgholzer**])
+- ✨ Add support for Debug builds on Windows with new `use_debug` option available in the action and both installation scripts ([#61]) ([**@burgholzer**])
 - ✅ Add comprehensive integration tests that exercise actual download and extraction paths ([#61]) ([**@burgholzer**])
 
 ### Changed
 
 - 🚸 Remove dependency on system-installed `zstd` so that only `tar` is now required on the host system ([#61]) ([**@burgholzer**])
 - 🔧 Improve asset matching regex patterns to be more precise and avoid incorrect matches ([#61]) ([**@burgholzer**])
-- 🔧 Use `--long=30` flag for zstd decompression to ensure compatibility with LLVM distributions ([#61]) ([**@burgholzer**])
+- 🔧 Use `--long=30` flag for `zstd` decompression to ensure compatibility with LLVM distributions ([#61]) ([**@burgholzer**])
 - ♻️ Clean up code and improve readability ([#61]) ([**@burgholzer**])
 
 ## [1.0.1] - 2025-12-24
@@ -48,8 +58,8 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ### Changed
 
-- 🚸 Remove dependency on `jq` in UNIX installer ([#47]) ([**@burgholzer**])
-- 🚸 Use tar-native zstd support in installers when available ([#49]) ([**@burgholzer**])
+- 🚸 Remove dependency on `jq` in `setup-mlir.sh` ([#47]) ([**@burgholzer**])
+- 🚸 Use `tar`-native `zstd` support in installation scripts when available ([#49]) ([**@burgholzer**])
 - 🚸 Create the installation directory if it does not exist ([#46]) ([**@denialhaag**])
 
 ### Fixed
@@ -66,7 +76,8 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- Version links -->
 
-[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.2.1...HEAD
+[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.3.0
 [1.2.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.2.1
 [1.2.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.2.0
 [1.1.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.1.0
@@ -75,6 +86,7 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#122]: https://github.com/munich-quantum-software/setup-mlir/pull/122
 [#111]: https://github.com/munich-quantum-software/setup-mlir/pull/111
 [#106]: https://github.com/munich-quantum-software/setup-mlir/pull/106
 [#97]: https://github.com/munich-quantum-software/setup-mlir/pull/97
@@ -95,6 +107,7 @@ _This is the initial release of the `setup-mlir` project._
 [#6]: https://github.com/munich-quantum-software/setup-mlir/pull/6
 [#3]: https://github.com/munich-quantum-software/setup-mlir/pull/3
 [#1]: https://github.com/munich-quantum-software/setup-mlir/pull/1
+[munich-quantum-software/portable-mlir-toolchain#30]: https://github.com/munich-quantum-software/portable-mlir-toolchain/pull/30
 
 <!-- Contributor -->
 

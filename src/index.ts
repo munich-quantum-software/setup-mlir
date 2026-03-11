@@ -19,7 +19,7 @@ import * as core from "@actions/core";
 import * as tc from "@actions/tool-cache";
 import * as exec from "@actions/exec";
 import * as io from "@actions/io";
-import { getMLIRUrl, getZstdUrl } from "./utils/download.js";
+import { getMLIRUrls, getZstdUrl } from "./utils/download.js";
 import path from "node:path";
 import process from "node:process";
 import fs from "node:fs";
@@ -34,6 +34,15 @@ export async function run(): Promise<void> {
   const llvm_version = core.getInput("llvm-version", { required: true });
   const platform = core.getInput("platform", { required: true });
   const architecture = core.getInput("architecture", { required: true });
+  const debug = core.getBooleanInput("debug", { required: false });
+
+  // Validate debug flag is only used on Windows
+  const isWindows =
+    platform === "windows" ||
+    (platform === "host" && process.platform === "win32");
+  if (debug && !isWindows) {
+    throw new Error("Debug builds are only available on Windows.");
+  }
 
   // Validate LLVM version (either X.Y.Z format or commit hash)
   const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
@@ -44,18 +53,13 @@ export async function run(): Promise<void> {
     );
   }
 
-  core.debug("==> Determining zstd binary URL");
+  core.debug("==> Determining download URL for zstd binary");
   const zstdAsset = await getZstdUrl(llvm_version, platform, architecture);
   core.debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
   const zstdFile = await tc.downloadTool(zstdAsset.url);
 
   core.debug("==> Extracting zstd binary");
-  let zstdDir: string;
-  if (zstdAsset.name.endsWith(".zip")) {
-    zstdDir = await tc.extractZip(zstdFile);
-  } else {
-    zstdDir = await tc.extractTar(zstdFile);
-  }
+  const zstdDir = await tc.extractTar(zstdFile);
 
   // zstd archive contains a single executable file
   const zstdExecutableName = process.platform === "win32" ? "zstd.exe" : "zstd";
@@ -70,10 +74,11 @@ export async function run(): Promise<void> {
     await exec.exec("chmod", ["+x", zstdPath]);
   }
 
-  core.debug("==> Determining LLVM asset URL");
-  const asset = await getMLIRUrl(llvm_version, platform, architecture);
-  core.debug(`==> Downloading LLVM asset: ${asset.url}`);
-  const file = await tc.downloadTool(asset.url);
+  core.debug("==> Determining download URL for LLVM distribution");
+  const assets = await getMLIRUrls(llvm_version, platform, architecture, debug);
+
+  const urls = assets.map((asset) => asset.url);
+  const file = await downloadLLVMDistribution(urls, isWindows && debug);
 
   core.debug("==> Decompressing and extracting LLVM distribution");
   const extractDir = path.join(
@@ -96,7 +101,7 @@ export async function run(): Promise<void> {
     // input), zstd may receive SIGPIPE and exit non-zero, which is acceptable.
     // In practice, both processes typically complete successfully.
     await new Promise<void>((resolve, reject) => {
-      const zstd = spawn(zstdPath, ["-d", file, "--long=30", "--stdout"]);
+      const zstd = spawn(zstdPath, ["-d", file, "--long=31", "--stdout"]);
       const tar = spawn("tar", ["-x", "-f", "-", "-C", extractedDir]);
 
       // Pipe zstd stdout to tar stdin
@@ -135,9 +140,13 @@ export async function run(): Promise<void> {
     core.debug("==> Adding MLIR toolchain to tool cache");
     cachedPath = await tc.cacheDir(dir, "mlir-toolchain", llvm_version);
   } finally {
-    // Cleanup temp directories (always runs, even on error)
+    // Clean up temp directories
     await io.rmRF(extractDir);
     await io.rmRF(zstdDir);
+    // Clean up archive file
+    try {
+      fs.unlinkSync(file);
+    } catch {}
   }
 
   core.debug("==> Adding MLIR toolchain to PATH");
@@ -152,6 +161,70 @@ export async function run(): Promise<void> {
     "MLIR_DIR",
     path.join(cachedPath, "lib", "cmake", "mlir"),
   );
+}
+
+/**
+ * Download the LLVM distribution. For Windows Debug builds, this may involve downloading multiple parts and concatenating them.
+ * @param urls The download URL(s) for the LLVM distribution
+ * @param isWindowsDebug Whether this is a Windows Debug build
+ * @returns The path to the archive file containing the LLVM distribution
+ */
+async function downloadLLVMDistribution(
+  urls: string[],
+  isWindowsDebug: boolean,
+): Promise<string> {
+  if (!isWindowsDebug) {
+    if (urls.length !== 1) {
+      throw new Error(
+        `Expected exactly one download URL for non-Windows-Debug builds, but got ${urls.length}.`,
+      );
+    }
+    core.debug(`==> Downloading LLVM distribution: ${urls[0]}`);
+    return tc.downloadTool(urls[0]);
+  }
+
+  // Windows Debug builds are split into multiple parts that need to be downloaded and concatenated into a single archive
+  core.debug(`==> Downloading LLVM distribution in ${urls.length} parts`);
+  const parts: string[] = [];
+  try {
+    for (const url of urls) {
+      core.debug(`==> Downloading part: ${url}`);
+      parts.push(await tc.downloadTool(url));
+    }
+
+    core.debug("==> Concatenating parts");
+    const combined = path.join(
+      process.env.RUNNER_TEMP || os.tmpdir(),
+      `mlir-combined-${Date.now()}.tar.zst`,
+    );
+    const writeStream = fs.createWriteStream(combined);
+    try {
+      for (const part of parts) {
+        await new Promise<void>((resolve, reject) => {
+          const readStream = fs.createReadStream(part);
+          readStream.on("close", resolve);
+          readStream.on("error", reject);
+          readStream.pipe(writeStream, { end: false });
+        });
+      }
+    } catch (error) {
+      try {
+        fs.unlinkSync(combined);
+      } catch {}
+      throw error;
+    } finally {
+      writeStream.end();
+      await new Promise<void>((resolve) => writeStream.on("finish", resolve));
+    }
+
+    return combined;
+  } finally {
+    for (const part of parts) {
+      try {
+        fs.unlinkSync(part);
+      } catch {}
+    }
+  }
 }
 
 // Run if this module is executed directly (not during tests)

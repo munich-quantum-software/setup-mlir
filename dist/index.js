@@ -33997,7 +33997,7 @@ function extractZipWin(file, dest) {
         // build the powershell command
         const escapedFile = file.replace(/'/g, "''").replace(/"|\n|\r/g, ''); // double-up single quotes, remove double quotes and newlines
         const escapedDest = dest.replace(/'/g, "''").replace(/"|\n|\r/g, '');
-        const pwshPath = yield which('pwsh', false);
+        const pwshPath = yield io.which('pwsh', false);
         //To match the file overwrite behavior on nix systems, we use the overwrite = true flag for ExtractToDirectory
         //and the -Force flag for Expand-Archive as a fallback
         if (pwshPath) {
@@ -34017,8 +34017,8 @@ function extractZipWin(file, dest) {
                 '-Command',
                 pwshCommand
             ];
-            core_debug(`Using pwsh at path: ${pwshPath}`);
-            yield exec_exec(`"${pwshPath}"`, args);
+            core.debug(`Using pwsh at path: ${pwshPath}`);
+            yield exec(`"${pwshPath}"`, args);
         }
         else {
             const powershellCommand = [
@@ -34037,21 +34037,21 @@ function extractZipWin(file, dest) {
                 '-Command',
                 powershellCommand
             ];
-            const powershellPath = yield which('powershell', true);
-            core_debug(`Using powershell at path: ${powershellPath}`);
-            yield exec_exec(`"${powershellPath}"`, args);
+            const powershellPath = yield io.which('powershell', true);
+            core.debug(`Using powershell at path: ${powershellPath}`);
+            yield exec(`"${powershellPath}"`, args);
         }
     });
 }
 function extractZipNix(file, dest) {
     return tool_cache_awaiter(this, void 0, void 0, function* () {
-        const unzipPath = yield which('unzip', true);
+        const unzipPath = yield io.which('unzip', true);
         const args = [file];
-        if (!isDebug()) {
+        if (!core.isDebug()) {
             args.unshift('-q');
         }
         args.unshift('-o'); //overwrite with -o, otherwise a prompt is shown which freezes the run
-        yield exec_exec(`"${unzipPath}"`, args, { cwd: dest });
+        yield exec(`"${unzipPath}"`, args, { cwd: dest });
     });
 }
 /**
@@ -34466,21 +34466,23 @@ function determineArchitecture() {
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
+ * @param debug Whether to get a debug build
  * @returns The manifest entry
  */
-async function getManifestEntry(version, platform, architecture) {
+async function getManifestEntries(version, platform, architecture, debug) {
     // Normalize inputs
     version = version.toLowerCase();
     platform = getPlatform(platform);
     architecture = getArchitecture(architecture);
     const manifest = await loadManifest();
-    const entry = manifest.find((entry) => entry.version.startsWith(version) &&
+    const entries = manifest.filter((entry) => entry.version.startsWith(version) &&
         entry.platform === platform &&
-        entry.architecture === architecture);
-    if (!entry) {
-        throw new Error(`No ${architecture} ${platform} archive found for LLVM ${version}.`);
+        entry.architecture === architecture &&
+        entry.debug === debug);
+    if (entries.length === 0) {
+        throw new Error(`No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`);
     }
-    return entry;
+    return entries;
 }
 /**
  * Load the manifest from the local file system or remote URL
@@ -34517,19 +34519,26 @@ async function loadManifest() {
  * @returns The download URL and the asset name
  */
 async function getZstdUrl(version, platform, architecture) {
-    const entry = await getManifestEntry(version, platform, architecture);
-    return { url: entry.zstd_download_url, name: entry.zstd_asset_name };
+    const entries = await getManifestEntries(version, platform, architecture, false);
+    return {
+        url: entries[0].zstd_download_url,
+        name: entries[0].zstd_asset_name,
+    };
 }
 /**
  * Get the download URL for the requested MLIR/LLVM binary
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
+ * @param debug Whether to get a debug build
  * @returns The download URL and the asset name
  */
-async function getMLIRUrl(version, platform, architecture) {
-    const entry = await getManifestEntry(version, platform, architecture);
-    return { url: entry.download_url, name: entry.asset_name };
+async function getMLIRUrls(version, platform, architecture, debug) {
+    const entries = await getManifestEntries(version, platform, architecture, debug);
+    return entries.map((entry) => ({
+        url: entry.download_url,
+        name: entry.asset_name,
+    }));
 }
 
 ;// CONCATENATED MODULE: external "node:process"
@@ -34575,24 +34584,25 @@ async function run() {
     const llvm_version = getInput("llvm-version", { required: true });
     const platform = getInput("platform", { required: true });
     const architecture = getInput("architecture", { required: true });
+    const debug = getBooleanInput("debug", { required: false });
+    // Validate debug flag is only used on Windows
+    const isWindows = platform === "windows" ||
+        (platform === "host" && (external_node_process_default()).platform === "win32");
+    if (debug && !isWindows) {
+        throw new Error("Debug builds are only available on Windows.");
+    }
     // Validate LLVM version (either X.Y.Z format or commit hash)
     const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
     const isCommitHash = RegExp("^[0-9a-f]{7,40}$", "i").test(llvm_version);
     if (!isVersionTag && !isCommitHash) {
         throw new Error(`Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z or a commit hash (minimum 7 characters).`);
     }
-    core_debug("==> Determining zstd binary URL");
+    core_debug("==> Determining download URL for zstd binary");
     const zstdAsset = await getZstdUrl(llvm_version, platform, architecture);
     core_debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
     const zstdFile = await downloadTool(zstdAsset.url);
     core_debug("==> Extracting zstd binary");
-    let zstdDir;
-    if (zstdAsset.name.endsWith(".zip")) {
-        zstdDir = await extractZip(zstdFile);
-    }
-    else {
-        zstdDir = await extractTar(zstdFile);
-    }
+    const zstdDir = await extractTar(zstdFile);
     // zstd archive contains a single executable file
     const zstdExecutableName = (external_node_process_default()).platform === "win32" ? "zstd.exe" : "zstd";
     const zstdPath = external_node_path_default().join(zstdDir, zstdExecutableName);
@@ -34603,10 +34613,10 @@ async function run() {
     if ((external_node_process_default()).platform !== "win32") {
         await exec_exec("chmod", ["+x", zstdPath]);
     }
-    core_debug("==> Determining LLVM asset URL");
-    const asset = await getMLIRUrl(llvm_version, platform, architecture);
-    core_debug(`==> Downloading LLVM asset: ${asset.url}`);
-    const file = await downloadTool(asset.url);
+    core_debug("==> Determining download URL for LLVM distribution");
+    const assets = await getMLIRUrls(llvm_version, platform, architecture, debug);
+    const urls = assets.map((asset) => asset.url);
+    const file = await downloadLLVMDistribution(urls, isWindows && debug);
     core_debug("==> Decompressing and extracting LLVM distribution");
     const extractDir = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || external_node_os_default().tmpdir(), `mlir-extract-${Date.now()}`);
     await mkdirP(extractDir);
@@ -34623,7 +34633,7 @@ async function run() {
         // input), zstd may receive SIGPIPE and exit non-zero, which is acceptable.
         // In practice, both processes typically complete successfully.
         await new Promise((resolve, reject) => {
-            const zstd = (0,external_node_child_process_namespaceObject.spawn)(zstdPath, ["-d", file, "--long=30", "--stdout"]);
+            const zstd = (0,external_node_child_process_namespaceObject.spawn)(zstdPath, ["-d", file, "--long=31", "--stdout"]);
             const tar = (0,external_node_child_process_namespaceObject.spawn)("tar", ["-x", "-f", "-", "-C", extractedDir]);
             // Pipe zstd stdout to tar stdin
             zstd.stdout.pipe(tar.stdin);
@@ -34655,9 +34665,14 @@ async function run() {
         cachedPath = await cacheDir(dir, "mlir-toolchain", llvm_version);
     }
     finally {
-        // Cleanup temp directories (always runs, even on error)
+        // Clean up temp directories
         await rmRF(extractDir);
         await rmRF(zstdDir);
+        // Clean up archive file
+        try {
+            external_node_fs_default().unlinkSync(file);
+        }
+        catch { }
     }
     core_debug("==> Adding MLIR toolchain to PATH");
     addPath(external_node_path_default().join(cachedPath, "bin"));
@@ -34665,6 +34680,63 @@ async function run() {
     exportVariable("LLVM_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "llvm"));
     core_debug("==> Exporting MLIR_DIR");
     exportVariable("MLIR_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "mlir"));
+}
+/**
+ * Download the LLVM distribution. For Windows Debug builds, this may involve downloading multiple parts and concatenating them.
+ * @param urls The download URL(s) for the LLVM distribution
+ * @param isWindowsDebug Whether this is a Windows Debug build
+ * @returns The path to the archive file containing the LLVM distribution
+ */
+async function downloadLLVMDistribution(urls, isWindowsDebug) {
+    if (!isWindowsDebug) {
+        if (urls.length !== 1) {
+            throw new Error(`Expected exactly one download URL for non-Windows-Debug builds, but got ${urls.length}.`);
+        }
+        core_debug(`==> Downloading LLVM distribution: ${urls[0]}`);
+        return downloadTool(urls[0]);
+    }
+    // Windows Debug builds are split into multiple parts that need to be downloaded and concatenated into a single archive
+    core_debug(`==> Downloading LLVM distribution in ${urls.length} parts`);
+    const parts = [];
+    try {
+        for (const url of urls) {
+            core_debug(`==> Downloading part: ${url}`);
+            parts.push(await downloadTool(url));
+        }
+        core_debug("==> Concatenating parts");
+        const combined = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || external_node_os_default().tmpdir(), `mlir-combined-${Date.now()}.tar.zst`);
+        const writeStream = external_node_fs_default().createWriteStream(combined);
+        try {
+            for (const part of parts) {
+                await new Promise((resolve, reject) => {
+                    const readStream = external_node_fs_default().createReadStream(part);
+                    readStream.on("close", resolve);
+                    readStream.on("error", reject);
+                    readStream.pipe(writeStream, { end: false });
+                });
+            }
+        }
+        catch (error) {
+            try {
+                external_node_fs_default().unlinkSync(combined);
+            }
+            catch { }
+            throw error;
+        }
+        finally {
+            writeStream.end();
+            await new Promise((resolve) => writeStream.on("finish", resolve));
+        }
+        return combined;
+    }
+    finally {
+        for (const part of parts) {
+            try {
+                external_node_fs_default().unlinkSync(part);
+            }
+            catch { }
+        }
+    }
 }
 // Run if this module is executed directly (not during tests)
 // Note: In production, this is bundled by ncc, so this check doesn't affect the action

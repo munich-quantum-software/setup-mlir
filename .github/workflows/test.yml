@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   test-installer-scripts:
-    name: Test installer script for version ${{ matrix.version }} on ${{ matrix.os }}
+    name: Test installer script for version ${{ matrix.version }} on ${{ matrix.os }}${{ matrix.debug && ' (debug)' || '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -26,12 +26,26 @@ jobs:
           [
             ubuntu-24.04,
             ubuntu-24.04-arm,
-            macos-14,
+            macos-15,
             macos-15-intel,
-            windows-2022,
+            windows-2025,
             windows-11-arm,
           ]
         version: ["21.1.8", "22.1.0", "f8cb798"]
+        debug: [false]
+        include:
+          - os: windows-2025
+            version: "21.1.8"
+            debug: true
+          - os: windows-11-arm
+            version: "21.1.8"
+            debug: true
+          - os: windows-2025
+            version: "22.1.0"
+            debug: true
+          - os: windows-11-arm
+            version: "22.1.0"
+            debug: true
 
     steps:
       - name: Checkout repository
@@ -77,7 +91,7 @@ jobs:
         run: |
           $install_dir = Join-Path $env:TEMP "mlir-install"
 
-          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir
+          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir ${{ matrix.debug && '-use_debug' || '' }}
 
           # Verify installation
           if (-not (Test-Path "$install_dir\bin")) {
@@ -108,7 +122,7 @@ jobs:
           Write-Host "Installation test passed!"
 
   integration-tests:
-    name: Integration tests with coverage on ${{ matrix.os }}
+    name: Integration tests with coverage on ${{ matrix.os }}${{ matrix.debug && ' (debug)' || '' }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -120,11 +134,17 @@ jobs:
           [
             ubuntu-24.04,
             ubuntu-24.04-arm,
-            macos-14,
+            macos-15,
             macos-15-intel,
-            windows-2022,
+            windows-2025,
             windows-11-arm,
           ]
+        debug: [false]
+        include:
+          - os: windows-2025
+            debug: true
+          - os: windows-11-arm
+            debug: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -142,6 +162,7 @@ jobs:
         run: npm run test:coverage
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          TEST_DEBUG_BUILD: ${{ matrix.debug && 'true' || 'false' }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
