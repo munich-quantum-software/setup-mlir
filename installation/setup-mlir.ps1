@@ -13,7 +13,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory> [-token <GitHub token>] [-use_debug]
+# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory> [-use_debug]
 
 param(
     [Parameter(Mandatory=$true)]
