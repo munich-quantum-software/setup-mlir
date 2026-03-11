@@ -24,7 +24,7 @@ For more information on the available LLVM versions and commit hashes, see [`ver
 
 ```yaml
 - name: Set up MLIR
-  uses: munich-quantum-software/setup-mlir@v1.2.1
+  uses: munich-quantum-software/setup-mlir@v1.3.0
   with:
     llvm-version: 22.1.0
 ```
@@ -37,9 +37,9 @@ On Windows, you can optionally install debug builds:
 
 ```yaml
 - name: Set up MLIR (Debug)
-  uses: munich-quantum-software/setup-mlir@v1.1.0
+  uses: munich-quantum-software/setup-mlir@v1.3.0
   with:
-    llvm-version: 21.1.8
+    llvm-version: 22.1.0
     debug: true
 ```
 
@@ -71,5 +71,5 @@ powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://git
 On Windows, you can optionally install debug builds by adding the `-use_debug` flag:
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 21.1.8 -install_prefix /path/to/installation -use_debug"
+powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 22.1.0 -install_prefix /path/to/installation -use_debug"
 ```

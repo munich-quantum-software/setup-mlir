@@ -48,6 +48,9 @@ fi
 # Create installation directory if it does not exist
 mkdir -p "$INSTALL_PREFIX"
 
+# Turn the installation directory into an absolute path
+INSTALL_PREFIX="$(cd "$INSTALL_PREFIX" && pwd -P)"
+
 # Change to installation directory
 pushd "$INSTALL_PREFIX" > /dev/null
 
@@ -170,8 +173,8 @@ fi
 rm -f "zstd.tar.gz"
 
 # zstd archive contains a single executable file at the root
-# The archive extracts to ./zstd (a single file in the current directory)
-ZSTD_BIN=$(realpath "./zstd")
+# The archive extracts to a single file in the current directory
+ZSTD_BIN="$(pwd -P)/zstd"
 if [ ! -f "$ZSTD_BIN" ]; then
   echo "Error: zstd executable not found in extracted archive." >&2
   exit 1
