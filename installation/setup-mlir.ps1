@@ -31,16 +31,16 @@ if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+# Create installation directory if it does not exist
+New-Item -ItemType Directory -Path $install_prefix -Force | Out-Null
+
 # Turn the installation directory into an absolute path
 try {
-    $install_prefix = (Resolve-Path -Path $install_prefix).Path
+    $install_prefix = [System.IO.Path]::GetFullPath($install_prefix)
 } catch {
     Write-Error "Failed to resolve installation directory: $_"
     exit 1
 }
-
-# Create installation directory if it does not exist
-New-Item -ItemType Directory -Path $install_prefix -Force | Out-Null
 
 # Change to installation directory
 pushd $install_prefix > $null
