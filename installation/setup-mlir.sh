@@ -45,6 +45,9 @@ if ! command -v tar >/dev/null 2>&1; then
   exit 1
 fi
 
+# Turn the installation directory into an absolute path
+INSTALL_PREFIX=$(realpath "$INSTALL_PREFIX")
+
 # Create installation directory if it does not exist
 mkdir -p "$INSTALL_PREFIX"
 
