@@ -48,6 +48,9 @@ fi
 # Create installation directory if it does not exist
 mkdir -p "$INSTALL_PREFIX"
 
+# Turn the installation directory into an absolute path
+INSTALL_PREFIX="$(cd "$INSTALL_PREFIX" && pwd -P)"
+
 # Change to installation directory
 pushd "$INSTALL_PREFIX" > /dev/null
 
@@ -68,9 +71,9 @@ esac
 
 # Determine whether version is version or commit SHA
 if [[ "$LLVM_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  MATCH_PATTERN="llvm-mlir_llvmorg-${LLVM_VERSION}_"
+  VERSION_PATTERN="llvm-mlir_llvmorg-${LLVM_VERSION}_"
 elif [[ "$LLVM_VERSION" =~ ^[0-9a-f]{7,40}$ ]]; then
-  MATCH_PATTERN="llvm-mlir_${LLVM_VERSION}"
+  VERSION_PATTERN="llvm-mlir_${LLVM_VERSION}"
 else
   echo "Error: Invalid LLVM version format: $LLVM_VERSION. Must be a version (e.g., 22.1.0) or a commit SHA." >&2
   exit 1
@@ -85,28 +88,31 @@ fetch_manifest_json() {
   fi
 }
 
-# Helper function to find asset URL in version-manifest.json
-find_asset_url() {
+# Helper function to find zstd asset URL in version-manifest.json
+find_zstd_asset_url() {
   local manifest_json=$1
   local pattern=$2
-  local version_pattern=$3
 
-  if [ -n "$version_pattern" ]; then
-    # Filter by version pattern first (for LLVM assets)
-    echo "$manifest_json" | \
-      grep -o '"download_url": "[^"]*"' | \
-      sed 's/"download_url": "//;s/"$//' | \
-      grep -F "$version_pattern" | \
-      grep -E "$pattern" | \
-      head -n 1
-  else
-    # No version filtering (for zstd assets)
-    echo "$manifest_json" | \
-      grep -o '"zstd_download_url": "[^"]*"' | \
-      sed 's/"zstd_download_url": "//;s/"$//' | \
-      grep -E "$pattern" | \
-      head -n 1
-  fi
+  echo "$manifest_json" | \
+    grep -o '"zstd_download_url": "[^"]*"' | \
+    sed 's/"zstd_download_url": "//;s/"$//' | \
+    grep -E "$pattern" | \
+    head -n 1
+}
+
+# Helper function to find LLVM asset URL in version-manifest.json
+find_llvm_asset_url() {
+  local manifest_json=$1
+  local version_pattern=$2
+  local llvm_pattern=$3
+  local legacy_llvm_pattern=$4
+
+  echo "$manifest_json" | \
+    grep -o '"download_url": "[^"]*"' | \
+    sed 's/"download_url": "//;s/"$//' | \
+    grep -F "$version_pattern" | \
+    grep -E "$llvm_pattern|$legacy_llvm_pattern" | \
+    head -n 1
 }
 
 # Helper function to download file from URL
@@ -127,17 +133,21 @@ MANIFEST_JSON=$(fetch_manifest_json "$MANIFEST_URL")
 
 # Determine asset patterns based on platform/architecture
 if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  LLVM_PATTERN="_linux_x86_64_X86\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_linux_x86_64_X86\.tar\.gz$"
+  LLVM_PATTERN="_x86_64-unknown-linux-gnu\.tar\.zst"
+  LEGACY_LLVM_PATTERN="_linux_x86_64_X86\.tar\.zst"
+  ZSTD_PATTERN="zstd-[^/]*_x86_64-unknown-linux-gnu\.tar\.gz$"
 elif [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  LLVM_PATTERN="_linux_aarch64_AArch64\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_linux_aarch64_AArch64\.tar\.gz$"
+  LLVM_PATTERN="_aarch64-unknown-linux-gnu\.tar\.zst"
+  LEGACY_LLVM_PATTERN="_linux_aarch64_AArch64\.tar\.zst"
+  ZSTD_PATTERN="zstd-[^/]*_aarch64-unknown-linux-gnu\.tar\.gz$"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  LLVM_PATTERN="_macos_x86_64_X86\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_macos_x86_64_X86\.tar\.gz$"
+  LLVM_PATTERN="_x86_64-apple-darwin\.tar\.zst"
+  LEGACY_LLVM_PATTERN="_macos_x86_64_X86\.tar\.zst"
+  ZSTD_PATTERN="zstd-[^/]*_x86_64-apple-darwin\.tar\.gz$"
 elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  LLVM_PATTERN="_macos_arm64_AArch64\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_macos_arm64_AArch64\.tar\.gz$"
+  LLVM_PATTERN="_arm64-apple-darwin\.tar\.zst"
+  LEGACY_LLVM_PATTERN="_macos_arm64_AArch64\.tar\.zst"
+  ZSTD_PATTERN="zstd-[^/]*_arm64-apple-darwin\.tar\.gz$"
 else
   echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
   exit 1
@@ -145,7 +155,7 @@ fi
 
 # Download zstd binary
 echo "Downloading zstd binary..."
-ZSTD_URL=$(find_asset_url "$MANIFEST_JSON" "$ZSTD_PATTERN" "")
+ZSTD_URL=$(find_zstd_asset_url "$MANIFEST_JSON" "$ZSTD_PATTERN")
 
 if [ -z "$ZSTD_URL" ]; then
   echo "Error: No zstd binary found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
@@ -163,8 +173,8 @@ fi
 rm -f "zstd.tar.gz"
 
 # zstd archive contains a single executable file at the root
-# The archive extracts to ./zstd (a single file in the current directory)
-ZSTD_BIN=$(realpath "./zstd")
+# The archive extracts to a single file in the current directory
+ZSTD_BIN="$(pwd -P)/zstd"
 if [ ! -f "$ZSTD_BIN" ]; then
   echo "Error: zstd executable not found in extracted archive." >&2
   exit 1
@@ -175,7 +185,7 @@ chmod +x "$ZSTD_BIN"
 
 # Download LLVM distribution
 echo "Downloading LLVM distribution..."
-LLVM_URL=$(find_asset_url "$MANIFEST_JSON" "$LLVM_PATTERN" "$MATCH_PATTERN")
+LLVM_URL=$(find_llvm_asset_url "$MANIFEST_JSON" "$VERSION_PATTERN" "$LLVM_PATTERN" "$LEGACY_LLVM_PATTERN")
 
 if [ -z "$LLVM_URL" ]; then
   echo "Error: No release with LLVM $LLVM_VERSION found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
@@ -186,7 +196,7 @@ download_file "$LLVM_URL" "llvm.tar.zst"
 
 # Decompress and extract LLVM distribution
 echo "Extracting LLVM distribution..."
-if ! "$ZSTD_BIN" -d --long=30 "llvm.tar.zst" --stdout | tar -x; then
+if ! "$ZSTD_BIN" -d --long=31 "llvm.tar.zst" --stdout | tar -x; then
   echo "Error: Failed to extract LLVM distribution." >&2
   exit 1
 fi

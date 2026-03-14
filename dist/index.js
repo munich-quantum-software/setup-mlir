@@ -5599,6 +5599,24 @@ class SecureProxyConnectionError extends UndiciError {
   [kSecureProxyConnectionError] = true
 }
 
+const kMessageSizeExceededError = Symbol.for('undici.error.UND_ERR_WS_MESSAGE_SIZE_EXCEEDED')
+class MessageSizeExceededError extends UndiciError {
+  constructor (message) {
+    super(message)
+    this.name = 'MessageSizeExceededError'
+    this.message = message || 'Max decompressed message size exceeded'
+    this.code = 'UND_ERR_WS_MESSAGE_SIZE_EXCEEDED'
+  }
+
+  static [Symbol.hasInstance] (instance) {
+    return instance && instance[kMessageSizeExceededError] === true
+  }
+
+  get [kMessageSizeExceededError] () {
+    return true
+  }
+}
+
 module.exports = {
   AbortError,
   HTTPParserError,
@@ -5622,7 +5640,8 @@ module.exports = {
   ResponseExceededMaxSizeError,
   RequestRetryError,
   ResponseError,
-  SecureProxyConnectionError
+  SecureProxyConnectionError,
+  MessageSizeExceededError
 }
 
 
@@ -5697,6 +5716,10 @@ class Request {
 
     if (upgrade && typeof upgrade !== 'string') {
       throw new InvalidArgumentError('upgrade must be a string')
+    }
+
+    if (upgrade && !isValidHeaderValue(upgrade)) {
+      throw new InvalidArgumentError('invalid upgrade header')
     }
 
     if (headersTimeout != null && (!Number.isFinite(headersTimeout) || headersTimeout < 0)) {
@@ -5993,13 +6016,19 @@ function processHeader (request, key, val) {
     val = `${val}`
   }
 
-  if (request.host === null && headerName === 'host') {
+  if (headerName === 'host') {
+    if (request.host !== null) {
+      throw new InvalidArgumentError('duplicate host header')
+    }
     if (typeof val !== 'string') {
       throw new InvalidArgumentError('invalid host header')
     }
     // Consumed by Client
     request.host = val
-  } else if (request.contentLength === null && headerName === 'content-length') {
+  } else if (headerName === 'content-length') {
+    if (request.contentLength !== null) {
+      throw new InvalidArgumentError('duplicate content-length header')
+    }
     request.contentLength = parseInt(val, 10)
     if (!Number.isFinite(request.contentLength)) {
       throw new InvalidArgumentError('invalid content-length header')
@@ -28716,10 +28745,14 @@ module.exports = {
 
 const { createInflateRaw, Z_DEFAULT_WINDOWBITS } = __nccwpck_require__(8522)
 const { isValidClientWindowBits } = __nccwpck_require__(8625)
+const { MessageSizeExceededError } = __nccwpck_require__(8707)
 
 const tail = Buffer.from([0x00, 0x00, 0xff, 0xff])
 const kBuffer = Symbol('kBuffer')
 const kLength = Symbol('kLength')
+
+// Default maximum decompressed message size: 4 MB
+const kDefaultMaxDecompressedSize = 4 * 1024 * 1024
 
 class PerMessageDeflate {
   /** @type {import('node:zlib').InflateRaw} */
@@ -28727,9 +28760,23 @@ class PerMessageDeflate {
 
   #options = {}
 
-  constructor (extensions) {
+  /** @type {number} */
+  #maxDecompressedSize
+
+  /** @type {boolean} */
+  #aborted = false
+
+  /** @type {Function|null} */
+  #currentCallback = null
+
+  /**
+   * @param {Map<string, string>} extensions
+   * @param {{ maxDecompressedMessageSize?: number }} [options]
+   */
+  constructor (extensions, options = {}) {
     this.#options.serverNoContextTakeover = extensions.has('server_no_context_takeover')
     this.#options.serverMaxWindowBits = extensions.get('server_max_window_bits')
+    this.#maxDecompressedSize = options.maxDecompressedMessageSize ?? kDefaultMaxDecompressedSize
   }
 
   decompress (chunk, fin, callback) {
@@ -28737,6 +28784,11 @@ class PerMessageDeflate {
     // 1.  Append 4 octets of 0x00 0x00 0xff 0xff to the tail end of the
     //     payload of the message.
     // 2.  Decompress the resulting data using DEFLATE.
+
+    if (this.#aborted) {
+      callback(new MessageSizeExceededError())
+      return
+    }
 
     if (!this.#inflate) {
       let windowBits = Z_DEFAULT_WINDOWBITS
@@ -28750,13 +28802,37 @@ class PerMessageDeflate {
         windowBits = Number.parseInt(this.#options.serverMaxWindowBits)
       }
 
-      this.#inflate = createInflateRaw({ windowBits })
+      try {
+        this.#inflate = createInflateRaw({ windowBits })
+      } catch (err) {
+        callback(err)
+        return
+      }
       this.#inflate[kBuffer] = []
       this.#inflate[kLength] = 0
 
       this.#inflate.on('data', (data) => {
-        this.#inflate[kBuffer].push(data)
+        if (this.#aborted) {
+          return
+        }
+
         this.#inflate[kLength] += data.length
+
+        if (this.#inflate[kLength] > this.#maxDecompressedSize) {
+          this.#aborted = true
+          this.#inflate.removeAllListeners()
+          this.#inflate.destroy()
+          this.#inflate = null
+
+          if (this.#currentCallback) {
+            const cb = this.#currentCallback
+            this.#currentCallback = null
+            cb(new MessageSizeExceededError())
+          }
+          return
+        }
+
+        this.#inflate[kBuffer].push(data)
       })
 
       this.#inflate.on('error', (err) => {
@@ -28765,16 +28841,22 @@ class PerMessageDeflate {
       })
     }
 
+    this.#currentCallback = callback
     this.#inflate.write(chunk)
     if (fin) {
       this.#inflate.write(tail)
     }
 
     this.#inflate.flush(() => {
+      if (this.#aborted || !this.#inflate) {
+        return
+      }
+
       const full = Buffer.concat(this.#inflate[kBuffer], this.#inflate[kLength])
 
       this.#inflate[kBuffer].length = 0
       this.#inflate[kLength] = 0
+      this.#currentCallback = null
 
       callback(null, full)
     })
@@ -28828,14 +28910,23 @@ class ByteParser extends Writable {
   /** @type {Map<string, PerMessageDeflate>} */
   #extensions
 
-  constructor (ws, extensions) {
+  /** @type {{ maxDecompressedMessageSize?: number }} */
+  #options
+
+  /**
+   * @param {import('./websocket').WebSocket} ws
+   * @param {Map<string, string>|null} extensions
+   * @param {{ maxDecompressedMessageSize?: number }} [options]
+   */
+  constructor (ws, extensions, options = {}) {
     super()
 
     this.ws = ws
     this.#extensions = extensions == null ? new Map() : extensions
+    this.#options = options
 
     if (this.#extensions.has('permessage-deflate')) {
-      this.#extensions.set('permessage-deflate', new PerMessageDeflate(extensions))
+      this.#extensions.set('permessage-deflate', new PerMessageDeflate(extensions, options))
     }
   }
 
@@ -28970,6 +29061,7 @@ class ByteParser extends Writable {
 
         const buffer = this.consume(8)
         const upper = buffer.readUInt32BE(0)
+        const lower = buffer.readUInt32BE(4)
 
         // 2^31 is the maximum bytes an arraybuffer can contain
         // on 32-bit systems. Although, on 64-bit systems, this is
@@ -28977,14 +29069,12 @@ class ByteParser extends Writable {
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Invalid_array_length
         // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/common/globals.h;drc=1946212ac0100668f14eb9e2843bdd846e510a1e;bpv=1;bpt=1;l=1275
         // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.h;l=34;drc=1946212ac0100668f14eb9e2843bdd846e510a1e
-        if (upper > 2 ** 31 - 1) {
+        if (upper !== 0 || lower > 2 ** 31 - 1) {
           failWebsocketConnection(this.ws, 'Received payload length > 2^31 bytes.')
           return
         }
 
-        const lower = buffer.readUInt32BE(4)
-
-        this.#info.payloadLength = (upper << 8) + lower
+        this.#info.payloadLength = lower
         this.#state = parserStates.READ_DATA
       } else if (this.#state === parserStates.READ_DATA) {
         if (this.#byteOffset < this.#info.payloadLength) {
@@ -29014,7 +29104,7 @@ class ByteParser extends Writable {
           } else {
             this.#extensions.get('permessage-deflate').decompress(body, this.#info.fin, (error, data) => {
               if (error) {
-                closeWebSocketConnection(this.ws, 1007, error.message, error.message.length)
+                failWebsocketConnection(this.ws, error.message)
                 return
               }
 
@@ -29618,6 +29708,12 @@ function parseExtensions (extensions) {
  * @param {string} value
  */
 function isValidClientWindowBits (value) {
+  // Must have at least one character
+  if (value.length === 0) {
+    return false
+  }
+
+  // Check all characters are ASCII digits
   for (let i = 0; i < value.length; i++) {
     const byte = value.charCodeAt(i)
 
@@ -29626,7 +29722,9 @@ function isValidClientWindowBits (value) {
     }
   }
 
-  return true
+  // Check numeric range: zlib requires windowBits in range 8-15
+  const num = Number.parseInt(value, 10)
+  return num >= 8 && num <= 15
 }
 
 // https://nodejs.org/api/intl.html#detecting-internationalization-support
@@ -29717,6 +29815,9 @@ class WebSocket extends EventTarget {
   /** @type {SendQueue} */
   #sendQueue
 
+  /** @type {{ maxDecompressedMessageSize?: number }} */
+  #options
+
   /**
    * @param {string} url
    * @param {string|string[]} protocols
@@ -29789,6 +29890,11 @@ class WebSocket extends EventTarget {
 
     // 10. Set this's url to urlRecord.
     this[kWebSocketURL] = new URL(urlRecord.href)
+
+    // Store options for later use (e.g., maxDecompressedMessageSize)
+    this.#options = {
+      maxDecompressedMessageSize: options.maxDecompressedMessageSize
+    }
 
     // 11. Let client be this's relevant settings object.
     const client = environmentSettingsObject.settingsObject
@@ -30104,11 +30210,11 @@ class WebSocket extends EventTarget {
    * @see https://websockets.spec.whatwg.org/#feedback-from-the-protocol
    */
   #onConnectionEstablished (response, parsedExtensions) {
-    // processResponse is called when the "response’s header list has been received and initialized."
+    // processResponse is called when the "response's header list has been received and initialized."
     // once this happens, the connection is open
     this[kResponse] = response
 
-    const parser = new ByteParser(this, parsedExtensions)
+    const parser = new ByteParser(this, parsedExtensions, this.#options)
     parser.on('drain', onParserDrain)
     parser.on('error', onParserError.bind(this))
 
@@ -30211,6 +30317,19 @@ webidl.converters.WebSocketInit = webidl.dictionaryConverter([
   {
     key: 'headers',
     converter: webidl.nullableConverter(webidl.converters.HeadersInit)
+  },
+  {
+    key: 'maxDecompressedMessageSize',
+    converter: webidl.nullableConverter((V) => {
+      V = webidl.converters['unsigned long long'](V)
+      if (V <= 0) {
+        throw webidl.errors.exception({
+          header: 'WebSocket constructor',
+          message: 'maxDecompressedMessageSize must be greater than 0'
+        })
+      }
+      return V
+    })
   }
 ])
 
@@ -33997,7 +34116,7 @@ function extractZipWin(file, dest) {
         // build the powershell command
         const escapedFile = file.replace(/'/g, "''").replace(/"|\n|\r/g, ''); // double-up single quotes, remove double quotes and newlines
         const escapedDest = dest.replace(/'/g, "''").replace(/"|\n|\r/g, '');
-        const pwshPath = yield which('pwsh', false);
+        const pwshPath = yield io.which('pwsh', false);
         //To match the file overwrite behavior on nix systems, we use the overwrite = true flag for ExtractToDirectory
         //and the -Force flag for Expand-Archive as a fallback
         if (pwshPath) {
@@ -34017,8 +34136,8 @@ function extractZipWin(file, dest) {
                 '-Command',
                 pwshCommand
             ];
-            core_debug(`Using pwsh at path: ${pwshPath}`);
-            yield exec_exec(`"${pwshPath}"`, args);
+            core.debug(`Using pwsh at path: ${pwshPath}`);
+            yield exec(`"${pwshPath}"`, args);
         }
         else {
             const powershellCommand = [
@@ -34037,21 +34156,21 @@ function extractZipWin(file, dest) {
                 '-Command',
                 powershellCommand
             ];
-            const powershellPath = yield which('powershell', true);
-            core_debug(`Using powershell at path: ${powershellPath}`);
-            yield exec_exec(`"${powershellPath}"`, args);
+            const powershellPath = yield io.which('powershell', true);
+            core.debug(`Using powershell at path: ${powershellPath}`);
+            yield exec(`"${powershellPath}"`, args);
         }
     });
 }
 function extractZipNix(file, dest) {
     return tool_cache_awaiter(this, void 0, void 0, function* () {
-        const unzipPath = yield which('unzip', true);
+        const unzipPath = yield io.which('unzip', true);
         const args = [file];
-        if (!isDebug()) {
+        if (!core.isDebug()) {
             args.unshift('-q');
         }
         args.unshift('-o'); //overwrite with -o, otherwise a prompt is shown which freezes the run
-        yield exec_exec(`"${unzipPath}"`, args, { cwd: dest });
+        yield exec(`"${unzipPath}"`, args, { cwd: dest });
     });
 }
 /**
@@ -34466,21 +34585,23 @@ function determineArchitecture() {
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
+ * @param debug Whether to get a debug build
  * @returns The manifest entry
  */
-async function getManifestEntry(version, platform, architecture) {
+async function getManifestEntries(version, platform, architecture, debug) {
     // Normalize inputs
     version = version.toLowerCase();
     platform = getPlatform(platform);
     architecture = getArchitecture(architecture);
     const manifest = await loadManifest();
-    const entry = manifest.find((entry) => entry.version.startsWith(version) &&
+    const entries = manifest.filter((entry) => entry.version.startsWith(version) &&
         entry.platform === platform &&
-        entry.architecture === architecture);
-    if (!entry) {
-        throw new Error(`No ${architecture} ${platform} archive found for LLVM ${version}.`);
+        entry.architecture === architecture &&
+        entry.debug === debug);
+    if (entries.length === 0) {
+        throw new Error(`No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`);
     }
-    return entry;
+    return entries;
 }
 /**
  * Load the manifest from the local file system or remote URL
@@ -34517,19 +34638,26 @@ async function loadManifest() {
  * @returns The download URL and the asset name
  */
 async function getZstdUrl(version, platform, architecture) {
-    const entry = await getManifestEntry(version, platform, architecture);
-    return { url: entry.zstd_download_url, name: entry.zstd_asset_name };
+    const entries = await getManifestEntries(version, platform, architecture, false);
+    return {
+        url: entries[0].zstd_download_url,
+        name: entries[0].zstd_asset_name,
+    };
 }
 /**
  * Get the download URL for the requested MLIR/LLVM binary
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
+ * @param debug Whether to get a debug build
  * @returns The download URL and the asset name
  */
-async function getMLIRUrl(version, platform, architecture) {
-    const entry = await getManifestEntry(version, platform, architecture);
-    return { url: entry.download_url, name: entry.asset_name };
+async function getMLIRUrls(version, platform, architecture, debug) {
+    const entries = await getManifestEntries(version, platform, architecture, debug);
+    return entries.map((entry) => ({
+        url: entry.download_url,
+        name: entry.asset_name,
+    }));
 }
 
 ;// CONCATENATED MODULE: external "node:process"
@@ -34575,24 +34703,25 @@ async function run() {
     const llvm_version = getInput("llvm-version", { required: true });
     const platform = getInput("platform", { required: true });
     const architecture = getInput("architecture", { required: true });
+    const debug = getBooleanInput("debug", { required: false });
+    // Validate debug flag is only used on Windows
+    const isWindows = platform === "windows" ||
+        (platform === "host" && (external_node_process_default()).platform === "win32");
+    if (debug && !isWindows) {
+        throw new Error("Debug builds are only available on Windows.");
+    }
     // Validate LLVM version (either X.Y.Z format or commit hash)
     const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
     const isCommitHash = RegExp("^[0-9a-f]{7,40}$", "i").test(llvm_version);
     if (!isVersionTag && !isCommitHash) {
         throw new Error(`Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z or a commit hash (minimum 7 characters).`);
     }
-    core_debug("==> Determining zstd binary URL");
+    core_debug("==> Determining download URL for zstd binary");
     const zstdAsset = await getZstdUrl(llvm_version, platform, architecture);
     core_debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
     const zstdFile = await downloadTool(zstdAsset.url);
     core_debug("==> Extracting zstd binary");
-    let zstdDir;
-    if (zstdAsset.name.endsWith(".zip")) {
-        zstdDir = await extractZip(zstdFile);
-    }
-    else {
-        zstdDir = await extractTar(zstdFile);
-    }
+    const zstdDir = await extractTar(zstdFile);
     // zstd archive contains a single executable file
     const zstdExecutableName = (external_node_process_default()).platform === "win32" ? "zstd.exe" : "zstd";
     const zstdPath = external_node_path_default().join(zstdDir, zstdExecutableName);
@@ -34603,10 +34732,10 @@ async function run() {
     if ((external_node_process_default()).platform !== "win32") {
         await exec_exec("chmod", ["+x", zstdPath]);
     }
-    core_debug("==> Determining LLVM asset URL");
-    const asset = await getMLIRUrl(llvm_version, platform, architecture);
-    core_debug(`==> Downloading LLVM asset: ${asset.url}`);
-    const file = await downloadTool(asset.url);
+    core_debug("==> Determining download URL for LLVM distribution");
+    const assets = await getMLIRUrls(llvm_version, platform, architecture, debug);
+    const urls = assets.map((asset) => asset.url);
+    const file = await downloadLLVMDistribution(urls, isWindows && debug);
     core_debug("==> Decompressing and extracting LLVM distribution");
     const extractDir = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || external_node_os_default().tmpdir(), `mlir-extract-${Date.now()}`);
     await mkdirP(extractDir);
@@ -34623,7 +34752,7 @@ async function run() {
         // input), zstd may receive SIGPIPE and exit non-zero, which is acceptable.
         // In practice, both processes typically complete successfully.
         await new Promise((resolve, reject) => {
-            const zstd = (0,external_node_child_process_namespaceObject.spawn)(zstdPath, ["-d", file, "--long=30", "--stdout"]);
+            const zstd = (0,external_node_child_process_namespaceObject.spawn)(zstdPath, ["-d", file, "--long=31", "--stdout"]);
             const tar = (0,external_node_child_process_namespaceObject.spawn)("tar", ["-x", "-f", "-", "-C", extractedDir]);
             // Pipe zstd stdout to tar stdin
             zstd.stdout.pipe(tar.stdin);
@@ -34655,9 +34784,14 @@ async function run() {
         cachedPath = await cacheDir(dir, "mlir-toolchain", llvm_version);
     }
     finally {
-        // Cleanup temp directories (always runs, even on error)
+        // Clean up temp directories
         await rmRF(extractDir);
         await rmRF(zstdDir);
+        // Clean up archive file
+        try {
+            external_node_fs_default().unlinkSync(file);
+        }
+        catch { }
     }
     core_debug("==> Adding MLIR toolchain to PATH");
     addPath(external_node_path_default().join(cachedPath, "bin"));
@@ -34665,6 +34799,63 @@ async function run() {
     exportVariable("LLVM_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "llvm"));
     core_debug("==> Exporting MLIR_DIR");
     exportVariable("MLIR_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "mlir"));
+}
+/**
+ * Download the LLVM distribution. For Windows Debug builds, this may involve downloading multiple parts and concatenating them.
+ * @param urls The download URL(s) for the LLVM distribution
+ * @param isWindowsDebug Whether this is a Windows Debug build
+ * @returns The path to the archive file containing the LLVM distribution
+ */
+async function downloadLLVMDistribution(urls, isWindowsDebug) {
+    if (!isWindowsDebug) {
+        if (urls.length !== 1) {
+            throw new Error(`Expected exactly one download URL for non-Windows-Debug builds, but got ${urls.length}.`);
+        }
+        core_debug(`==> Downloading LLVM distribution: ${urls[0]}`);
+        return downloadTool(urls[0]);
+    }
+    // Windows Debug builds are split into multiple parts that need to be downloaded and concatenated into a single archive
+    core_debug(`==> Downloading LLVM distribution in ${urls.length} parts`);
+    const parts = [];
+    try {
+        for (const url of urls) {
+            core_debug(`==> Downloading part: ${url}`);
+            parts.push(await downloadTool(url));
+        }
+        core_debug("==> Concatenating parts");
+        const combined = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || external_node_os_default().tmpdir(), `mlir-combined-${Date.now()}.tar.zst`);
+        const writeStream = external_node_fs_default().createWriteStream(combined);
+        try {
+            for (const part of parts) {
+                await new Promise((resolve, reject) => {
+                    const readStream = external_node_fs_default().createReadStream(part);
+                    readStream.on("close", resolve);
+                    readStream.on("error", reject);
+                    readStream.pipe(writeStream, { end: false });
+                });
+            }
+        }
+        catch (error) {
+            try {
+                external_node_fs_default().unlinkSync(combined);
+            }
+            catch { }
+            throw error;
+        }
+        finally {
+            writeStream.end();
+            await new Promise((resolve) => writeStream.on("finish", resolve));
+        }
+        return combined;
+    }
+    finally {
+        for (const part of parts) {
+            try {
+                external_node_fs_default().unlinkSync(part);
+            }
+            catch { }
+        }
+    }
 }
 // Run if this module is executed directly (not during tests)
 // Note: In production, this is bundled by ncc, so this check doesn't affect the action
