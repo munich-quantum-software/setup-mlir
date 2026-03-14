@@ -16,7 +16,7 @@
 codecov:
   require_ci_to_pass: true
   notify:
-    after_n_builds: 6
+    after_n_builds: 6 # Keep in sync with integration-tests matrix size in .github/workflows/test.yml
 
 coverage:
   precision: 2
