@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    types: [opened, reopened, synchronize]
 
 permissions:
   contents: read
@@ -15,16 +13,12 @@ jobs:
     name: Run
     permissions:
       contents: write
-      pull-requests: write
     runs-on: ubuntu-slim
     steps:
       - uses: release-drafter/release-drafter@3a7fb5c85b80b1dda66e1ccb94009adbbd32fce3 # v7.0.0
         id: release-drafter
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Upload installation scripts
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: gh release upload ${{ steps.release-drafter.outputs.tag_name }} installation/setup-mlir.sh installation/setup-mlir.ps1 --clobber
         env:
           GITHUB_TOKEN: ${{ github.token }}
