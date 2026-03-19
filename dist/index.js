@@ -28760,9 +28760,6 @@ class PerMessageDeflate {
 
   #options = {}
 
-  /** @type {number} */
-  #maxDecompressedSize
-
   /** @type {boolean} */
   #aborted = false
 
@@ -28771,12 +28768,10 @@ class PerMessageDeflate {
 
   /**
    * @param {Map<string, string>} extensions
-   * @param {{ maxDecompressedMessageSize?: number }} [options]
    */
-  constructor (extensions, options = {}) {
+  constructor (extensions) {
     this.#options.serverNoContextTakeover = extensions.has('server_no_context_takeover')
     this.#options.serverMaxWindowBits = extensions.get('server_max_window_bits')
-    this.#maxDecompressedSize = options.maxDecompressedMessageSize ?? kDefaultMaxDecompressedSize
   }
 
   decompress (chunk, fin, callback) {
@@ -28818,7 +28813,7 @@ class PerMessageDeflate {
 
         this.#inflate[kLength] += data.length
 
-        if (this.#inflate[kLength] > this.#maxDecompressedSize) {
+        if (this.#inflate[kLength] > kDefaultMaxDecompressedSize) {
           this.#aborted = true
           this.#inflate.removeAllListeners()
           this.#inflate.destroy()
@@ -28910,23 +28905,18 @@ class ByteParser extends Writable {
   /** @type {Map<string, PerMessageDeflate>} */
   #extensions
 
-  /** @type {{ maxDecompressedMessageSize?: number }} */
-  #options
-
   /**
    * @param {import('./websocket').WebSocket} ws
    * @param {Map<string, string>|null} extensions
-   * @param {{ maxDecompressedMessageSize?: number }} [options]
    */
-  constructor (ws, extensions, options = {}) {
+  constructor (ws, extensions) {
     super()
 
     this.ws = ws
     this.#extensions = extensions == null ? new Map() : extensions
-    this.#options = options
 
     if (this.#extensions.has('permessage-deflate')) {
-      this.#extensions.set('permessage-deflate', new PerMessageDeflate(extensions, options))
+      this.#extensions.set('permessage-deflate', new PerMessageDeflate(extensions))
     }
   }
 
@@ -29815,9 +29805,6 @@ class WebSocket extends EventTarget {
   /** @type {SendQueue} */
   #sendQueue
 
-  /** @type {{ maxDecompressedMessageSize?: number }} */
-  #options
-
   /**
    * @param {string} url
    * @param {string|string[]} protocols
@@ -29890,11 +29877,6 @@ class WebSocket extends EventTarget {
 
     // 10. Set this's url to urlRecord.
     this[kWebSocketURL] = new URL(urlRecord.href)
-
-    // Store options for later use (e.g., maxDecompressedMessageSize)
-    this.#options = {
-      maxDecompressedMessageSize: options.maxDecompressedMessageSize
-    }
 
     // 11. Let client be this's relevant settings object.
     const client = environmentSettingsObject.settingsObject
@@ -30214,7 +30196,7 @@ class WebSocket extends EventTarget {
     // once this happens, the connection is open
     this[kResponse] = response
 
-    const parser = new ByteParser(this, parsedExtensions, this.#options)
+    const parser = new ByteParser(this, parsedExtensions)
     parser.on('drain', onParserDrain)
     parser.on('error', onParserError.bind(this))
 
@@ -30317,19 +30299,6 @@ webidl.converters.WebSocketInit = webidl.dictionaryConverter([
   {
     key: 'headers',
     converter: webidl.nullableConverter(webidl.converters.HeadersInit)
-  },
-  {
-    key: 'maxDecompressedMessageSize',
-    converter: webidl.nullableConverter((V) => {
-      V = webidl.converters['unsigned long long'](V)
-      if (V <= 0) {
-        throw webidl.errors.exception({
-          header: 'WebSocket constructor',
-          message: 'maxDecompressedMessageSize must be greater than 0'
-        })
-      }
-      return V
-    })
   }
 ])
 
