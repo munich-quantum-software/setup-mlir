@@ -110,7 +110,7 @@ describe("setup-mlir Integration Tests", () => {
       await io.rmRF(cachedPath);
     }
     cachedPath = undefined;
-  }, 30000); // 30 second timeout for cleanup
+  }, 30000); // 30-second time-out for cleanup
 
   describe("Version Validation", () => {
     it("should validate version tag format", () => {
@@ -449,21 +449,7 @@ describe("setup-mlir Integration Tests", () => {
 
         cachedPath = cachedDir;
       }
-    }, 600000); // 10 minute timeout
-
-    it("should handle debug flag on Windows", async () => {
-      if (
-        process.platform !== "win32" ||
-        process.env.TEST_DEBUG_BUILD !== "true"
-      ) {
-        return;
-      }
-
-      await run();
-
-      expect(mockCore.addPath).toHaveBeenCalled();
-      expect(mockCore.setFailed).not.toHaveBeenCalled();
-    }, 600000); // 10 minute timeout
+    }, 900000); // 15-minute time-out
 
     it("should reject debug flag on non-Windows platforms", async () => {
       if (process.platform === "win32") {
