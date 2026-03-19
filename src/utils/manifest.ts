@@ -124,37 +124,39 @@ function populateZstdInfo(info: ZstdInfo, asset: Asset): void {
     /zstd-(.+?)_(.+?)_(.+)_(x86|aarch64)\.(tar\.gz|zip)/i,
   );
 
+  let assetNameKey = "" as keyof ZstdInfo;
+  let downloadUrlKey = "" as keyof ZstdInfo;
   if (match_linux_x86) {
-    info[`asset_name_linux_x86`] = asset.name;
-    info[`download_url_linux_x86`] = asset.browser_download_url;
+    assetNameKey = `asset_name_linux_x86`;
+    downloadUrlKey = `download_url_linux_x86`;
   } else if (match_linux_aarch64) {
-    info[`asset_name_linux_aarch64`] = asset.name;
-    info[`download_url_linux_aarch64`] = asset.browser_download_url;
+    assetNameKey = `asset_name_linux_aarch64`;
+    downloadUrlKey = `download_url_linux_aarch64`;
   } else if (match_macos_x86) {
-    info[`asset_name_macos_x86`] = asset.name;
-    info[`download_url_macos_x86`] = asset.browser_download_url;
+    assetNameKey = `asset_name_macos_x86`;
+    downloadUrlKey = `download_url_macos_x86`;
   } else if (match_macos_aarch64) {
-    info[`asset_name_macos_aarch64`] = asset.name;
-    info[`download_url_macos_aarch64`] = asset.browser_download_url;
+    assetNameKey = `asset_name_macos_aarch64`;
+    downloadUrlKey = `download_url_macos_aarch64`;
   } else if (match_windows_x86) {
-    info[`asset_name_windows_x86`] = asset.name;
-    info[`download_url_windows_x86`] = asset.browser_download_url;
+    assetNameKey = `asset_name_windows_x86`;
+    downloadUrlKey = `download_url_windows_x86`;
   } else if (match_windows_aarch64) {
-    info[`asset_name_windows_aarch64`] = asset.name;
-    info[`download_url_windows_aarch64`] = asset.browser_download_url;
+    assetNameKey = `asset_name_windows_aarch64`;
+    downloadUrlKey = `download_url_windows_aarch64`;
   } else if (match_legacy) {
     const platform = match_legacy[2].toLowerCase();
     const architecture = match_legacy[4].toLowerCase();
-    const assetNameKey =
-      `asset_name_${platform}_${architecture}` as keyof ZstdInfo;
-    const downloadUrlKey =
+    assetNameKey = `asset_name_${platform}_${architecture}` as keyof ZstdInfo;
+    downloadUrlKey =
       `download_url_${platform}_${architecture}` as keyof ZstdInfo;
-    if (!info[assetNameKey] || !info[downloadUrlKey]) {
-      info[assetNameKey] = asset.name;
-      info[downloadUrlKey] = asset.browser_download_url;
-    }
   } else {
     throw new Error(`Asset ${asset.name} does not match any known pattern.`);
+  }
+
+  if (!info[assetNameKey] || !info[downloadUrlKey]) {
+    info[assetNameKey] = asset.name;
+    info[downloadUrlKey] = asset.browser_download_url;
   }
 }
 
