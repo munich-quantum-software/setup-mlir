@@ -108,13 +108,15 @@ export async function run(): Promise<void> {
       zstd.stdout.pipe(tar.stdin);
 
       // Handle errors
-      zstd.on("error", (err) =>
+      zstd.on("error", (err: Error) =>
         reject(new Error(`zstd failed: ${err.message}`)),
       );
-      tar.on("error", (err) => reject(new Error(`tar failed: ${err.message}`)));
+      tar.on("error", (err: Error) =>
+        reject(new Error(`tar failed: ${err.message}`)),
+      );
 
       // Handle process exit
-      tar.on("close", (code) => {
+      tar.on("close", (code: number | null) => {
         if (code !== 0) {
           reject(new Error(`tar exited with code ${code}`));
         } else {
@@ -122,7 +124,7 @@ export async function run(): Promise<void> {
         }
       });
 
-      zstd.on("close", (code) => {
+      zstd.on("close", (code: number | null) => {
         if (code !== 0) {
           reject(new Error(`zstd exited with code ${code}`));
         }
