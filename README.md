@@ -16,6 +16,7 @@ List of available LLVM versions:
 
 List of available LLVM commit hashes:
 
+- `8f264586d7521b0e305ca7bb78825aa3382ffef7`
 - `113f01aa82d055410f22a9d03b3468fa68600589`
 - `f8cb7987c64dcffb72414a40560055cb717dbf74`
 
