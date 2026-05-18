@@ -9,6 +9,12 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-05-18
+
+### Added
+
+- ✨ Add support for new LLVM versions ([#134], [#146], [#155], [#171], [#174], [#177])
+
 ## [1.3.0] - 2026-03-11
 
 ### Added
@@ -76,7 +82,8 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- Version links -->
 
-[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.3.0...HEAD
+[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.3.1
 [1.3.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.3.0
 [1.2.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.2.1
 [1.2.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.2.0
@@ -86,6 +93,12 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#177]: https://github.com/munich-quantum-software/setup-mlir/pull/177
+[#174]: https://github.com/munich-quantum-software/setup-mlir/pull/174
+[#171]: https://github.com/munich-quantum-software/setup-mlir/pull/171
+[#155]: https://github.com/munich-quantum-software/setup-mlir/pull/155
+[#146]: https://github.com/munich-quantum-software/setup-mlir/pull/146
+[#134]: https://github.com/munich-quantum-software/setup-mlir/pull/134
 [#122]: https://github.com/munich-quantum-software/setup-mlir/pull/122
 [#111]: https://github.com/munich-quantum-software/setup-mlir/pull/111
 [#106]: https://github.com/munich-quantum-software/setup-mlir/pull/106

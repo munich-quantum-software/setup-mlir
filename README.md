@@ -30,7 +30,7 @@ For more information on the available LLVM versions and commit hashes, see [`ver
 
 ```yaml
 - name: Set up MLIR
-  uses: munich-quantum-software/setup-mlir@v1.3.0
+  uses: munich-quantum-software/setup-mlir@v1.3.1
   with:
     llvm-version: 22.1.0
 ```
@@ -43,7 +43,7 @@ On Windows, you can optionally install debug builds:
 
 ```yaml
 - name: Set up MLIR (Debug)
-  uses: munich-quantum-software/setup-mlir@v1.3.0
+  uses: munich-quantum-software/setup-mlir@v1.3.1
   with:
     llvm-version: 22.1.0
     debug: true
