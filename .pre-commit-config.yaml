@@ -57,7 +57,7 @@ repos:
 
   # Check for spelling
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.47.0
+    rev: v1.47.2
     hooks:
       - id: typos
 
