@@ -16,9 +16,11 @@
  */
 
 import { promises as fs } from "node:fs";
-import { ManifestEntry } from "./manifest.js";
-import { MANIFEST_FILE } from "./constants.js";
 
+import * as core from "@actions/core";
+
+import { MANIFEST_FILE } from "./constants.js";
+import { ManifestEntry } from "./manifest.js";
 import { getPlatform, getArchitecture } from "./platform.js";
 
 /**
@@ -53,6 +55,9 @@ async function getManifestEntries(
   );
 
   if (entries.length === 0 && !forceRemote) {
+    core.debug(
+      `No local manifest entries found for LLVM ${version}. Retrying with remote manifest.`,
+    );
     return await getManifestEntries(
       version,
       platform,

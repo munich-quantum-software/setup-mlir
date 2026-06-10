@@ -34734,6 +34734,7 @@ function determineArchitecture() {
 
 
 
+
 /**
  * Get the manifest entry for the specified arguments
  * @param version The requested LLVM version
@@ -34754,6 +34755,7 @@ async function getManifestEntries(version, platform, architecture, debug, forceR
         entry.architecture === architecture &&
         entry.debug === debug);
     if (entries.length === 0 && !forceRemote) {
+        core_debug(`No local manifest entries found for LLVM ${version}. Retrying with remote manifest.`);
         return await getManifestEntries(version, platform, architecture, debug, true);
     }
     if (entries.length === 0) {
