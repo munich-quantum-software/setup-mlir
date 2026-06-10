@@ -27,6 +27,7 @@ import { getPlatform, getArchitecture } from "./platform.js";
  * @param platform The platform
  * @param architecture The architecture
  * @param debug Whether to get a debug build
+ * @param forceRemote Whether to force loading the manifest from the remote URL
  * @returns The manifest entry
  */
 async function getManifestEntries(
@@ -34,13 +35,14 @@ async function getManifestEntries(
   platform: string,
   architecture: string,
   debug: boolean,
+  forceRemote: boolean = false,
 ): Promise<ManifestEntry[]> {
   // Normalize inputs
   version = version.toLowerCase();
   platform = getPlatform(platform);
   architecture = getArchitecture(architecture);
 
-  const manifest = await loadManifest();
+  const manifest = await loadManifest(forceRemote);
 
   const entries = manifest.filter(
     (entry) =>
@@ -50,40 +52,66 @@ async function getManifestEntries(
       entry.debug === debug,
   );
 
+  if (entries.length === 0 && !forceRemote) {
+    return await getManifestEntries(
+      version,
+      platform,
+      architecture,
+      debug,
+      true,
+    );
+  }
+
   if (entries.length === 0) {
     throw new Error(
       `No ${architecture} ${platform}${debug ? " (debug)" : ""} archive found for LLVM ${version}.`,
     );
   }
+
   return entries;
 }
 
 /**
- * Load the manifest from the local file system or remote URL
+ * Load the manifest from the remote URL.
  * @returns The manifest entries
  */
-async function loadManifest(): Promise<ManifestEntry[]> {
+async function loadManifestFromRemote(): Promise<ManifestEntry[]> {
+  const actionRepo =
+    process.env.GITHUB_ACTION_REPOSITORY ??
+    "munich-quantum-software/setup-mlir";
+  const actionRef = process.env.GITHUB_ACTION_REF ?? "main";
+  const manifestUrl = `https://raw.githubusercontent.com/${actionRepo}/${actionRef}/version-manifest.json`;
+
+  const response = await fetch(manifestUrl, {
+    redirect: "follow",
+    signal: AbortSignal.timeout(30000), // 30 second timeout
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch version manifest from ${manifestUrl}: ${response.status} ${response.statusText}`,
+    );
+  }
+  return (await response.json()) as ManifestEntry[];
+}
+
+/**
+ * Load the manifest. The manifest is loaded from file if possible, but falls back to the remote URL if the file is not found.
+ * @param forceRemote Whether to force loading the manifest from the remote URL
+ * @returns The manifest entries
+ */
+async function loadManifest(
+  forceRemote: boolean = false,
+): Promise<ManifestEntry[]> {
+  if (forceRemote) {
+    return await loadManifestFromRemote();
+  }
+
   try {
     const fileContent = await fs.readFile(MANIFEST_FILE, "utf-8");
     return JSON.parse(fileContent) as ManifestEntry[];
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      const actionRepo =
-        process.env.GITHUB_ACTION_REPOSITORY ??
-        "munich-quantum-software/setup-mlir";
-      const actionRef = process.env.GITHUB_ACTION_REF ?? "main";
-      const manifestUrl = `https://raw.githubusercontent.com/${actionRepo}/${actionRef}/version-manifest.json`;
-
-      const response = await fetch(manifestUrl, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(30000), // 30 second timeout
-      });
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch version manifest from ${manifestUrl}: ${response.status} ${response.statusText}`,
-        );
-      }
-      return (await response.json()) as ManifestEntry[];
+      return await loadManifestFromRemote();
     }
     throw error;
   }
