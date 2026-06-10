@@ -110,7 +110,7 @@ describe("setup-mlir Integration Tests", () => {
       await io.rmRF(cachedPath);
     }
     cachedPath = undefined;
-  }, 30000); // 30-second time-out for cleanup
+  }, 30000); // 30-second timeout for cleanup
 
   describe("Version Validation", () => {
     it("should validate version tag format", () => {
@@ -449,7 +449,7 @@ describe("setup-mlir Integration Tests", () => {
 
         cachedPath = cachedDir;
       }
-    }, 900000); // 15-minute time-out
+    }, 900000); // 15-minute timeout
 
     it("should reject debug flag on non-Windows platforms", async () => {
       if (process.platform === "win32") {
