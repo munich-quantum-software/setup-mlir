@@ -34772,7 +34772,7 @@ async function loadManifestFromRemote() {
     const manifestUrl = `https://raw.githubusercontent.com/${actionRepo}/${actionRef}/version-manifest.json`;
     const response = await fetch(manifestUrl, {
         redirect: "follow",
-        signal: AbortSignal.timeout(30000), // 30 second timeout
+        signal: AbortSignal.timeout(30000), // 30-second timeout
     });
     if (!response.ok) {
         throw new Error(`Failed to fetch version manifest from ${manifestUrl}: ${response.status} ${response.statusText}`);

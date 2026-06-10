@@ -84,7 +84,7 @@ async function loadManifestFromRemote(): Promise<ManifestEntry[]> {
 
   const response = await fetch(manifestUrl, {
     redirect: "follow",
-    signal: AbortSignal.timeout(30000), // 30 second timeout
+    signal: AbortSignal.timeout(30000), // 30-second timeout
   });
   if (!response.ok) {
     throw new Error(

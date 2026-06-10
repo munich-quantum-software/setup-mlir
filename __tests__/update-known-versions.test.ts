@@ -148,5 +148,5 @@ describe("Update Known Versions", () => {
         "github.com/munich-quantum-software/portable-mlir-toolchain/releases/download",
       );
     }
-  }, 600000); // 10 minute timeout
+  }, 600000); // 10-minute timeout
 });
