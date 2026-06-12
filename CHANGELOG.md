@@ -9,6 +9,12 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-06-12
+
+### Changed
+
+- ✨ Change binaries for LLVM 21.1.7 to ensure compatibility with Visual Studio 2022 and 2026 ([#196])
+
 ## [1.4.0] - 2026-06-10
 
 ### Added
@@ -89,7 +95,8 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- Version links -->
 
-[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.4.0...HEAD
+[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.4.1
 [1.4.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.4.0
 [1.3.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.3.1
 [1.3.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.3.0
@@ -101,6 +108,7 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#196]: https://github.com/munich-quantum-software/setup-mlir/pull/196
 [#191]: https://github.com/munich-quantum-software/setup-mlir/pull/191
 [#190]: https://github.com/munich-quantum-software/setup-mlir/pull/190
 [#189]: https://github.com/munich-quantum-software/setup-mlir/pull/189
