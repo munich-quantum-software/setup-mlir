@@ -247,7 +247,8 @@ describe("setup-mlir Integration Tests", () => {
       global.fetch = fetchMock as typeof fetch;
       process.env.GITHUB_ACTION_REPOSITORY =
         "munich-quantum-software/setup-mlir";
-      process.env.GITHUB_ACTION_REF = "test-ref";
+      // The ref the action is used at must not affect the remote manifest URL.
+      process.env.GITHUB_ACTION_REF = "v1.0.0";
 
       try {
         const assets = await getMLIRUrls(testVersion, "linux", "X86", false);
@@ -255,7 +256,63 @@ describe("setup-mlir Integration Tests", () => {
         const asset = assets[0];
         expect(asset.url).toBe("https://example.com/llvm.tar.zst");
         expect(fetchMock).toHaveBeenCalledWith(
-          "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/test-ref/version-manifest.json",
+          "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json",
+          expect.objectContaining({
+            redirect: "follow",
+            signal: expect.any(AbortSignal),
+          }),
+        );
+      } finally {
+        readFileSpy.mockRestore();
+        global.fetch = originalFetch;
+        delete process.env.GITHUB_ACTION_REPOSITORY;
+        delete process.env.GITHUB_ACTION_REF;
+      }
+    });
+
+    it("should fall back to remote manifest when local file doesn't know the version", async () => {
+      const { getMLIRUrls } = await import("../src/utils/download.js");
+      // A pinned ref ships a manifest that predates the requested version.
+      const readFileSpy = jest
+        .spyOn(fs.promises, "readFile")
+        .mockResolvedValueOnce(JSON.stringify([]));
+
+      const manifest = [
+        {
+          architecture: "x86",
+          asset_name:
+            "llvm-mlir_llvmorg-22.1.0_x86_64-unknown-linux-gnu.tar.zst",
+          debug: false,
+          download_url: "https://example.com/llvm.tar.zst",
+          platform: "linux",
+          release_url: "https://example.com/release",
+          tag: "v22.1.0",
+          version: testVersion,
+          zstd_asset_name: "zstd-1.5.7_x86_64-unknown-linux-gnu.tar.gz",
+          zstd_download_url: "https://example.com/zstd.tar.gz",
+        },
+      ];
+
+      const fetchMock: jest.MockedFunction<typeof fetch> = jest.fn(
+        async (..._args: Parameters<typeof fetch>) =>
+          new Response(JSON.stringify(manifest), {
+            status: 200,
+            statusText: "OK",
+          }),
+      );
+
+      const originalFetch = global.fetch;
+      global.fetch = fetchMock as typeof fetch;
+      process.env.GITHUB_ACTION_REPOSITORY =
+        "munich-quantum-software/setup-mlir";
+      process.env.GITHUB_ACTION_REF = "v1.0.0";
+
+      try {
+        const assets = await getMLIRUrls(testVersion, "linux", "X86", false);
+        expect(assets).toHaveLength(1);
+        expect(assets[0].url).toBe("https://example.com/llvm.tar.zst");
+        expect(fetchMock).toHaveBeenCalledWith(
+          "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json",
           expect.objectContaining({
             redirect: "follow",
             signal: expect.any(AbortSignal),
@@ -303,7 +360,6 @@ describe("setup-mlir Integration Tests", () => {
       const originalFetch = global.fetch;
       global.fetch = fetchMock as typeof fetch;
       delete process.env.GITHUB_ACTION_REPOSITORY;
-      process.env.GITHUB_ACTION_REF = "default-ref";
 
       try {
         const assets = await getMLIRUrls(testVersion, "linux", "X86", false);
@@ -311,7 +367,7 @@ describe("setup-mlir Integration Tests", () => {
         const asset = assets[0];
         expect(asset.url).toBe("https://example.com/llvm.tar.zst");
         expect(fetchMock).toHaveBeenCalledWith(
-          "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/default-ref/version-manifest.json",
+          "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json",
           expect.objectContaining({
             redirect: "follow",
             signal: expect.any(AbortSignal),
@@ -321,7 +377,6 @@ describe("setup-mlir Integration Tests", () => {
         readFileSpy.mockRestore();
         global.fetch = originalFetch;
         delete process.env.GITHUB_ACTION_REPOSITORY;
-        delete process.env.GITHUB_ACTION_REF;
       }
     });
 
@@ -345,7 +400,6 @@ describe("setup-mlir Integration Tests", () => {
       global.fetch = fetchMock as typeof fetch;
       process.env.GITHUB_ACTION_REPOSITORY =
         "munich-quantum-software/setup-mlir";
-      process.env.GITHUB_ACTION_REF = "bad-ref";
 
       try {
         await expect(
@@ -355,7 +409,6 @@ describe("setup-mlir Integration Tests", () => {
         readFileSpy.mockRestore();
         global.fetch = originalFetch;
         delete process.env.GITHUB_ACTION_REPOSITORY;
-        delete process.env.GITHUB_ACTION_REF;
       }
     });
 

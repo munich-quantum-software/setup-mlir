@@ -9,6 +9,10 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ## [Unreleased]
 
+### Fixed
+
+- 🐛 Read the remote version manifest from `main` instead of the ref the action is used at, so that pinned workflows can install LLVM versions released after that ref ([#230]) ([**@denialhaag**])
+
 ## [1.4.1] - 2026-06-12
 
 ### Changed
@@ -108,6 +112,7 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#230]: https://github.com/munich-quantum-software/setup-mlir/pull/230
 [#196]: https://github.com/munich-quantum-software/setup-mlir/pull/196
 [#191]: https://github.com/munich-quantum-software/setup-mlir/pull/191
 [#190]: https://github.com/munich-quantum-software/setup-mlir/pull/190
