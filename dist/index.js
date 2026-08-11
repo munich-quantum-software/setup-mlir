@@ -34993,12 +34993,19 @@ async function getManifestEntries(version, platform, architecture, debug, forceR
 }
 /**
  * Load the manifest from the remote URL.
+ *
+ * The manifest is read from the default branch, which knows about all LLVM versions released so
+ * far. This allows workflows pinned to an older ref of the action to install versions that were
+ * released after that ref.
+ *
  * @returns The manifest entries
  */
 async function loadManifestFromRemote() {
     const actionRepo = process.env.GITHUB_ACTION_REPOSITORY ??
         "munich-quantum-software/setup-mlir";
-    const actionRef = process.env.GITHUB_ACTION_REF ?? "main";
+    // Deliberately not `GITHUB_ACTION_REF`: that ref ships the very manifest the remote lookup is
+    // falling back from.
+    const actionRef = "main";
     const manifestUrl = `https://raw.githubusercontent.com/${actionRepo}/${actionRef}/version-manifest.json`;
     const response = await fetch(manifestUrl, {
         redirect: "follow",
