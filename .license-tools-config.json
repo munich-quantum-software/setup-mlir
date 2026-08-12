@@ -34,9 +34,6 @@
     ".*\\.tfc",
     ".*\\.qc",
     ".*\\.real",
-    ".*\\.tex",
-    "uv\\.lock",
-    "py\\.typed",
-    "Dockerfile"
+    "LICENSE"
   ]
 }
