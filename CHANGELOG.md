@@ -10,6 +10,13 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-08-12
+
+### Added
+
+- ✨ Add support for LLVM 21.1.8 with binaries that disable runtime type
+  information (RTTI) for the first time ([#229])
+
 ### Fixed
 
 - 🐛 Read the remote version manifest from `main` instead of the ref the action
@@ -121,7 +128,8 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- Version links -->
 
-[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.4.1...HEAD
+[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.4.2
 [1.4.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.4.1
 [1.4.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.4.0
 [1.3.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.3.1
@@ -135,6 +143,7 @@ _This is the initial release of the `setup-mlir` project._
 <!-- PR links -->
 
 [#230]: https://github.com/munich-quantum-software/setup-mlir/pull/230
+[#229]: https://github.com/munich-quantum-software/setup-mlir/pull/229
 [#196]: https://github.com/munich-quantum-software/setup-mlir/pull/196
 [#191]: https://github.com/munich-quantum-software/setup-mlir/pull/191
 [#190]: https://github.com/munich-quantum-software/setup-mlir/pull/190
