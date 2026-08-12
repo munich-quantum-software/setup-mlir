@@ -1,8 +1,13 @@
 # setup-mlir
 
-This repository provides an action for setting up MLIR in GitHub Actions and installation scripts for setting up MLIR locally.
+This repository provides an action for setting up MLIR in GitHub Actions and
+installation scripts for setting up MLIR locally.
 
-The MLIR binaries are built and distributed in the [`portable-mlir-toolchain`](https://github.com/munich-quantum-software/portable-mlir-toolchain/) repository.
+The MLIR binaries are built and distributed in the
+[`portable-mlir-toolchain`](https://github.com/munich-quantum-software/portable-mlir-toolchain/)
+repository.
+
+<!-- rumdl-disable -->
 
 <!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->
 
@@ -27,7 +32,10 @@ List of available LLVM commit hashes:
 
 <!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->
 
-For more information on the available LLVM versions and commit hashes, see [`version-manifest.json`](./version-manifest.json).
+<!-- rumdl-enable -->
+
+For more information on the available LLVM versions and commit hashes, see
+[`version-manifest.json`](./version-manifest.json).
 
 ## GitHub Actions
 
@@ -38,7 +46,8 @@ For more information on the available LLVM versions and commit hashes, see [`ver
     llvm-version: 22.1.8
 ```
 
-This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and defines `$LLVM_DIR` and `$MLIR_DIR`.
+This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and
+defines `$LLVM_DIR` and `$MLIR_DIR`.
 
 ### Debug Builds (Windows Only)
 
@@ -54,14 +63,17 @@ On Windows, you can optionally install debug builds:
 
 ## Installation Scripts
 
-If you want to use the pre-built MLIR installations locally, we also provide installation scripts.
-The scripts require the LLVM version or commit hash (e.g., `22.1.0` or `f8cb798`) and the desired installation directory to be passed.
-The scripts automatically download and use a platform-specific `zstd` binary for decompression, so only `tar` needs to be installed on the host system.
+If you want to use the pre-built MLIR installations locally, we also provide
+installation scripts. The scripts require the LLVM version or commit hash (e.g.,
+`22.1.0` or `f8cb798`) and the desired installation directory to be passed. The
+scripts automatically download and use a platform-specific `zstd` binary for
+decompression, so only `tar` needs to be installed on the host system.
 
 > [!NOTE]
 >
-> `tar` is included by default in Windows 10 and Windows 11.
-> If you're using an older version, you can install it, for example, via [Chocolatey](https://chocolatey.org/): `choco install tar`.
+> `tar` is included by default in Windows 10 and Windows 11. If you're using an
+> older version, you can install it, for example, via
+> [Chocolatey](https://chocolatey.org/): `choco install tar`.
 
 On Linux and macOS, use the following Bash command:
 
@@ -77,7 +89,8 @@ powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://git
 
 ### Debug Builds (Windows Only)
 
-On Windows, you can optionally install debug builds by adding the `-use_debug` flag:
+On Windows, you can optionally install debug builds by adding the `-use_debug`
+flag:
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 22.1.0 -install_prefix /path/to/installation -use_debug"
