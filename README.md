@@ -7,6 +7,8 @@ The MLIR binaries are built and distributed in the
 [`portable-mlir-toolchain`](https://github.com/munich-quantum-software/portable-mlir-toolchain/)
 repository.
 
+<!-- rumdl-disable -->
+
 <!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->
 
 List of available LLVM versions:
@@ -29,6 +31,8 @@ List of available LLVM commit hashes:
 - `f8cb7987c64dcffb72414a40560055cb717dbf74`
 
 <!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->
+
+<!-- rumdl-enable -->
 
 For more information on the available LLVM versions and commit hashes, see
 [`version-manifest.json`](./version-manifest.json).
