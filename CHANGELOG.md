@@ -5,42 +5,51 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
-This project adheres to [Semantic Versioning], with the exception that minor releases may include breaking changes.
+This project adheres to [Semantic Versioning], with the exception that minor
+releases may include breaking changes.
 
 ## [Unreleased]
 
 ### Fixed
 
-- 🐛 Read the remote version manifest from `main` instead of the ref the action is used at, so that pinned workflows can install LLVM versions released after that ref ([#230]) ([**@denialhaag**])
+- 🐛 Read the remote version manifest from `main` instead of the ref the action
+  is used at, so that pinned workflows can install LLVM versions released after
+  that ref ([#230]) ([**@denialhaag**])
 
 ## [1.4.1] - 2026-06-12
 
 ### Changed
 
-- ✨ Change binaries for LLVM 21.1.7 to ensure compatibility with Visual Studio 2022 and 2026 ([#196])
+- ✨ Change binaries for LLVM 21.1.7 to ensure compatibility with Visual Studio
+  2022 and 2026 ([#196])
 
 ## [1.4.0] - 2026-06-10
 
 ### Added
 
-- ✨ Add fallback for loading version manifest from remote URL ([#191]) ([**@denialhaag**])
+- ✨ Add fallback for loading version manifest from remote URL ([#191])
+  ([**@denialhaag**])
 - ✨ Add support for new LLVM versions ([#189], [#190])
 
 ## [1.3.1] - 2026-05-18
 
 ### Added
 
-- ✨ Add support for new LLVM versions ([#134], [#146], [#155], [#171], [#174], [#177])
+- ✨ Add support for new LLVM versions ([#134], [#146], [#155], [#171], [#174],
+  [#177])
 
 ## [1.3.0] - 2026-03-11
 
 ### Added
 
-- ♻️ Re-add support for Windows Debug builds by assembling multi-part artifacts ([#122]) ([**@denialhaag**])
+- ♻️ Re-add support for Windows Debug builds by assembling multi-part artifacts
+  ([#122]) ([**@denialhaag**])
 
 ### Changed
 
-- ♻️ Support new asset names introduced in [munich-quantum-software/portable-mlir-toolchain#30] ([#122]) ([**@denialhaag**])
+- ♻️ Support new asset names introduced in
+  [munich-quantum-software/portable-mlir-toolchain#30] ([#122])
+  ([**@denialhaag**])
 
 ## [1.2.1] - 2026-03-01
 
@@ -62,15 +71,23 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 
 ### Added
 
-- ✨ Add support for distributed `zstd` binaries so that the action and the installation scripts automatically download and use platform-specific `zstd` binaries for decompression ([#61]) ([**@burgholzer**])
-- ✨ Add support for Debug builds on Windows with new `use_debug` option available in the action and both installation scripts ([#61]) ([**@burgholzer**])
-- ✅ Add comprehensive integration tests that exercise actual download and extraction paths ([#61]) ([**@burgholzer**])
+- ✨ Add support for distributed `zstd` binaries so that the action and the
+  installation scripts automatically download and use platform-specific `zstd`
+  binaries for decompression ([#61]) ([**@burgholzer**])
+- ✨ Add support for Debug builds on Windows with new `use_debug` option
+  available in the action and both installation scripts ([#61])
+  ([**@burgholzer**])
+- ✅ Add comprehensive integration tests that exercise actual download and
+  extraction paths ([#61]) ([**@burgholzer**])
 
 ### Changed
 
-- 🚸 Remove dependency on system-installed `zstd` so that only `tar` is now required on the host system ([#61]) ([**@burgholzer**])
-- 🔧 Improve asset matching regex patterns to be more precise and avoid incorrect matches ([#61]) ([**@burgholzer**])
-- 🔧 Use `--long=30` flag for `zstd` decompression to ensure compatibility with LLVM distributions ([#61]) ([**@burgholzer**])
+- 🚸 Remove dependency on system-installed `zstd` so that only `tar` is now
+  required on the host system ([#61]) ([**@burgholzer**])
+- 🔧 Improve asset matching regex patterns to be more precise and avoid
+  incorrect matches ([#61]) ([**@burgholzer**])
+- 🔧 Use `--long=30` flag for `zstd` decompression to ensure compatibility with
+  LLVM distributions ([#61]) ([**@burgholzer**])
 - ♻️ Clean up code and improve readability ([#61]) ([**@burgholzer**])
 
 ## [1.0.1] - 2025-12-24
@@ -82,12 +99,15 @@ This project adheres to [Semantic Versioning], with the exception that minor rel
 ### Changed
 
 - 🚸 Remove dependency on `jq` in `setup-mlir.sh` ([#47]) ([**@burgholzer**])
-- 🚸 Use `tar`-native `zstd` support in installation scripts when available ([#49]) ([**@burgholzer**])
-- 🚸 Create the installation directory if it does not exist ([#46]) ([**@denialhaag**])
+- 🚸 Use `tar`-native `zstd` support in installation scripts when available
+  ([#49]) ([**@burgholzer**])
+- 🚸 Create the installation directory if it does not exist ([#46])
+  ([**@denialhaag**])
 
 ### Fixed
 
-- 🐛 Fix installation scripts to also accept commit SHAs ([#43]) ([**@denialhaag**])
+- 🐛 Fix installation scripts to also accept commit SHAs ([#43])
+  ([**@denialhaag**])
 
 ## [1.0.0] - 2025-12-23
 
@@ -95,7 +115,9 @@ _This is the initial release of the `setup-mlir` project._
 
 ### Added
 
-- ✨ Add action and installation scripts ([#1], [#3], [#6], [#14], [#23], [#25], [#29], [#30], [#32], [#41]) ([**@burgholzer**], [**@denialhaag**], [**@flowerthrower**])
+- ✨ Add action and installation scripts ([#1], [#3], [#6], [#14], [#23], [#25],
+  [#29], [#30], [#32], [#41]) ([**@burgholzer**], [**@denialhaag**],
+  [**@flowerthrower**])
 
 <!-- Version links -->
 
