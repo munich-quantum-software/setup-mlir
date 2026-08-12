@@ -14,7 +14,8 @@ releases may include breaking changes.
 
 ### Added
 
-- ✨ Add support for LLVM 21.1.8 with binaries that disable runtime type information (RTTI) for the first time ([#229])
+- ✨ Add support for LLVM 21.1.8 with binaries that disable runtime type
+  information (RTTI) for the first time ([#229])
 
 ### Fixed
 
