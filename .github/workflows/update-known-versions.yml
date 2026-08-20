@@ -26,14 +26,16 @@ jobs:
           node-version: 24
       - name: Update known versions
         id: update-known-versions
-        run: node dist/update-known-versions/index.js
         env:
           GITHUB_TOKEN: ${{ github.token }}
+        run: node dist/update-known-versions/index.js
       - id: create-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.APP_ID }}
+          client-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-contents: write # Needed to push the update branch
+          permission-pull-requests: write # Needed to open the update pull request
       - name: Create pull request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:

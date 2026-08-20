@@ -18,7 +18,10 @@ jobs:
       - uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         id: release-drafter
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Upload installation scripts
-        run: gh release upload ${{ steps.release-drafter.outputs.tag_name }} installation/setup-mlir.sh installation/setup-mlir.ps1 --clobber
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.release-drafter.outputs.tag_name }}
+        run: gh release upload "$TAG_NAME" installation/setup-mlir.sh installation/setup-mlir.ps1 --clobber
