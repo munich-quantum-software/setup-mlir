@@ -16,12 +16,17 @@
  */
 
 import { promises as fs } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import * as core from "@actions/core";
 
-import { MANIFEST_FILE } from "./constants.js";
-import { ManifestEntry } from "./manifest.js";
+import type { ManifestEntry } from "./manifest.js";
 import { getPlatform, getArchitecture } from "./platform.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const MANIFEST_FILE = join(__dirname, "..", "..", "version-manifest.json");
 
 /**
  * Get the manifest entry for the specified arguments

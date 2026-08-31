@@ -17,17 +17,16 @@
 
 import * as core from "@actions/core";
 import { promises as fs } from "node:fs";
+import { join } from "node:path";
 import { createOctokit } from "./create-octokit.js";
-import {
-  MANIFEST_FILE,
-  README_FILE,
-  REPO_NAME,
-  REPO_OWNER,
-} from "./constants.js";
+import { REPO_NAME, REPO_OWNER } from "./constants.js";
 import { Octokit } from "@octokit/core";
 import type { Asset, Release } from "./types.js";
 import { compare } from "semver";
 
+const REPOSITORY_ROOT = process.env.GITHUB_WORKSPACE ?? process.cwd();
+const MANIFEST_FILE = join(REPOSITORY_ROOT, "version-manifest.json");
+const README_FILE = join(REPOSITORY_ROOT, "README.md");
 const README_LIST_BEGIN = "<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 
