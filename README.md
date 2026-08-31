@@ -23,6 +23,7 @@ List of available LLVM versions:
 - `22.1.6`
 - `22.1.7`
 - `22.1.8`
+- `23.1.0`
 
 List of available LLVM commit hashes:
 
