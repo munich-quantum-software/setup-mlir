@@ -103,6 +103,5 @@ the same variant because LLVM's assertion mode affects its ABI checks.
 These SDKs contain native object code with portable CPU targets. They do not
 require the producer's exact compiler version. Consumers must still satisfy
 LLVM's compiler requirements and the SDK's deployment and C++ ABI constraints.
-Compiler-matched LTO variants remain experimental and are not selected by this
-input. The version manifest retains one default archive per platform so older
-pinned actions continue to work.
+The version manifest retains one default archive per platform so older pinned
+actions continue to work.
