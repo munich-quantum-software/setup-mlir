@@ -34,6 +34,7 @@ export async function run(): Promise<void> {
   const llvm_version = core.getInput("llvm-version", { required: true });
   const platform = core.getInput("platform", { required: true });
   const architecture = core.getInput("architecture", { required: true });
+  const assertions = core.getBooleanInput("assertions");
 
   // Validate LLVM version (either X.Y.Z format or commit hash)
   const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
@@ -66,7 +67,12 @@ export async function run(): Promise<void> {
   }
 
   core.debug("==> Determining download URL for LLVM distribution");
-  const asset = await getMLIRUrl(llvm_version, platform, architecture);
+  const asset = await getMLIRUrl(
+    llvm_version,
+    platform,
+    architecture,
+    assertions,
+  );
   core.debug(`==> Downloading LLVM distribution: ${asset.url}`);
   const file = await tc.downloadTool(asset.url);
 
@@ -130,7 +136,11 @@ export async function run(): Promise<void> {
         : extractedDir;
 
     core.debug("==> Adding MLIR toolchain to tool cache");
-    cachedPath = await tc.cacheDir(dir, "mlir-toolchain", llvm_version);
+    cachedPath = await tc.cacheDir(
+      dir,
+      assertions ? "mlir-toolchain" : "mlir-toolchain-noassert",
+      llvm_version,
+    );
   } finally {
     // Clean up temp directories
     await io.rmRF(extractDir);

@@ -29,6 +29,10 @@ inputs:
     description: "The architecture to install the MLIR toolchain for (either X86, AArch64, or host). macOS requires AArch64. Defaults to host."
     required: false
     default: "host"
+  assertions:
+    description: "Whether to retain LLVM assertions. Set false for an assertion-free Release SDK."
+    required: false
+    default: "true"
 
 runs:
   using: node24
