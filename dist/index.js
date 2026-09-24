@@ -35095,7 +35095,7 @@ async function getManifestEntry(version, platform, architecture, forceRemote = f
         entry.platform === platform &&
         entry.architecture === architecture &&
         entry.asset_name.endsWith(".tar.zst") &&
-        !entry.asset_name.includes("_debug"));
+        !/_(?:debug|noassert)/.test(entry.asset_name));
     if (entries.length === 0 && !forceRemote) {
         core_debug(`No local manifest entries found for LLVM ${version}. Retrying with remote manifest.`);
         return await getManifestEntry(version, platform, architecture, true);
@@ -35172,13 +35172,15 @@ async function getZstdUrl(version, platform, architecture) {
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
+ * @param assertions Whether to retain LLVM assertions
  * @returns The download URL and the asset name
  */
-async function getMLIRUrl(version, platform, architecture) {
+async function getMLIRUrl(version, platform, architecture, assertions = true) {
     const entry = await getManifestEntry(version, platform, architecture);
+    const suffix = assertions ? ".tar.zst" : "_noassert.tar.zst";
     return {
-        url: entry.download_url,
-        name: entry.asset_name,
+        url: entry.download_url.replace(/\.tar\.zst$/, suffix),
+        name: entry.asset_name.replace(/\.tar\.zst$/, suffix),
     };
 }
 
@@ -35225,6 +35227,7 @@ async function run() {
     const llvm_version = getInput("llvm-version", { required: true });
     const platform = getInput("platform", { required: true });
     const architecture = getInput("architecture", { required: true });
+    const assertions = getBooleanInput("assertions");
     // Validate LLVM version (either X.Y.Z format or commit hash)
     const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
     const isCommitHash = RegExp("^[0-9a-f]{7,40}$", "i").test(llvm_version);
@@ -35248,7 +35251,7 @@ async function run() {
         await exec_exec("chmod", ["+x", zstdPath]);
     }
     core_debug("==> Determining download URL for LLVM distribution");
-    const asset = await getMLIRUrl(llvm_version, platform, architecture);
+    const asset = await getMLIRUrl(llvm_version, platform, architecture, assertions);
     core_debug(`==> Downloading LLVM distribution: ${asset.url}`);
     const file = await downloadTool(asset.url);
     core_debug("==> Decompressing and extracting LLVM distribution");
@@ -35296,7 +35299,7 @@ async function run() {
             ? external_node_path_default().join(extractedDir, entries[0])
             : extractedDir;
         core_debug("==> Adding MLIR toolchain to tool cache");
-        cachedPath = await cacheDir(dir, "mlir-toolchain", llvm_version);
+        cachedPath = await cacheDir(dir, assertions ? "mlir-toolchain" : "mlir-toolchain-noassert", llvm_version);
     }
     finally {
         // Clean up temp directories

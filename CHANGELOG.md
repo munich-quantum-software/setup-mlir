@@ -10,6 +10,12 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- ⚡ Select native assertion-free SDKs with `assertions: false`, Bash `-a OFF`,
+  or PowerShell `-no_assertions`, while preserving assertion-enabled defaults
+  and the manifest format used by older actions ([#255]) ([**@burgholzer**])
+
 ### Removed
 
 - 🍎 Drop support for x86 macOS ([#257]) ([**@denialhaag**])
@@ -153,6 +159,7 @@ _This is the initial release of the `setup-mlir` project._
 [#256]: https://github.com/munich-quantum-software/setup-mlir/pull/256
 [#230]: https://github.com/munich-quantum-software/setup-mlir/pull/230
 [#229]: https://github.com/munich-quantum-software/setup-mlir/pull/229
+[#255]: https://github.com/munich-quantum-software/setup-mlir/pull/255
 [#196]: https://github.com/munich-quantum-software/setup-mlir/pull/196
 [#191]: https://github.com/munich-quantum-software/setup-mlir/pull/191
 [#190]: https://github.com/munich-quantum-software/setup-mlir/pull/190

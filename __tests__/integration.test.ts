@@ -40,6 +40,7 @@ const mockSetFailed = jest.fn<(message: string) => void>();
 
 const mockCore = {
   getInput: mockGetInput,
+  getBooleanInput: jest.fn(() => true),
   debug: mockDebug,
   isDebug: mockIsDebug,
   addPath: mockAddPath,
@@ -179,6 +180,19 @@ describe("setup-mlir Integration Tests", () => {
       } finally {
         readFileSpy.mockRestore();
       }
+    });
+
+    it("should select the assertion-free companion without changing the default", async () => {
+      const { getMLIRUrl } = await import("../src/utils/download.js");
+      const ordinary = await getMLIRUrl(testVersion, "linux", "X86");
+      const optimized = await getMLIRUrl(testVersion, "linux", "X86", false);
+      expect(ordinary.name).not.toContain("_noassert");
+      expect(optimized.name).toBe(
+        ordinary.name.replace(/\.tar\.zst$/, "_noassert.tar.zst"),
+      );
+      expect(optimized.url).toBe(
+        ordinary.url.replace(/\.tar\.zst$/, "_noassert.tar.zst"),
+      );
     });
 
     it("should fall back to remote manifest when local file is missing", async () => {

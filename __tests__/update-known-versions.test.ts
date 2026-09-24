@@ -163,6 +163,9 @@ describe("Update Known Versions", () => {
         "zstd-1.5.7_x86_64-pc-windows-msvc.tar.gz",
         "zstd-1.5.7_aarch64-pc-windows-msvc.tar.gz",
         ...names,
+        ...names.map((name) =>
+          name.replace(/\.tar\.zst$/, "_noassert.tar.zst"),
+        ),
       ].map((name) => ({
         name,
         browser_download_url: `https://example.com/${name}`,

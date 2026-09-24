@@ -58,7 +58,7 @@ async function getManifestEntry(
       entry.platform === platform &&
       entry.architecture === architecture &&
       entry.asset_name.endsWith(".tar.zst") &&
-      !entry.asset_name.includes("_debug"),
+      !/_(?:debug|noassert)/.test(entry.asset_name),
   );
 
   if (entries.length === 0 && !forceRemote) {
@@ -160,16 +160,19 @@ export async function getZstdUrl(
  * @param version The requested LLVM version
  * @param platform The platform
  * @param architecture The architecture
+ * @param assertions Whether to retain LLVM assertions
  * @returns The download URL and the asset name
  */
 export async function getMLIRUrl(
   version: string,
   platform: string,
   architecture: string,
+  assertions: boolean = true,
 ): Promise<{ url: string; name: string }> {
   const entry = await getManifestEntry(version, platform, architecture);
+  const suffix = assertions ? ".tar.zst" : "_noassert.tar.zst";
   return {
-    url: entry.download_url,
-    name: entry.asset_name,
+    url: entry.download_url.replace(/\.tar\.zst$/, suffix),
+    name: entry.asset_name.replace(/\.tar\.zst$/, suffix),
   };
 }

@@ -325,9 +325,12 @@ export async function updateManifest(): Promise<void> {
   const manifest: ManifestEntry[] = [];
   const zstdInfo: ZstdInfo = {};
   for (const release of releases) {
+    /// Keep one default archive per platform for older pinned actions.
     const assets = release.assets.filter(
       (asset) =>
-        !/(?:x86_64-apple-darwin|macos_.*_x86)\.|_debug/i.test(asset.name),
+        !/(?:x86_64-apple-darwin|macos_.*_x86)\.|_(?:debug|noassert)/i.test(
+          asset.name,
+        ),
     );
     let version: string | undefined = undefined;
     for (const asset of assets) {

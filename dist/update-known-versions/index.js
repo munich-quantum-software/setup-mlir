@@ -36364,7 +36364,8 @@ async function updateManifest() {
     const manifest = [];
     const zstdInfo = {};
     for (const release of releases) {
-        const assets = release.assets.filter((asset) => !/(?:x86_64-apple-darwin|macos_.*_x86)\.|_debug/i.test(asset.name));
+        /// Keep one default archive per platform for older pinned actions.
+        const assets = release.assets.filter((asset) => !/(?:x86_64-apple-darwin|macos_.*_x86)\.|_(?:debug|noassert)/i.test(asset.name));
         let version = undefined;
         for (const asset of assets) {
             if (asset.name.startsWith("zstd-")) {

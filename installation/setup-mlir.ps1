@@ -19,7 +19,8 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$llvm_version,
     [Parameter(Mandatory=$true)]
-    [string]$install_prefix
+    [string]$install_prefix,
+    [switch]$no_assertions
 )
 
 $ErrorActionPreference = "Stop"
@@ -95,6 +96,7 @@ $matching_entries = @($manifest_json | Where-Object {
     $_.architecture -eq $architecture -and
     $_.asset_name -like "*.tar.zst" -and
     $_.asset_name -notlike "*_debug*" -and
+    $_.asset_name -notlike "*_noassert*" -and
     $_.version -like "${llvm_version}*"
 })
 
@@ -137,7 +139,11 @@ if (-not (Test-Path $zstdBinPath)) {
 
 # Download LLVM distribution
 Write-Host "Downloading LLVM distribution..."
-if (-not (Download-Asset -Url $matching_entries[0].download_url -OutputFile "llvm.tar.zst")) {
+$llvm_url = $matching_entries[0].download_url
+if ($no_assertions) {
+    $llvm_url = $llvm_url -replace '\.tar\.zst$', '_noassert.tar.zst'
+}
+if (-not (Download-Asset -Url $llvm_url -OutputFile "llvm.tar.zst")) {
     Write-Error "Download of LLVM distribution failed."
     exit 1
 }

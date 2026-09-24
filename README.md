@@ -82,3 +82,26 @@ On Windows, use the following PowerShell command:
 ```powershell
 powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 22.1.0 -install_prefix /path/to/installation"
 ```
+
+## Assertion-free release SDKs
+
+Set `assertions: false` to select the native assertion-free SDK:
+
+```yaml
+- uses: munich-quantum-software/setup-mlir@v1
+  with:
+    llvm-version: 23.1.1
+    assertions: false
+```
+
+The standalone installers accept `-a OFF` in Bash and `-no_assertions` in
+PowerShell. Defaults retain assertions. The `_noassert.tar.zst` companion
+archive must exist in the same release; installation fails if it is unavailable.
+Tool-cache directories separate the two variants. Use headers and libraries from
+the same variant because LLVM's assertion mode affects its ABI checks.
+
+These SDKs contain native object code with portable CPU targets. They do not
+require the producer's exact compiler version. Consumers must still satisfy
+LLVM's compiler requirements and the SDK's deployment and C++ ABI constraints.
+The version manifest retains one default archive per platform so older pinned
+actions continue to work.

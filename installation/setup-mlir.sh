@@ -19,23 +19,30 @@
 set -euo pipefail
 
 # Parse arguments
-while getopts ":v:p:" opt; do
+ASSERTIONS=ON
+while getopts ":v:p:a:" opt; do
   case $opt in
     v) LLVM_VERSION="$OPTARG" ;;
     p) INSTALL_PREFIX="$OPTARG" ;;
+    a) ASSERTIONS="$OPTARG" ;;
     \?) echo "Error: Invalid option -$OPTARG" >&2; exit 1 ;;
   esac
 done
 
+if [[ "$ASSERTIONS" != ON && "$ASSERTIONS" != OFF ]]; then
+  echo "Error: Assertions (-a) must be ON or OFF." >&2
+  exit 1
+fi
+
 # Check arguments
 if [ -z "${LLVM_VERSION:-}" ]; then
   echo "Error: LLVM version (-v) is required" >&2
-  echo "Usage: $0 -v <LLVM version> -p <installation directory>" >&2
+  echo "Usage: $0 -v <LLVM version> -p <installation directory> [-a ON|OFF]" >&2
   exit 1
 fi
 if [ -z "${INSTALL_PREFIX:-}" ]; then
   echo "Error: Installation directory (-p) is required" >&2
-  echo "Usage: $0 -v <LLVM version> -p <installation directory>" >&2
+  echo "Usage: $0 -v <LLVM version> -p <installation directory> [-a ON|OFF]" >&2
   exit 1
 fi
 
@@ -188,6 +195,9 @@ if [ -z "$LLVM_URL" ]; then
   exit 1
 fi
 
+if [[ "$ASSERTIONS" == OFF ]]; then
+  LLVM_URL="${LLVM_URL%.tar.zst}_noassert.tar.zst"
+fi
 download_file "$LLVM_URL" "llvm.tar.zst"
 
 # Decompress and extract LLVM distribution
