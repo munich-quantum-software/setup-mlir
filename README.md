@@ -90,7 +90,7 @@ Set `assertions: false` to select the native assertion-free SDK:
 ```yaml
 - uses: munich-quantum-software/setup-mlir@v1
   with:
-    llvm-version: 23.1.1
+    llvm-version: 23.1.2
     assertions: false
 ```
 
