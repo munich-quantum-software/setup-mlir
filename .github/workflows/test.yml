@@ -39,8 +39,6 @@ jobs:
             assertions: "OFF"
           - version: "f8cb798"
             assertions: "OFF"
-    env:
-      SETUP_MLIR_MANIFEST_URL: https://raw.githubusercontent.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/${{ github.event.pull_request.head.sha || github.sha }}/version-manifest.json
 
     steps:
       - name: Checkout repository
@@ -52,7 +50,12 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          installation/setup-mlir.sh -v ${{ matrix.version }} -p /tmp/mlir-install -a ${{ matrix.assertions }}
+          installer=installation/setup-mlir.sh
+          if [[ '${{ matrix.version }}' != 23.1.2 ]]; then
+            cp "$installer" /tmp/setup-mlir.sh
+            installer=/tmp/setup-mlir.sh
+          fi
+          bash "$installer" -v ${{ matrix.version }} -p /tmp/mlir-install -a ${{ matrix.assertions }}
           grep -F "set(LLVM_ENABLE_ASSERTIONS ${{ matrix.assertions }})" /tmp/mlir-install/lib/cmake/llvm/LLVMConfig.cmake
 
           # Verify installation
@@ -89,7 +92,12 @@ jobs:
         run: |
           $install_dir = Join-Path $env:TEMP "mlir-install"
 
-          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir -no_assertions:('${{ matrix.assertions }}' -eq 'OFF')
+          $installer = "installation/setup-mlir.ps1"
+          if ('${{ matrix.version }}' -ne '23.1.2') {
+            $installer = Join-Path $env:TEMP "setup-mlir.ps1"
+            Copy-Item installation/setup-mlir.ps1 $installer
+          }
+          & $installer -llvm_version ${{ matrix.version }} -install_prefix $install_dir -no_assertions:('${{ matrix.assertions }}' -eq 'OFF')
           if (-not (Select-String -Path "$install_dir/lib/cmake/llvm/LLVMConfig.cmake" -SimpleMatch "set(LLVM_ENABLE_ASSERTIONS ${{ matrix.assertions }})")) {
             throw "Installed LLVM assertion mode does not match"
           }

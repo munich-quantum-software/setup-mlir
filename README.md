@@ -66,9 +66,11 @@ installation scripts. The scripts require the LLVM version or commit hash (e.g.,
 scripts automatically download and use a platform-specific `zstd` binary for
 decompression, so only `tar` needs to be installed on the host system.
 
-The installers read the version manifest from `main` by default. Set
-`SETUP_MLIR_MANIFEST_URL` to pin the manifest to the same revision as the script
-when installing from a specific commit.
+When run from a repository checkout or source archive, the installers use its
+`version-manifest.json`. PR tests therefore use the manifest from the tested
+revision automatically. Standalone or piped scripts read the manifest from
+`main`. To pin both script and manifest, download the repository's source
+archive at the desired commit and run its installer.
 
 > [!NOTE]
 >

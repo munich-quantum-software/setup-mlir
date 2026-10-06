@@ -59,6 +59,15 @@ mkdir -p "$INSTALL_PREFIX"
 # Turn the installation directory into an absolute path
 INSTALL_PREFIX="$(cd "$INSTALL_PREFIX" && pwd -P)"
 
+# Use the checkout's manifest before changing directories; standalone scripts use main.
+MANIFEST_FILE="$(dirname "${BASH_SOURCE[0]:-}")/../version-manifest.json"
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "$MANIFEST_FILE" ]]; then
+  MANIFEST_JSON=$(cat "$MANIFEST_FILE")
+elif ! MANIFEST_JSON=$(curl -fsSL https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json); then
+  echo "Error: Failed to download version manifest." >&2
+  exit 1
+fi
+
 # Change to installation directory
 pushd "$INSTALL_PREFIX" > /dev/null
 
@@ -86,15 +95,6 @@ else
   echo "Error: Invalid LLVM version format: $LLVM_VERSION. Must be a version (e.g., 22.1.0) or a commit SHA." >&2
   exit 1
 fi
-
-# Helper function to fetch version-manifest.json
-fetch_manifest_json() {
-  local url=$1
-  if ! curl -fsSL "$url"; then
-    echo "Error: Download failed." >&2
-    exit 1
-  fi
-}
 
 # Helper function to find zstd asset URL in version-manifest.json
 find_zstd_asset_url() {
@@ -152,10 +152,6 @@ else
   echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
   exit 1
 fi
-
-# Fetch version-manifest.json once
-MANIFEST_URL="${SETUP_MLIR_MANIFEST_URL:-https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json}"
-MANIFEST_JSON=$(fetch_manifest_json "$MANIFEST_URL")
 
 # Download zstd binary
 echo "Downloading zstd binary..."

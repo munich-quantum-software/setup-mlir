@@ -69,14 +69,14 @@ function Download-Asset {
     }
 }
 
-$manifest_url = $env:SETUP_MLIR_MANIFEST_URL
-if (-not $manifest_url) {
-    $manifest_url = "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json"
-}
 try {
-    $manifest_json = Invoke-RestMethod -Uri $manifest_url
+    if ($PSScriptRoot -and (Test-Path "$PSScriptRoot/../version-manifest.json" -PathType Leaf)) {
+        $manifest_json = Get-Content "$PSScriptRoot/../version-manifest.json" -Raw | ConvertFrom-Json
+    } else {
+        $manifest_json = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json"
+    }
 } catch {
-    Write-Error "Failed to fetch version manifest from ${manifest_url}: $_"
+    Write-Error "Failed to load version manifest: $_"
     exit 1
 }
 
