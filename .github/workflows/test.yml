@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   test-installer-scripts:
-    name: Test installer script for version ${{ matrix.version }} on ${{ matrix.os }}
+    name: Installer ${{ matrix.version }} (assertions=${{ matrix.assertions }}) on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -30,7 +30,17 @@ jobs:
             windows-2025,
             windows-11-arm,
           ]
-        version: ["21.1.8", "22.1.0", "f8cb798"]
+        version: ["21.1.8", "22.1.0", "f8cb798", "23.1.2"]
+        assertions: ["ON", "OFF"]
+        exclude:
+          - version: "21.1.8"
+            assertions: "OFF"
+          - version: "22.1.0"
+            assertions: "OFF"
+          - version: "f8cb798"
+            assertions: "OFF"
+    env:
+      SETUP_MLIR_MANIFEST_URL: https://raw.githubusercontent.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/${{ github.event.pull_request.head.sha || github.sha }}/version-manifest.json
 
     steps:
       - name: Checkout repository
@@ -42,7 +52,8 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          installation/setup-mlir.sh -v ${{ matrix.version }} -p /tmp/mlir-install
+          installation/setup-mlir.sh -v ${{ matrix.version }} -p /tmp/mlir-install -a ${{ matrix.assertions }}
+          grep -F "set(LLVM_ENABLE_ASSERTIONS ${{ matrix.assertions }})" /tmp/mlir-install/lib/cmake/llvm/LLVMConfig.cmake
 
           # Verify installation
           if [ ! -d "/tmp/mlir-install/bin" ]; then
@@ -78,7 +89,10 @@ jobs:
         run: |
           $install_dir = Join-Path $env:TEMP "mlir-install"
 
-          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir
+          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir -no_assertions:('${{ matrix.assertions }}' -eq 'OFF')
+          if (-not (Select-String -Path "$install_dir/lib/cmake/llvm/LLVMConfig.cmake" -SimpleMatch "set(LLVM_ENABLE_ASSERTIONS ${{ matrix.assertions }})")) {
+            throw "Installed LLVM assertion mode does not match"
+          }
 
           # Verify installation
           if (-not (Test-Path "$install_dir\bin")) {

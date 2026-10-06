@@ -31,6 +31,7 @@ List of available LLVM versions:
 - `22.1.8`
 - `23.1.0`
 - `23.1.1`
+- `23.1.2`
 
 List of available LLVM commit hashes:
 
@@ -64,6 +65,10 @@ installation scripts. The scripts require the LLVM version or commit hash (e.g.,
 `22.1.0` or `f8cb798`) and the desired installation directory to be passed. The
 scripts automatically download and use a platform-specific `zstd` binary for
 decompression, so only `tar` needs to be installed on the host system.
+
+The installers read the version manifest from `main` by default. Set
+`SETUP_MLIR_MANIFEST_URL` to pin the manifest to the same revision as the script
+when installing from a specific commit.
 
 > [!NOTE]
 >

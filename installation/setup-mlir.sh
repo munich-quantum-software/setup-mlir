@@ -154,7 +154,7 @@ else
 fi
 
 # Fetch version-manifest.json once
-MANIFEST_URL="https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json"
+MANIFEST_URL="${SETUP_MLIR_MANIFEST_URL:-https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json}"
 MANIFEST_JSON=$(fetch_manifest_json "$MANIFEST_URL")
 
 # Download zstd binary

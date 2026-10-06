@@ -52,7 +52,7 @@ const mockCore = {
 jest.unstable_mockModule("@actions/core", () => mockCore);
 
 describe("setup-mlir Integration Tests", () => {
-  const testVersion = "22.1.0";
+  const testVersion = "23.1.2";
   const testVersionCommit = "f8cb798";
   let cachedPath: string | undefined;
   let run: () => Promise<void>;
@@ -64,6 +64,7 @@ describe("setup-mlir Integration Tests", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCore.getBooleanInput.mockReturnValue(true);
 
     // Set up environment for tests
     if (!process.env.RUNNER_TEMP) {
@@ -425,60 +426,77 @@ describe("setup-mlir Integration Tests", () => {
   });
 
   describe("Full Setup Integration", () => {
-    it("should complete full setup for current platform", async () => {
-      // Run the actual setup function
-      await run();
+    it.each([true, false])(
+      "should complete full setup with assertions=%s",
+      async (assertions) => {
+        mockCore.getBooleanInput.mockReturnValue(assertions);
+        // Run the actual setup function
+        await run();
 
-      // Verify mocks were called correctly
-      expect(mockCore.addPath).toHaveBeenCalled();
+        // Verify mocks were called correctly
+        expect(mockCore.addPath).toHaveBeenCalled();
 
-      // Check LLVM_DIR was set correctly (normalize paths for cross-platform)
-      const llvmDirCall = mockCore.exportVariable.mock.calls.find(
-        (call) => call[0] === "LLVM_DIR",
-      );
-      expect(llvmDirCall).toBeDefined();
-      expect(llvmDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]llvm$/);
+        // Check LLVM_DIR was set correctly (normalize paths for cross-platform)
+        const llvmDirCall = mockCore.exportVariable.mock.calls.find(
+          (call) => call[0] === "LLVM_DIR",
+        );
+        expect(llvmDirCall).toBeDefined();
+        expect(llvmDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]llvm$/);
 
-      // Check MLIR_DIR was set correctly
-      const mlirDirCall = mockCore.exportVariable.mock.calls.find(
-        (call) => call[0] === "MLIR_DIR",
-      );
-      expect(mlirDirCall).toBeDefined();
-      expect(mlirDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]mlir$/);
-      expect(mockCore.setFailed).not.toHaveBeenCalled();
+        // Check MLIR_DIR was set correctly
+        const mlirDirCall = mockCore.exportVariable.mock.calls.find(
+          (call) => call[0] === "MLIR_DIR",
+        );
+        expect(mlirDirCall).toBeDefined();
+        expect(mlirDirCall![1]).toMatch(/lib[\/\\]cmake[\/\\]mlir$/);
+        expect(mockCore.setFailed).not.toHaveBeenCalled();
 
-      // Get the cached path from the addPath call
-      const addPathCall = mockCore.addPath.mock.calls[0];
-      if (addPathCall) {
-        const binPath = addPathCall[0] as string;
-        const cachedDir = path.dirname(binPath);
+        // Get the cached path from the addPath call
+        const addPathCall = mockCore.addPath.mock.calls[0];
+        if (addPathCall) {
+          const binPath = addPathCall[0] as string;
+          const cachedDir = path.dirname(binPath);
+          expect(cachedDir).toContain(
+            assertions
+              ? "mlir-toolchain" + path.sep
+              : "mlir-toolchain-noassert" + path.sep,
+          );
+          const config = fs.readFileSync(
+            path.join(cachedDir, "lib", "cmake", "llvm", "LLVMConfig.cmake"),
+            "utf8",
+          );
+          expect(config).toContain(
+            `set(LLVM_ENABLE_ASSERTIONS ${assertions ? "ON" : "OFF"})`,
+          );
 
-        // Verify the structure
-        expect(fs.existsSync(binPath)).toBe(true);
-        expect(
-          fs.existsSync(path.join(cachedDir, "lib", "cmake", "llvm")),
-        ).toBe(true);
-        expect(
-          fs.existsSync(path.join(cachedDir, "lib", "cmake", "mlir")),
-        ).toBe(true);
+          // Verify the structure
+          expect(fs.existsSync(binPath)).toBe(true);
+          expect(
+            fs.existsSync(path.join(cachedDir, "lib", "cmake", "llvm")),
+          ).toBe(true);
+          expect(
+            fs.existsSync(path.join(cachedDir, "lib", "cmake", "mlir")),
+          ).toBe(true);
 
-        // Verify binaries exist
-        const mlirOptName =
-          process.platform === "win32" ? "mlir-opt.exe" : "mlir-opt";
-        const mlirOptPath = path.join(binPath, mlirOptName);
-        expect(fs.existsSync(mlirOptPath)).toBe(true);
+          // Verify binaries exist
+          const mlirOptName =
+            process.platform === "win32" ? "mlir-opt.exe" : "mlir-opt";
+          const mlirOptPath = path.join(binPath, mlirOptName);
+          expect(fs.existsSync(mlirOptPath)).toBe(true);
 
-        // Verify mlir-opt can run and check version
-        const { execSync } = await import("node:child_process");
-        const versionOutput = execSync(`"${mlirOptPath}" --version`, {
-          encoding: "utf8",
-        });
-        expect(versionOutput).toContain("LLVM version");
-        expect(versionOutput).toContain(testVersion);
+          // Verify mlir-opt can run and check version
+          const { execSync } = await import("node:child_process");
+          const versionOutput = execSync(`"${mlirOptPath}" --version`, {
+            encoding: "utf8",
+          });
+          expect(versionOutput).toContain("LLVM version");
+          expect(versionOutput).toContain(testVersion);
 
-        cachedPath = cachedDir;
-      }
-    }, 900000); // 15-minute timeout
+          cachedPath = cachedDir;
+        }
+      },
+      900000,
+    ); // 15-minute timeout
 
     it("should reject invalid version", async () => {
       mockCore.getInput.mockImplementation((name: string) => {
@@ -513,7 +531,9 @@ describe("setup-mlir Integration Tests", () => {
             ? "apple"
             : "windows";
 
-      expect(asset.name).toMatch(/^llvm-mlir_llvmorg-22\.1\.0_/);
+      expect(asset.name.startsWith(`llvm-mlir_llvmorg-${testVersion}_`)).toBe(
+        true,
+      );
       expect(asset.name).toContain(expectedPlatform.toLowerCase());
       expect(asset.name).toMatch(/\.tar\.zst$/);
     });
