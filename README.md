@@ -52,7 +52,7 @@ For more information on the available LLVM versions and commit hashes, see
 - name: Set up MLIR
   uses: munich-quantum-software/setup-mlir@v1.4.2
   with:
-    llvm-version: 22.1.8
+    llvm-version: 23.1.2
 ```
 
 This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and
@@ -62,7 +62,7 @@ defines `$LLVM_DIR` and `$MLIR_DIR`.
 
 If you want to use the pre-built MLIR installations locally, we also provide
 installation scripts. The scripts require the LLVM version or commit hash (e.g.,
-`22.1.8` or `f8cb798`) and the desired installation directory to be passed. The
+`23.1.2` or `f8cb798`) and the desired installation directory to be passed. The
 scripts automatically download and use a platform-specific `zstd` binary for
 decompression, so only `tar` needs to be installed on the host system.
 
@@ -74,7 +74,7 @@ archive at the desired commit and run its installer.
 On Linux and macOS, use the following Bash command:
 
 ```bash
-curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -v 22.1.8 -p /path/to/installation
+curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -v 23.1.2 -p /path/to/installation
 ```
 
 On Windows, use PowerShell 7.4 or newer, which supports the
@@ -82,7 +82,7 @@ On Windows, use PowerShell 7.4 or newer, which supports the
 used for extraction. `tar` is included with Windows 10 and Windows 11.
 
 ```powershell
-pwsh -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 22.1.8 -install_prefix /path/to/installation"
+pwsh -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 23.1.2 -install_prefix /path/to/installation"
 ```
 
 ## Assertion-free release SDKs
