@@ -36270,11 +36270,31 @@ const MANIFEST_FILE = (0,external_node_path_namespaceObject.join)(REPOSITORY_ROO
 const README_FILE = (0,external_node_path_namespaceObject.join)(REPOSITORY_ROOT, "README.md");
 const README_LIST_BEGIN = "<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->";
 const README_LIST_END = "<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->";
-/**
- * Fetch all releases from the `portable-mlir-toolchain` repository
- * @param octokit The Octokit instance
- * @returns Array of releases sorted by creation date
- */
+const TARGETS = [
+    ["x86_64-unknown-linux-gnu", "linux", "x86"],
+    ["aarch64-unknown-linux-gnu", "linux", "aarch64"],
+    ["arm64-apple-darwin", "macos", "aarch64"],
+    ["x86_64-pc-windows-msvc", "windows", "x86"],
+    ["aarch64-pc-windows-msvc", "windows", "aarch64"],
+];
+/** Identify current target triples and legacy platform/architecture suffixes. */
+function getTarget(assetName) {
+    const stem = assetName.replace(/\.(?:tar\.gz|tar\.zst|zip)$/, "");
+    for (const [target, platform, architecture] of TARGETS) {
+        if (stem.endsWith(`_${target}`)) {
+            return { platform, architecture };
+        }
+    }
+    const legacy = stem.match(/_(linux|macos|windows)_.+_(x86|aarch64)$/i);
+    if (legacy) {
+        return {
+            platform: legacy[1].toLowerCase(),
+            architecture: legacy[2].toLowerCase(),
+        };
+    }
+    throw new Error(`Asset ${assetName} does not match any known target.`);
+}
+/** Fetch SDK releases, newest first. */
 async function getReleases(octokit) {
     const releases = [];
     let page = 1;
@@ -36297,151 +36317,15 @@ async function getReleases(octokit) {
     releases.sort((a, b) => b.created_at.localeCompare(a.created_at));
     return releases;
 }
-/**
- * Populate the `ZstdInfo` object with information from a release asset
- * @param info The `ZstdInfo` object to populate
- * @param asset The release asset
- */
-function populateZstdInfo(info, asset) {
-    const match_linux_x86 = asset.name.match(/zstd-(.+?)_x86_64-unknown-linux-gnu\.tar\.gz/);
-    const match_linux_aarch64 = asset.name.match(/zstd-(.+?)_aarch64-unknown-linux-gnu\.tar\.gz/);
-    const match_macos_aarch64 = asset.name.match(/zstd-(.+?)_arm64-apple-darwin\.tar\.gz/);
-    const match_windows_x86 = asset.name.match(/zstd-(.+?)_x86_64-pc-windows-msvc\.tar\.gz/);
-    const match_windows_aarch64 = asset.name.match(/zstd-(.+?)_aarch64-pc-windows-msvc\.tar\.gz/);
-    const match_legacy = asset.name.match(/zstd-(.+?)_(.+?)_(.+)_(x86|aarch64)\.(tar\.gz|zip)/i);
-    let assetNameKey = "";
-    let downloadUrlKey = "";
-    if (match_linux_x86) {
-        assetNameKey = `asset_name_linux_x86`;
-        downloadUrlKey = `download_url_linux_x86`;
-    }
-    else if (match_linux_aarch64) {
-        assetNameKey = `asset_name_linux_aarch64`;
-        downloadUrlKey = `download_url_linux_aarch64`;
-    }
-    else if (match_macos_aarch64) {
-        assetNameKey = `asset_name_macos_aarch64`;
-        downloadUrlKey = `download_url_macos_aarch64`;
-    }
-    else if (match_windows_x86) {
-        assetNameKey = `asset_name_windows_x86`;
-        downloadUrlKey = `download_url_windows_x86`;
-    }
-    else if (match_windows_aarch64) {
-        assetNameKey = `asset_name_windows_aarch64`;
-        downloadUrlKey = `download_url_windows_aarch64`;
-    }
-    else if (match_legacy) {
-        const platform = match_legacy[2].toLowerCase();
-        const architecture = match_legacy[4].toLowerCase();
-        assetNameKey = `asset_name_${platform}_${architecture}`;
-        downloadUrlKey =
-            `download_url_${platform}_${architecture}`;
-    }
-    else {
-        throw new Error(`Asset ${asset.name} does not match any known pattern.`);
-    }
-    if (!info[assetNameKey] || !info[downloadUrlKey]) {
-        info[assetNameKey] = asset.name;
-        info[downloadUrlKey] = asset.browser_download_url;
-    }
-}
-/**
- * Extract version from the name of a release asset
- * @param assetName - Name of the release asset
- * @returns Version string
- */
+/** Extract an LLVM release version or commit hash from an archive name. */
 function getVersionFromAssetName(assetName) {
-    const versionMatch = assetName.match(/llvm-mlir_llvmorg-(\d+\.\d+\.\d+)_/i);
-    if (versionMatch) {
-        return versionMatch[1].toLowerCase();
+    const match = assetName.match(/^llvm-mlir_(?:llvmorg-(\d+\.\d+\.\d+)|([0-9a-f]{7,40}))_/i);
+    if (!match) {
+        throw new Error(`Could not extract version from asset name: ${assetName}`);
     }
-    const hashMatch = assetName.match(/llvm-mlir_([0-9a-f]{7,40})_/i);
-    if (hashMatch) {
-        return hashMatch[1].toLowerCase();
-    }
-    throw new Error(`Could not extract version from asset name: ${assetName}`);
+    return (match[1] ?? match[2]).toLowerCase();
 }
-/**
- * Populate the manifest with information from a release asset
- * @param manifest The manifest array to populate
- * @param asset The release asset
- * @param release The release containing the asset
- * @param zstdInfo The `ZstdInfo` object containing information about zstd assets
- */
-function populateManifest(manifest, asset, release, zstdInfo) {
-    const match_linux_x86 = asset.name.match(/llvm-mlir_(.+?)_x86_64-unknown-linux-gnu\.tar\.zst/i);
-    const match_linux_aarch64 = asset.name.match(/llvm-mlir_(.+?)_aarch64-unknown-linux-gnu\.tar\.zst/i);
-    const match_macos_aarch64 = asset.name.match(/llvm-mlir_(.+?)_arm64-apple-darwin\.tar\.zst/i);
-    const match_windows_x86 = asset.name.match(/llvm-mlir_(.+?)_x86_64-pc-windows-msvc\.tar\.zst/i);
-    const match_windows_aarch64 = asset.name.match(/llvm-mlir_(.+?)_aarch64-pc-windows-msvc\.tar\.zst/i);
-    const match_legacy = asset.name.match(/llvm-mlir_(.+?)_(.+?)_(.+)_(x86|aarch64)\.tar\.zst/i);
-    let architecture = "";
-    let platform = "";
-    let zstdAssetNameKey = "";
-    let zstdDownloadUrlKey = "";
-    if (match_linux_x86) {
-        architecture = "x86";
-        platform = "linux";
-        zstdAssetNameKey = "asset_name_linux_x86";
-        zstdDownloadUrlKey = "download_url_linux_x86";
-    }
-    else if (match_linux_aarch64) {
-        architecture = "aarch64";
-        platform = "linux";
-        zstdAssetNameKey = "asset_name_linux_aarch64";
-        zstdDownloadUrlKey = "download_url_linux_aarch64";
-    }
-    else if (match_macos_aarch64) {
-        architecture = "aarch64";
-        platform = "macos";
-        zstdAssetNameKey = "asset_name_macos_aarch64";
-        zstdDownloadUrlKey = "download_url_macos_aarch64";
-    }
-    else if (match_windows_x86) {
-        architecture = "x86";
-        platform = "windows";
-        zstdAssetNameKey = "asset_name_windows_x86";
-        zstdDownloadUrlKey = "download_url_windows_x86";
-    }
-    else if (match_windows_aarch64) {
-        architecture = "aarch64";
-        platform = "windows";
-        zstdAssetNameKey = "asset_name_windows_aarch64";
-        zstdDownloadUrlKey = "download_url_windows_aarch64";
-    }
-    else if (match_legacy) {
-        architecture = match_legacy[4].toLowerCase();
-        platform = match_legacy[2].toLowerCase();
-        zstdAssetNameKey = `asset_name_${platform}_${architecture}`;
-        zstdDownloadUrlKey = `download_url_${platform}_${architecture}`;
-    }
-    else {
-        throw new Error(`Asset ${asset.name} does not match any known pattern.`);
-    }
-    const version = getVersionFromAssetName(asset.name);
-    const zstdAssetName = zstdInfo[zstdAssetNameKey];
-    const zstdDownloadUrl = zstdInfo[zstdDownloadUrlKey];
-    if (!zstdAssetName || !zstdDownloadUrl) {
-        throw new Error(`No zstd binary found for ${asset.name}.`);
-    }
-    manifest.push({
-        architecture: architecture,
-        asset_name: asset.name,
-        debug: false,
-        download_url: asset.browser_download_url,
-        platform: platform,
-        release_url: release.html_url,
-        tag: release.tag_name,
-        version: version,
-        zstd_asset_name: zstdAssetName,
-        zstd_download_url: zstdDownloadUrl,
-    });
-}
-/**
- * Update README.md file with a list of available versions
- * @param versions The available versions
- */
+/** Regenerate the available-version list in the README. */
 async function updateReadme(versions) {
     const readme = await external_node_fs_namespaceObject.promises.readFile(README_FILE, "utf-8");
     const beginIndex = readme.indexOf(README_LIST_BEGIN);
@@ -36480,9 +36364,7 @@ async function updateReadme(versions) {
     const updatedReadme = `${before}\n\n${body}${after}`;
     await external_node_fs_namespaceObject.promises.writeFile(README_FILE, updatedReadme);
 }
-/**
- * Update the version manifest with release assets
- */
+/** Index published SDKs and their available assertion-free companions. */
 async function updateManifest() {
     const token = process.env.GITHUB_TOKEN || "";
     if (!token) {
@@ -36490,37 +36372,53 @@ async function updateManifest() {
     }
     const octokit = createOctokit(token);
     const releases = await getReleases(octokit);
-    const versions = new Set();
     const manifest = [];
-    const zstdInfo = {};
+    const seen = new Set();
+    const zstdAssets = new Map();
     for (const release of releases) {
-        const assets = release.assets.filter((asset) => !/(?:x86_64-apple-darwin|macos_.*_x86)\.|_debug/i.test(asset.name));
-        let version = undefined;
-        for (const asset of assets) {
-            if (asset.name.startsWith("zstd-")) {
-                populateZstdInfo(zstdInfo, asset);
+        const assets = release.assets.filter((asset) => !/(?:x86_64-apple-darwin|macos_.*_x86)\.|_(?:debug|noassert)/i.test(asset.name));
+        for (const asset of assets.filter((asset) => asset.name.startsWith("zstd-"))) {
+            const { platform, architecture } = getTarget(asset.name);
+            const target = `${platform}/${architecture}`;
+            if (!zstdAssets.has(target)) {
+                zstdAssets.set(target, asset);
             }
         }
-        for (const asset of assets) {
-            if (asset.name.startsWith("llvm-mlir_") &&
-                asset.name.endsWith(".tar.zst")) {
-                try {
-                    version = getVersionFromAssetName(asset.name);
-                    if (versions.has(version)) {
-                        continue;
-                    }
-                    populateManifest(manifest, asset, release, zstdInfo);
+        for (const asset of assets.filter((asset) => asset.name.startsWith("llvm-mlir_") && asset.name.endsWith(".tar.zst"))) {
+            try {
+                const version = getVersionFromAssetName(asset.name);
+                const { platform, architecture } = getTarget(asset.name);
+                const key = `${version}/${platform}/${architecture}`;
+                if (seen.has(key)) {
+                    continue;
                 }
-                catch (error) {
-                    warning(`Skipping asset ${asset.name}: ${error instanceof Error ? error.message : String(error)}`);
+                const zstd = zstdAssets.get(`${platform}/${architecture}`);
+                if (!zstd) {
+                    throw new Error(`No zstd binary found for ${asset.name}.`);
                 }
+                const noassert = release.assets.find((candidate) => candidate.name ===
+                    asset.name.replace(/\.tar\.zst$/, "_noassert.tar.zst"));
+                manifest.push({
+                    architecture,
+                    asset_name: asset.name,
+                    debug: false,
+                    download_url: asset.browser_download_url,
+                    noassert_asset_name: noassert?.name,
+                    noassert_download_url: noassert?.browser_download_url,
+                    platform,
+                    release_url: release.html_url,
+                    tag: release.tag_name,
+                    version,
+                    zstd_asset_name: zstd.name,
+                    zstd_download_url: zstd.browser_download_url,
+                });
+                seen.add(key);
             }
-        }
-        if (version) {
-            versions.add(version);
+            catch (error) {
+                warning(`Skipping asset ${asset.name}: ${error instanceof Error ? error.message : String(error)}`);
+            }
         }
     }
-    // Sort manifest entries by tag name, platform, and architecture
     manifest.sort((a, b) => {
         if (a.tag !== b.tag) {
             return b.tag.localeCompare(a.tag);
@@ -36531,12 +36429,8 @@ async function updateManifest() {
         return a.architecture.localeCompare(b.architecture);
     });
     await external_node_fs_namespaceObject.promises.writeFile(MANIFEST_FILE, JSON.stringify(manifest, null, 2) + "\n");
-    await updateReadme(versions);
-    const latestRelease = await octokit.request("GET /repos/{owner}/{repo}/releases/latest", {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-    });
-    setOutput("latest-tag", latestRelease.data.tag_name);
+    await updateReadme(new Set(manifest.map((entry) => entry.version)));
+    setOutput("latest-tag", releases[0]?.tag_name);
 }
 
 ;// CONCATENATED MODULE: ./src/update-known-versions.ts
@@ -36558,13 +36452,7 @@ async function updateManifest() {
  */
 
 
-/**
- * Main function to update the version manifest
- */
-async function run() {
-    await updateManifest();
-}
-run().catch((error) => {
+updateManifest().catch((error) => {
     setFailed(error instanceof Error ? error.message : String(error));
 });
 

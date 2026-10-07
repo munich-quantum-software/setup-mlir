@@ -19,8 +19,6 @@ import { promises as fs } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import * as core from "@actions/core";
-
 import type { ManifestEntry } from "./manifest.js";
 import { getPlatform, getArchitecture } from "./platform.js";
 
@@ -28,148 +26,62 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const MANIFEST_FILE = join(__dirname, "..", "..", "version-manifest.json");
 
-/**
- * Get the manifest entry for the specified arguments
- * @param version The requested LLVM version
- * @param platform The platform
- * @param architecture The architecture
- * @param forceRemote Whether to force loading the manifest from the remote URL
- * @returns The manifest entry
- */
-async function getManifestEntry(
+/** Resolve the SDK and decompressor together for the requested build. */
+export async function getDownloadUrls(
   version: string,
   platform: string,
   architecture: string,
-  forceRemote: boolean = false,
-): Promise<ManifestEntry> {
-  // Normalize inputs
+  assertions: boolean = true,
+): Promise<{ llvm: string; zstd: string }> {
   version = version.toLowerCase();
   platform = getPlatform(platform);
   architecture = getArchitecture(architecture);
   if (platform === "macos" && architecture !== "aarch64") {
     throw new Error("macOS requires AArch64 architecture.");
   }
-
-  const manifest = await loadManifest(forceRemote);
-
-  const entries = manifest.filter(
-    (entry) =>
-      entry.version.startsWith(version) &&
-      entry.platform === platform &&
-      entry.architecture === architecture &&
-      entry.asset_name.endsWith(".tar.zst") &&
-      !entry.asset_name.includes("_debug"),
-  );
-
-  if (entries.length === 0 && !forceRemote) {
-    core.debug(
-      `No local manifest entries found for LLVM ${version}. Retrying with remote manifest.`,
-    );
-    return await getManifestEntry(version, platform, architecture, true);
+  const matches = (entry: ManifestEntry) =>
+    (version.includes(".")
+      ? entry.version === version
+      : entry.version.startsWith(version)) &&
+    entry.platform === platform &&
+    entry.architecture === architecture;
+  let manifest: ManifestEntry[] = [];
+  try {
+    manifest = JSON.parse(
+      await fs.readFile(MANIFEST_FILE, "utf-8"),
+    ) as ManifestEntry[];
+  } catch (error) {
+    if (!(
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+    )) {
+      throw error;
+    }
   }
-
+  let entries = manifest.filter(matches);
   if (entries.length === 0) {
-    throw new Error(
-      `No ${architecture} ${platform} archive found for LLVM ${version}.`,
-    );
+    const url =
+      "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json";
+    const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch version manifest from ${url}: ${response.status} ${response.statusText}`,
+      );
+    }
+    entries = ((await response.json()) as ManifestEntry[]).filter(matches);
   }
-
   if (entries.length !== 1) {
     throw new Error(
       `Expected exactly one ${architecture} ${platform} archive for LLVM ${version}, but found ${entries.length}.`,
     );
   }
-
-  return entries[0];
-}
-
-/**
- * Load the manifest from the remote URL.
- *
- * The manifest is read from the default branch, which knows about all LLVM versions released so
- * far. This allows workflows pinned to an older ref of the action to install versions that were
- * released after that ref.
- *
- * @returns The manifest entries
- */
-async function loadManifestFromRemote(): Promise<ManifestEntry[]> {
-  const actionRepo =
-    process.env.GITHUB_ACTION_REPOSITORY ??
-    "munich-quantum-software/setup-mlir";
-  // Deliberately not `GITHUB_ACTION_REF`: that ref ships the very manifest the remote lookup is
-  // falling back from.
-  const actionRef = "main";
-  const manifestUrl = `https://raw.githubusercontent.com/${actionRepo}/${actionRef}/version-manifest.json`;
-
-  const response = await fetch(manifestUrl, {
-    redirect: "follow",
-    signal: AbortSignal.timeout(30000), // 30-second timeout
-  });
-  if (!response.ok) {
+  const entry = entries[0];
+  const llvm = assertions ? entry.download_url : entry.noassert_download_url;
+  if (!llvm || !entry.zstd_download_url) {
     throw new Error(
-      `Failed to fetch version manifest from ${manifestUrl}: ${response.status} ${response.statusText}`,
+      `LLVM ${version} for ${platform}/${architecture} with assertions=${assertions ? "ON" : "OFF"} is unavailable.`,
     );
   }
-  return (await response.json()) as ManifestEntry[];
-}
-
-/**
- * Load the manifest. The manifest is loaded from file if possible, but falls back to the remote URL if the file is not found.
- * @param forceRemote Whether to force loading the manifest from the remote URL
- * @returns The manifest entries
- */
-async function loadManifest(
-  forceRemote: boolean = false,
-): Promise<ManifestEntry[]> {
-  if (forceRemote) {
-    return await loadManifestFromRemote();
-  }
-
-  try {
-    const fileContent = await fs.readFile(MANIFEST_FILE, "utf-8");
-    return JSON.parse(fileContent) as ManifestEntry[];
-  } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      return await loadManifestFromRemote();
-    }
-    throw error;
-  }
-}
-
-/**
- * Get the download URL for the requested zstd binary
- * @param version The requested LLVM version
- * @param platform The platform
- * @param architecture The architecture
- * @returns The download URL and the asset name
- */
-export async function getZstdUrl(
-  version: string,
-  platform: string,
-  architecture: string,
-): Promise<{ url: string; name: string }> {
-  const entry = await getManifestEntry(version, platform, architecture);
-  return {
-    url: entry.zstd_download_url,
-    name: entry.zstd_asset_name,
-  };
-}
-
-/**
- * Get the download URL for the requested MLIR/LLVM binary
- * @param version The requested LLVM version
- * @param platform The platform
- * @param architecture The architecture
- * @returns The download URL and the asset name
- */
-export async function getMLIRUrl(
-  version: string,
-  platform: string,
-  architecture: string,
-): Promise<{ url: string; name: string }> {
-  const entry = await getManifestEntry(version, platform, architecture);
-  return {
-    url: entry.download_url,
-    name: entry.asset_name,
-  };
+  return { llvm, zstd: entry.zstd_download_url };
 }

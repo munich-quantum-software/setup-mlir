@@ -13,151 +13,62 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Usage: setup-mlir.ps1 -llvm_version <LLVM version> -install_prefix <installation directory>
+#Requires -Version 7.4
 
 param(
     [Parameter(Mandatory=$true)]
+    [ValidatePattern('^(\d+\.\d+\.\d+|[0-9a-fA-F]{7,40})$')]
     [string]$llvm_version,
     [Parameter(Mandatory=$true)]
-    [string]$install_prefix
+    [string]$install_prefix,
+    [switch]$no_assertions
 )
 
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $true
+Get-Command tar -ErrorAction Stop | Out-Null
 
-# Check if tar is installed
-if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
-    Write-Error "tar not found. Please install tar (e.g., via Chocolatey: choco install tar)."
-    exit 1
-}
-
-# Create installation directory if it does not exist
-New-Item -ItemType Directory -Path $install_prefix -Force | Out-Null
-
-# Turn the installation directory into an absolute path
-try {
-    $install_prefix = [System.IO.Path]::GetFullPath($install_prefix)
-} catch {
-    Write-Error "Failed to resolve installation directory: $_"
-    exit 1
-}
-
-# Change to installation directory
-pushd $install_prefix > $null
-
-# Detect architecture
 $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
-
-# Helper function to download asset from a URL
-function Download-Asset {
-    param(
-        [string]$Url,
-        [string]$OutputFile
-    )
-
-    if (-not $Url) {
-        return $false
-    }
-
-    Write-Host "Downloading from $Url ..."
-    try {
-        Invoke-WebRequest -Uri $Url -OutFile $OutputFile
-        return $true
-    } catch {
-        Write-Error "Download failed: $_"
-        exit 1
-    }
-}
-
-$manifest_url = "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json"
-try {
-    $manifest_json = Invoke-RestMethod -Uri $manifest_url
-} catch {
-    Write-Error "Failed to fetch version manifest from ${manifest_url}: $_"
-    exit 1
-}
-
 switch ($arch) {
-    x64 {
-        $architecture = "x86"
-    }
-    arm64 {
-        $architecture = "aarch64"
-    }
-    default {
-        Write-Error "Unsupported architecture: $arch"
-        exit 1
-    }
+    x64 { $architecture = "x86" }
+    arm64 { $architecture = "aarch64" }
+    default { throw "Unsupported architecture: $arch" }
 }
-$platform = "windows"
 
-$matching_entries = @($manifest_json | Where-Object {
-    $_.platform -eq $platform -and
-    $_.architecture -eq $architecture -and
-    $_.asset_name -like "*.tar.zst" -and
-    $_.asset_name -notlike "*_debug*" -and
-    $_.version -like "${llvm_version}*"
+if ($PSScriptRoot -and (Test-Path "$PSScriptRoot/../version-manifest.json" -PathType Leaf)) {
+    $manifest = Get-Content "$PSScriptRoot/../version-manifest.json" -Raw | ConvertFrom-Json
+} else {
+    $manifest = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json"
+}
+$entries = @($manifest | Where-Object {
+    $_.platform -eq "windows" -and $_.architecture -eq $architecture -and
+    $(if ($llvm_version.Contains('.')) { $_.version -eq $llvm_version } else { $_.version -like "$llvm_version*" })
 })
-
-if ($matching_entries.Count -ne 1) {
-    Write-Error "Expected one release with LLVM $llvm_version for Windows/${arch}, but found $($matching_entries.Count)."
-    exit 1
+if ($entries.Count -ne 1) {
+    throw "Expected one release with LLVM $llvm_version for Windows/$arch, but found $($entries.Count)."
+}
+$llvm_url = if ($no_assertions) { $entries[0].noassert_download_url } else { $entries[0].download_url }
+if (-not $llvm_url -or -not $entries[0].zstd_download_url) {
+    $assertions = if ($no_assertions) { "OFF" } else { "ON" }
+    throw "LLVM $llvm_version for Windows/$arch with assertions=$assertions is unavailable."
 }
 
-# Download zstd binary
-Write-Host "Downloading zstd binary..."
-if (-not (Download-Asset -Url $matching_entries[0].zstd_download_url -OutputFile "zstd.tar.gz")) {
-    Write-Error "Download of zstd binary failed."
-    exit 1
-}
-
-# Extract zstd binary
-Write-Host "Extracting zstd binary..."
+New-Item -ItemType Directory -Path $install_prefix -Force | Out-Null
+$install_prefix = (Resolve-Path $install_prefix).Path
+Push-Location $install_prefix
 try {
-    New-Item -ItemType Directory -Path "zstd_temp" -Force | Out-Null
-    tar -xzf "zstd.tar.gz" -C "zstd_temp"
-    if ($LASTEXITCODE -ne 0) { throw "tar exited with code $LASTEXITCODE" }
-    Remove-Item "zstd.tar.gz" -Force
-} catch {
-    Write-Error "Failed to extract zstd binary: $_"
-    exit 1
+    Invoke-WebRequest -Uri $entries[0].zstd_download_url -OutFile zstd.tar.gz
+    New-Item -ItemType Directory -Path zstd_temp -Force | Out-Null
+    tar -xzf zstd.tar.gz -C zstd_temp
+
+    Invoke-WebRequest -Uri $llvm_url -OutFile llvm.tar.zst
+    & ./zstd_temp/zstd.exe -d llvm.tar.zst --long=31 --stdout | tar -x
+    Remove-Item zstd.tar.gz, llvm.tar.zst -Force
+    Remove-Item zstd_temp -Recurse -Force
+} finally {
+    Pop-Location
 }
 
-# Verify extraction directory exists
-if (-not (Test-Path "zstd_temp")) {
-    Write-Error "zstd extraction failed: zstd_temp directory not found"
-    exit 1
-}
-
-# zstd archive contains a single executable file
-$zstdBinPath = Join-Path "zstd_temp" "zstd.exe"
-if (-not (Test-Path $zstdBinPath)) {
-    Write-Error "zstd.exe not found at $zstdBinPath (extraction succeeded but file is missing)"
-    exit 1
-}
-
-# Download LLVM distribution
-Write-Host "Downloading LLVM distribution..."
-if (-not (Download-Asset -Url $matching_entries[0].download_url -OutputFile "llvm.tar.zst")) {
-    Write-Error "Download of LLVM distribution failed."
-    exit 1
-}
-
-# Decompress and extract LLVM distribution
-Write-Host "Extracting LLVM distribution..."
-& $zstdBinPath -d "llvm.tar.zst" --long=31 --stdout | tar -x -f - -C "$install_prefix"
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to extract LLVM distribution."
-    exit 1
-}
-
-# Clean up
-Remove-Item "llvm.tar.zst" -Force
-Remove-Item "zstd_temp" -Recurse -Force
-
-# Return to original directory
-popd > $null
-
-# Output instructions
 Write-Host "MLIR toolchain has been installed."
 Write-Host "Run the following commands to set up your environment:"
 Write-Host "  `$env:LLVM_DIR = '$install_prefix\lib\cmake\llvm'"

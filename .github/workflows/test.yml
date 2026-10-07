@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   test-installer-scripts:
-    name: Test installer script for version ${{ matrix.version }} on ${{ matrix.os }}
+    name: Installer ${{ matrix.version }} (assertions=${{ matrix.assertions }}) on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -30,7 +30,18 @@ jobs:
             windows-2025,
             windows-11-arm,
           ]
-        version: ["21.1.8", "22.1.0", "f8cb798"]
+        version: ["23.1.2"]
+        assertions: ["ON", "OFF"]
+        include:
+          - os: ubuntu-26.04
+            version: "21.1.8"
+            assertions: "ON"
+          - os: windows-2025
+            version: "22.1.8"
+            assertions: "ON"
+          - os: macos-26
+            version: "f8cb798"
+            assertions: "ON"
 
     steps:
       - name: Checkout repository
@@ -42,35 +53,16 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          installation/setup-mlir.sh -v ${{ matrix.version }} -p /tmp/mlir-install
-
-          # Verify installation
-          if [ ! -d "/tmp/mlir-install/bin" ]; then
-            echo "Error: bin directory not found"
-            exit 1
+          installer=installation/setup-mlir.sh
+          if [[ '${{ matrix.version }}' != 23.1.2 ]]; then
+            cp "$installer" /tmp/setup-mlir.sh
+            installer=/tmp/setup-mlir.sh
           fi
+          bash "$installer" -v ${{ matrix.version }} -p /tmp/mlir-install -a ${{ matrix.assertions }}
+          grep -F "set(LLVM_ENABLE_ASSERTIONS ${{ matrix.assertions }})" /tmp/mlir-install/lib/cmake/llvm/LLVMConfig.cmake
 
-          if [ ! -d "/tmp/mlir-install/lib/cmake/llvm" ]; then
-            echo "Error: LLVM cmake directory not found"
-            exit 1
-          fi
-
-          if [ ! -d "/tmp/mlir-install/lib/cmake/mlir" ]; then
-            echo "Error: MLIR cmake directory not found"
-            exit 1
-          fi
-
-          # Verify binaries exist
-          export PATH="/tmp/mlir-install/bin:$PATH"
-          if ! command -v mlir-opt &> /dev/null; then
-            echo "Error: mlir-opt not found in PATH"
-            exit 1
-          fi
-
-          # Test that mlir-opt runs
-          mlir-opt --version
-
-          echo "Installation test passed!"
+          test -f /tmp/mlir-install/lib/cmake/mlir/MLIRConfig.cmake
+          /tmp/mlir-install/bin/mlir-opt --version
 
       - name: Test installer script (PowerShell)
         if: runner.os == 'Windows'
@@ -78,35 +70,20 @@ jobs:
         run: |
           $install_dir = Join-Path $env:TEMP "mlir-install"
 
-          & installation/setup-mlir.ps1 -llvm_version ${{ matrix.version }} -install_prefix $install_dir
-
-          # Verify installation
-          if (-not (Test-Path "$install_dir\bin")) {
-            Write-Error "bin directory not found"
-            exit 1
+          $installer = "installation/setup-mlir.ps1"
+          if ('${{ matrix.version }}' -ne '23.1.2') {
+            $installer = Join-Path $env:TEMP "setup-mlir.ps1"
+            Copy-Item installation/setup-mlir.ps1 $installer
+          }
+          & $installer -llvm_version ${{ matrix.version }} -install_prefix $install_dir -no_assertions:('${{ matrix.assertions }}' -eq 'OFF')
+          if (-not (Select-String -Path "$install_dir/lib/cmake/llvm/LLVMConfig.cmake" -SimpleMatch "set(LLVM_ENABLE_ASSERTIONS ${{ matrix.assertions }})")) {
+            throw "Installed LLVM assertion mode does not match"
           }
 
-          if (-not (Test-Path "$install_dir\lib\cmake\llvm")) {
-            Write-Error "LLVM cmake directory not found"
-            exit 1
+          if (-not (Test-Path "$install_dir/lib/cmake/mlir/MLIRConfig.cmake")) {
+            throw "MLIR CMake configuration not found"
           }
-
-          if (-not (Test-Path "$install_dir\lib\cmake\mlir")) {
-            Write-Error "MLIR cmake directory not found"
-            exit 1
-          }
-
-          # Verify binaries exist
-          $env:Path = "$install_dir\bin;$env:Path"
-          if (-not (Get-Command mlir-opt -ErrorAction SilentlyContinue)) {
-            Write-Error "mlir-opt not found in PATH"
-            exit 1
-          }
-
-          # Test that mlir-opt runs
-          mlir-opt --version
-
-          Write-Host "Installation test passed!"
+          & "$install_dir/bin/mlir-opt.exe" --version
 
   integration-tests:
     name: Integration tests with coverage on ${{ matrix.os }}

@@ -18,13 +18,6 @@
 import * as core from "@actions/core";
 import { updateManifest } from "./utils/manifest.js";
 
-/**
- * Main function to update the version manifest
- */
-async function run(): Promise<void> {
-  await updateManifest();
-}
-
-run().catch((error) => {
+updateManifest().catch((error) => {
   core.setFailed(error instanceof Error ? error.message : String(error));
 });

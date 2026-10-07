@@ -16,187 +16,151 @@
  */
 
 import {
-  describe,
-  it,
-  expect,
-  beforeEach,
   afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
   jest,
 } from "@jest/globals";
-import * as path from "node:path";
-import * as os from "node:os";
-import process from "node:process";
+import { promises as fs } from "node:fs";
 import type { ManifestEntry } from "../src/utils/manifest.js";
 
-describe("Update Known Versions", () => {
-  const testToken = process.env.GITHUB_TOKEN || "";
-  let tempDir: string;
-  let tempManifestPath: string;
-  let actualFsModule: any;
-  let actualFsCore: any;
-  let updateManifest: () => Promise<void>;
+const request =
+  jest.fn<(route: string, options: unknown) => Promise<{ data: unknown[] }>>();
+const setOutput = jest.fn();
+jest.unstable_mockModule("../src/utils/create-octokit.js", () => ({
+  createOctokit: () => ({ request }),
+}));
+jest.unstable_mockModule("@actions/core", () => ({
+  warning: jest.fn(),
+  setOutput,
+}));
+let updateManifest: typeof import("../src/utils/manifest.js").updateManifest;
+beforeAll(
+  async () => ({ updateManifest } = await import("../src/utils/manifest.js")),
+);
+afterEach(() => jest.restoreAllMocks());
 
-  beforeEach(async () => {
-    // Create temporary directory
-    const { mkdtemp } = await import("node:fs/promises");
-    tempDir = await mkdtemp(path.join(os.tmpdir(), "manifest-test-"));
-    tempManifestPath = path.join(tempDir, "test-version-manifest.json");
+const targets = [
+  ["linux", "x86", "x86_64-unknown-linux-gnu", "linux_x86_64_X86"],
+  ["linux", "aarch64", "aarch64-unknown-linux-gnu", "linux_aarch64_AArch64"],
+  ["macos", "aarch64", "arm64-apple-darwin", "macos_arm64_AArch64"],
+  ["windows", "x86", "x86_64-pc-windows-msvc", "windows_X64_X86"],
+  ["windows", "aarch64", "aarch64-pc-windows-msvc", "windows_Arm64_AArch64"],
+];
+const asset = (name: string) => ({
+  name,
+  browser_download_url: `https://example.com/${name}`,
+});
+const modern = targets.map(
+  ([, , target]) => `llvm-mlir_llvmorg-23.1.2_${target}.tar.zst`,
+);
+const legacy = targets.map(
+  ([, , , target]) => `llvm-mlir_llvmorg-21.1.8_${target}.tar.zst`,
+);
+const hash = "f8cb7987c64dcffb72414a40560055cb717dbf74";
+const releases = [
+  {
+    tag_name: "2026.01.08",
+    created_at: "2026-01-08T00:00:00Z",
+    html_url: "https://example.com/old",
+    assets: [
+      ...targets.map(([, , , target]) => `zstd-1.5.7_${target}.tar.gz`),
+      ...legacy,
+      modern[0],
+    ].map(asset),
+  },
+  {
+    tag_name: "2026.10.06",
+    created_at: "2026-10-06T00:00:00Z",
+    html_url: "https://example.com/current",
+    assets: [
+      ...targets.map(([, , target]) => `zstd-1.5.7_${target}.tar.gz`),
+      ...modern,
+      ...modern.map((name) => name.replace(".tar.zst", "_noassert.tar.zst")),
+      "llvm-mlir_llvmorg-23.1.2_x86_64-apple-darwin.tar.zst",
+      "llvm-mlir_llvmorg-23.1.2_x86_64-pc-windows-msvc_debug.tar.zst.part1",
+    ].map(asset),
+  },
+  {
+    tag_name: "2025.12.23",
+    created_at: "2025-12-23T00:00:00Z",
+    html_url: "https://example.com/commit",
+    assets: [asset(`llvm-mlir_${hash}_linux_x86_64_X86.tar.zst`)],
+  },
+];
+const readme =
+  "before\n<!--- BEGIN: AUTO-GENERATED LIST. DO NOT EDIT. -->\nstale\n<!--- END: AUTO-GENERATED LIST. DO NOT EDIT. -->\nafter\n";
 
-    // Get the actual fs module
-    actualFsModule = await import("node:fs/promises");
-    actualFsCore = await import("node:fs");
-
-    // Redirect writeFile to temporary files
-    jest.unstable_mockModule("node:fs", () => ({
-      ...actualFsCore,
-      promises: {
-        ...actualFsCore.promises,
-        writeFile: jest.fn(async (file: any, data: any, options?: any) => {
-          const filePath = file.toString();
-          if (filePath.endsWith("version-manifest.json")) {
-            return actualFsModule.writeFile(tempManifestPath, data, options);
-          }
-          if (filePath.endsWith("README.md")) {
-            const tempReadmePath = path.join(tempDir, "README.md");
-            return actualFsModule.writeFile(tempReadmePath, data, options);
-          }
-          return actualFsModule.writeFile(file, data, options);
-        }),
-      },
-    }));
-
-    // Import manifest module after mocking
-    const manifestModule = await import("../src/utils/manifest.js");
-    updateManifest = manifestModule.updateManifest;
-  });
-
-  afterEach(async () => {
-    // Clean up
-    jest.resetModules();
-    if (tempDir) {
-      await actualFsModule.rm(tempDir, { recursive: true, force: true });
-    }
-  });
-
-  it("should generate a valid manifest with entries", async () => {
-    if (!testToken) {
-      console.warn("Skipping test: GITHUB_TOKEN is not set.");
-      return;
-    }
-
-    // Call updateManifest
+describe("Manifest generation", () => {
+  it("records companions without adding rows visible to pinned actions", async () => {
+    request.mockResolvedValue({ data: releases });
+    jest.spyOn(fs, "readFile").mockResolvedValue(readme);
+    const write = jest.spyOn(fs, "writeFile").mockResolvedValue(undefined);
     await updateManifest();
-
-    // Parse the generated manifest
-    const fileContent = await actualFsModule.readFile(
-      tempManifestPath,
-      "utf-8",
+    const manifest: ManifestEntry[] = JSON.parse(
+      String(
+        write.mock.calls.find(([file]) =>
+          String(file).endsWith("version-manifest.json"),
+        )![1],
+      ),
     );
-    const manifest: ManifestEntry[] = JSON.parse(fileContent);
-
-    // Verify manifest is an array with entries
-    expect(Array.isArray(manifest)).toBe(true);
-    expect(manifest.length).toBeGreaterThan(0);
-
-    // Verify entries are valid
-    for (const entry of manifest) {
-      // Verify all required fields exist
-      expect(entry.architecture).toBeTruthy();
-      expect(entry.asset_name).toBeTruthy();
-      expect(entry.download_url).toBeTruthy();
-      expect(entry.platform).toBeTruthy();
-      expect(entry.release_url).toBeTruthy();
-      expect(entry.tag).toBeTruthy();
-      expect(entry.version).toBeTruthy();
-      expect(entry.zstd_asset_name).toBeTruthy();
-      expect(entry.zstd_download_url).toBeTruthy();
-
-      // Verify version is either semantic version or commit hash
-      const isSemanticVersion = /^\d+\.\d+\.\d+$/.test(entry.version);
-      const isCommitHash = /^[0-9a-f]{7,40}$/i.test(entry.version);
-      expect(isSemanticVersion || isCommitHash).toBe(true);
-
-      // Verify tag is a calendar version (YYYY.MM.DD format)
-      const isCalendarVersion = /^\d{4}\.\d{2}\.\d{2}$/.test(entry.tag);
-      expect(isCalendarVersion).toBe(true);
-
-      // Verify platform is valid
-      expect(["linux", "macos", "windows"]).toContain(entry.platform);
-
-      // Verify architecture is valid
-      expect(
-        entry.platform === "macos" ? ["aarch64"] : ["x86", "aarch64"],
-      ).toContain(entry.architecture);
-
-      // Verify download URL is from the correct repository
-      expect(entry.download_url).toContain(
-        "github.com/munich-quantum-software/portable-mlir-toolchain/releases/download",
+    expect(manifest).toHaveLength(11);
+    for (const [i, [platform, architecture, target]] of targets.entries()) {
+      const current = manifest.filter(
+        (entry) =>
+          entry.version === "23.1.2" &&
+          entry.platform === platform &&
+          entry.architecture === architecture &&
+          entry.debug === false,
       );
-
-      // Verify release URL is from the correct repository
-      expect(entry.release_url).toContain(
-        "github.com/munich-quantum-software/portable-mlir-toolchain/releases/tag",
-      );
-
-      // Verify asset name matches expected pattern
-      expect(entry.asset_name).toMatch(/^llvm-mlir_.*\.tar\.zst$/);
-
-      // Verify zstd asset name matches expected pattern
-      expect(entry.zstd_asset_name).toMatch(/^zstd-.*\.(zip|tar\.gz)/);
-
-      // Verify zstd download URL is from the correct repository
-      expect(entry.zstd_download_url).toContain(
-        "github.com/munich-quantum-software/portable-mlir-toolchain/releases/download",
-      );
+      expect(current).toEqual([
+        {
+          architecture,
+          platform,
+          version: "23.1.2",
+          debug: false,
+          tag: "2026.10.06",
+          release_url: "https://example.com/current",
+          asset_name: modern[i],
+          download_url: asset(modern[i]).browser_download_url,
+          noassert_asset_name: modern[i].replace(
+            ".tar.zst",
+            "_noassert.tar.zst",
+          ),
+          noassert_download_url: asset(
+            modern[i].replace(".tar.zst", "_noassert.tar.zst"),
+          ).browser_download_url,
+          zstd_asset_name: `zstd-1.5.7_${target}.tar.gz`,
+          zstd_download_url: asset(`zstd-1.5.7_${target}.tar.gz`)
+            .browser_download_url,
+        },
+      ]);
+      const old = manifest.find(
+        (entry) =>
+          entry.version === "21.1.8" &&
+          entry.platform === platform &&
+          entry.architecture === architecture,
+      )!;
+      expect(old.asset_name).toBe(legacy[i]);
+      expect(old).not.toHaveProperty("noassert_asset_name");
+      expect(old).not.toHaveProperty("noassert_download_url");
     }
-  }, 600000); // 10-minute timeout
-
-  it("should generate manifest entries for both Windows architectures", async () => {
-    const names = ["x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc"].map(
-      (target) => `llvm-mlir_llvmorg-22.1.0_${target}.tar.zst`,
+    expect(manifest.some((entry) => entry.version === hash)).toBe(true);
+    const updatedReadme = String(
+      write.mock.calls.find(([file]) => String(file).endsWith("README.md"))![1],
     );
-    const release = {
-      tag_name: "2026.03.24",
-      created_at: "2026-03-24T00:00:00Z",
-      html_url: "https://example.com/release",
-      assets: [
-        "zstd-1.5.7_x86_64-pc-windows-msvc.tar.gz",
-        "zstd-1.5.7_aarch64-pc-windows-msvc.tar.gz",
-        ...names,
-      ].map((name) => ({
-        name,
-        browser_download_url: `https://example.com/${name}`,
-      })),
-    };
-    jest.resetModules();
-    jest.unstable_mockModule("../src/utils/create-octokit.js", () => ({
-      createOctokit: () => ({
-        request: async (route: string) => ({
-          data: route.endsWith("/latest") ? release : [release],
-        }),
-      }),
-    }));
-
-    try {
-      const { updateManifest: updateOfflineManifest } =
-        await import("../src/utils/manifest.js");
-      await updateOfflineManifest();
-      const manifest: ManifestEntry[] = JSON.parse(
-        await actualFsModule.readFile(tempManifestPath, "utf-8"),
-      );
-      expect(manifest.map((entry) => entry.asset_name).sort()).toEqual(
-        [...names].sort(),
-      );
-      // Pinned actions use this predicate to select Release archives.
-      expect(manifest.filter((entry) => entry.debug === false)).toEqual(
-        manifest,
-      );
-      for (const entry of manifest) {
-        expect(entry.platform).toBe("windows");
-        expect(["x86", "aarch64"]).toContain(entry.architecture);
-      }
-    } finally {
-      jest.unstable_unmockModule("../src/utils/create-octokit.js");
-    }
+    expect(updatedReadme).toContain("before\n");
+    expect(updatedReadme).toContain("\nafter\n");
+    expect(updatedReadme).not.toContain("stale");
+    expect(updatedReadme).toContain("- `21.1.8`\n- `23.1.2`");
+    expect(updatedReadme).toContain(`- \`${hash}\``);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledWith(
+      "GET /repos/{owner}/{repo}/releases",
+      expect.objectContaining({ page: 1, per_page: 100 }),
+    );
+    expect(setOutput).toHaveBeenCalledWith("latest-tag", "2026.10.06");
   });
 });

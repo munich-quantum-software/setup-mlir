@@ -35202,116 +35202,51 @@ function determineArchitecture() {
 
 
 
-
 const download_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
 const download_dirname = (0,external_node_path_namespaceObject.dirname)(download_filename);
 const MANIFEST_FILE = __nccwpck_require__.ab + "version-manifest.json";
-/**
- * Get the manifest entry for the specified arguments
- * @param version The requested LLVM version
- * @param platform The platform
- * @param architecture The architecture
- * @param forceRemote Whether to force loading the manifest from the remote URL
- * @returns The manifest entry
- */
-async function getManifestEntry(version, platform, architecture, forceRemote = false) {
-    // Normalize inputs
+/** Resolve the SDK and decompressor together for the requested build. */
+async function getDownloadUrls(version, platform, architecture, assertions = true) {
     version = version.toLowerCase();
     platform = getPlatform(platform);
     architecture = getArchitecture(architecture);
     if (platform === "macos" && architecture !== "aarch64") {
         throw new Error("macOS requires AArch64 architecture.");
     }
-    const manifest = await loadManifest(forceRemote);
-    const entries = manifest.filter((entry) => entry.version.startsWith(version) &&
+    const matches = (entry) => (version.includes(".")
+        ? entry.version === version
+        : entry.version.startsWith(version)) &&
         entry.platform === platform &&
-        entry.architecture === architecture &&
-        entry.asset_name.endsWith(".tar.zst") &&
-        !entry.asset_name.includes("_debug"));
-    if (entries.length === 0 && !forceRemote) {
-        core_debug(`No local manifest entries found for LLVM ${version}. Retrying with remote manifest.`);
-        return await getManifestEntry(version, platform, architecture, true);
+        entry.architecture === architecture;
+    let manifest = [];
+    try {
+        manifest = JSON.parse(await external_node_fs_namespaceObject.promises.readFile(__nccwpck_require__.ab + "version-manifest.json", "utf-8"));
     }
+    catch (error) {
+        if (!(error instanceof Error &&
+            "code" in error &&
+            error.code === "ENOENT")) {
+            throw error;
+        }
+    }
+    let entries = manifest.filter(matches);
     if (entries.length === 0) {
-        throw new Error(`No ${architecture} ${platform} archive found for LLVM ${version}.`);
+        const url = "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json";
+        const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch version manifest from ${url}: ${response.status} ${response.statusText}`);
+        }
+        entries = (await response.json()).filter(matches);
     }
     if (entries.length !== 1) {
         throw new Error(`Expected exactly one ${architecture} ${platform} archive for LLVM ${version}, but found ${entries.length}.`);
     }
-    return entries[0];
-}
-/**
- * Load the manifest from the remote URL.
- *
- * The manifest is read from the default branch, which knows about all LLVM versions released so
- * far. This allows workflows pinned to an older ref of the action to install versions that were
- * released after that ref.
- *
- * @returns The manifest entries
- */
-async function loadManifestFromRemote() {
-    const actionRepo = process.env.GITHUB_ACTION_REPOSITORY ??
-        "munich-quantum-software/setup-mlir";
-    // Deliberately not `GITHUB_ACTION_REF`: that ref ships the very manifest the remote lookup is
-    // falling back from.
-    const actionRef = "main";
-    const manifestUrl = `https://raw.githubusercontent.com/${actionRepo}/${actionRef}/version-manifest.json`;
-    const response = await fetch(manifestUrl, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(30000), // 30-second timeout
-    });
-    if (!response.ok) {
-        throw new Error(`Failed to fetch version manifest from ${manifestUrl}: ${response.status} ${response.statusText}`);
+    const entry = entries[0];
+    const llvm = assertions ? entry.download_url : entry.noassert_download_url;
+    if (!llvm || !entry.zstd_download_url) {
+        throw new Error(`LLVM ${version} for ${platform}/${architecture} with assertions=${assertions ? "ON" : "OFF"} is unavailable.`);
     }
-    return (await response.json());
-}
-/**
- * Load the manifest. The manifest is loaded from file if possible, but falls back to the remote URL if the file is not found.
- * @param forceRemote Whether to force loading the manifest from the remote URL
- * @returns The manifest entries
- */
-async function loadManifest(forceRemote = false) {
-    if (forceRemote) {
-        return await loadManifestFromRemote();
-    }
-    try {
-        const fileContent = await external_node_fs_namespaceObject.promises.readFile(__nccwpck_require__.ab + "version-manifest.json", "utf-8");
-        return JSON.parse(fileContent);
-    }
-    catch (error) {
-        if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-            return await loadManifestFromRemote();
-        }
-        throw error;
-    }
-}
-/**
- * Get the download URL for the requested zstd binary
- * @param version The requested LLVM version
- * @param platform The platform
- * @param architecture The architecture
- * @returns The download URL and the asset name
- */
-async function getZstdUrl(version, platform, architecture) {
-    const entry = await getManifestEntry(version, platform, architecture);
-    return {
-        url: entry.zstd_download_url,
-        name: entry.zstd_asset_name,
-    };
-}
-/**
- * Get the download URL for the requested MLIR/LLVM binary
- * @param version The requested LLVM version
- * @param platform The platform
- * @param architecture The architecture
- * @returns The download URL and the asset name
- */
-async function getMLIRUrl(version, platform, architecture) {
-    const entry = await getManifestEntry(version, platform, architecture);
-    return {
-        url: entry.download_url,
-        name: entry.asset_name,
-    };
+    return { llvm, zstd: entry.zstd_download_url };
 }
 
 ;// CONCATENATED MODULE: external "node:process"
@@ -35322,6 +35257,10 @@ const external_node_os_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import
 var external_node_os_default = /*#__PURE__*/__nccwpck_require__.n(external_node_os_namespaceObject);
 ;// CONCATENATED MODULE: external "node:child_process"
 const external_node_child_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:child_process");
+// EXTERNAL MODULE: external "node:events"
+var external_node_events_ = __nccwpck_require__(8474);
+;// CONCATENATED MODULE: external "node:stream/promises"
+const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:stream/promises");
 ;// CONCATENATED MODULE: ./src/index.ts
 /*
  * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
@@ -35349,96 +35288,81 @@ const external_node_child_process_namespaceObject = __WEBPACK_EXTERNAL_createReq
 
 
 
-/**
- * Set up MLIR toolchain
- * @returns {Promise<void>}
- */
+
+
+/** Install the selected SDK into the Actions tool cache and export its paths. */
 async function run() {
     const llvm_version = getInput("llvm-version", { required: true });
     const platform = getInput("platform", { required: true });
     const architecture = getInput("architecture", { required: true });
-    // Validate LLVM version (either X.Y.Z format or commit hash)
+    const assertions = getBooleanInput("assertions");
+    /// Validate LLVM version (either X.Y.Z format or commit hash)
     const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
     const isCommitHash = RegExp("^[0-9a-f]{7,40}$", "i").test(llvm_version);
     if (!isVersionTag && !isCommitHash) {
         throw new Error(`Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z or a commit hash (minimum 7 characters).`);
     }
-    core_debug("==> Determining download URL for zstd binary");
-    const zstdAsset = await getZstdUrl(llvm_version, platform, architecture);
-    core_debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
-    const zstdFile = await downloadTool(zstdAsset.url);
+    const urls = await getDownloadUrls(llvm_version, platform, architecture, assertions);
+    core_debug(`==> Downloading zstd binary: ${urls.zstd}`);
+    const zstdFile = await downloadTool(urls.zstd);
     core_debug("==> Extracting zstd binary");
     const zstdDir = await extractTar(zstdFile);
-    // zstd archive contains a single executable file
+    /// zstd archive contains a single executable file
     const zstdExecutableName = (external_node_process_default()).platform === "win32" ? "zstd.exe" : "zstd";
     const zstdPath = external_node_path_default().join(zstdDir, zstdExecutableName);
     if (!external_node_fs_default().existsSync(zstdPath)) {
         throw new Error(`zstd executable not found at ${zstdPath}`);
     }
-    // Make sure zstd is executable on Unix
+    /// Make sure zstd is executable on Unix
     if ((external_node_process_default()).platform !== "win32") {
         await exec_exec("chmod", ["+x", zstdPath]);
     }
-    core_debug("==> Determining download URL for LLVM distribution");
-    const asset = await getMLIRUrl(llvm_version, platform, architecture);
-    core_debug(`==> Downloading LLVM distribution: ${asset.url}`);
-    const file = await downloadTool(asset.url);
+    core_debug(`==> Downloading LLVM distribution: ${urls.llvm}`);
+    const file = await downloadTool(urls.llvm);
     core_debug("==> Decompressing and extracting LLVM distribution");
     const extractDir = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || external_node_os_default().tmpdir(), `mlir-extract-${Date.now()}`);
     await mkdirP(extractDir);
-    // Extract the archive to a specific directory
+    /// Extract the archive to a specific directory
     const extractedDir = external_node_path_default().join(extractDir, "extracted");
     await mkdirP(extractedDir);
     let cachedPath;
     try {
-        // Pipe zstd decompression directly to tar extraction
-        // This avoids creating an intermediate tar file on disk
-        //
-        // Note on process ordering: tar's successful close is treated as the
-        // definitive success signal. If tar closes stdin early (satisfied with
-        // input), zstd may receive SIGPIPE and exit non-zero, which is acceptable.
-        // In practice, both processes typically complete successfully.
-        await new Promise((resolve, reject) => {
-            const zstd = (0,external_node_child_process_namespaceObject.spawn)(zstdPath, ["-d", file, "--long=31", "--stdout"]);
-            const tar = (0,external_node_child_process_namespaceObject.spawn)("tar", ["-x", "-f", "-", "-C", extractedDir]);
-            // Pipe zstd stdout to tar stdin
-            zstd.stdout.pipe(tar.stdin);
-            // Handle errors
-            zstd.on("error", (err) => reject(new Error(`zstd failed: ${err.message}`)));
-            tar.on("error", (err) => reject(new Error(`tar failed: ${err.message}`)));
-            // Handle process exit
-            tar.on("close", (code) => {
-                if (code !== 0) {
-                    reject(new Error(`tar exited with code ${code}`));
-                }
-                else {
-                    resolve();
-                }
-            });
-            zstd.on("close", (code) => {
-                if (code !== 0) {
-                    reject(new Error(`zstd exited with code ${code}`));
-                }
-            });
+        /// Stream decompression to tar without an intermediate archive.
+        const zstd = (0,external_node_child_process_namespaceObject.spawn)(zstdPath, ["-d", file, "--long=31", "--stdout"], {
+            stdio: ["ignore", "pipe", "inherit"],
         });
-        // Find the actual LLVM directory (might be nested)
+        const tar = (0,external_node_child_process_namespaceObject.spawn)("tar", ["-x", "-f", "-", "-C", extractedDir], {
+            stdio: ["pipe", "ignore", "inherit"],
+        });
+        const exits = [zstd, tar].map(async (child) => {
+            const [code] = await (0,external_node_events_.once)(child, "close");
+            if (code !== 0) {
+                throw new Error(`${child.spawnfile} exited with code ${code}`);
+            }
+        });
+        try {
+            await Promise.all([(0,promises_namespaceObject.pipeline)(zstd.stdout, tar.stdin), ...exits]);
+        }
+        finally {
+            zstd.kill();
+            tar.kill();
+            await Promise.allSettled(exits);
+        }
+        /// Find the actual LLVM directory (might be nested)
         const entries = external_node_fs_default().readdirSync(extractedDir);
         const dir = entries.length === 1 &&
             external_node_fs_default().statSync(external_node_path_default().join(extractedDir, entries[0])).isDirectory()
             ? external_node_path_default().join(extractedDir, entries[0])
             : extractedDir;
         core_debug("==> Adding MLIR toolchain to tool cache");
-        cachedPath = await cacheDir(dir, "mlir-toolchain", llvm_version);
+        cachedPath = await cacheDir(dir, assertions ? "mlir-toolchain" : "mlir-toolchain-noassert", llvm_version);
     }
     finally {
-        // Clean up temp directories
+        /// Clean up temp directories
         await rmRF(extractDir);
         await rmRF(zstdDir);
-        // Clean up archive file
-        try {
-            external_node_fs_default().unlinkSync(file);
-        }
-        catch { }
+        await rmRF(zstdFile);
+        await rmRF(file);
     }
     core_debug("==> Adding MLIR toolchain to PATH");
     addPath(external_node_path_default().join(cachedPath, "bin"));
@@ -35447,8 +35371,6 @@ async function run() {
     core_debug("==> Exporting MLIR_DIR");
     exportVariable("MLIR_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "mlir"));
 }
-// Run if this module is executed directly (not during tests)
-// Note: In production, this is bundled by ncc, so this check doesn't affect the action
 if ((external_node_process_default()).env.NODE_ENV !== "test") {
     (async () => {
         try {
