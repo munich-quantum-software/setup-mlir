@@ -62,32 +62,27 @@ defines `$LLVM_DIR` and `$MLIR_DIR`.
 
 If you want to use the pre-built MLIR installations locally, we also provide
 installation scripts. The scripts require the LLVM version or commit hash (e.g.,
-`22.1.0` or `f8cb798`) and the desired installation directory to be passed. The
+`22.1.8` or `f8cb798`) and the desired installation directory to be passed. The
 scripts automatically download and use a platform-specific `zstd` binary for
 decompression, so only `tar` needs to be installed on the host system.
 
 When run from a repository checkout or source archive, the installers use its
-`version-manifest.json`. PR tests therefore use the manifest from the tested
-revision automatically. Standalone or piped scripts read the manifest from
+`version-manifest.json`. Standalone or piped scripts read the manifest from
 `main`. To pin both script and manifest, download the repository's source
 archive at the desired commit and run its installer.
-
-> [!NOTE]
->
-> `tar` is included by default in Windows 10 and Windows 11. If you're using an
-> older version, you can install it, for example, via
-> [Chocolatey](https://chocolatey.org/): `choco install tar`.
 
 On Linux and macOS, use the following Bash command:
 
 ```bash
-curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -v 22.1.0 -p /path/to/installation
+curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -v 22.1.8 -p /path/to/installation
 ```
 
-On Windows, use the following PowerShell command:
+On Windows, use PowerShell 7.4 or newer, which supports the
+[binary pipeline](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_pipelines#piping-to-native-commands)
+used for extraction. `tar` is included with Windows 10 and Windows 11.
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 22.1.0 -install_prefix /path/to/installation"
+pwsh -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 22.1.8 -install_prefix /path/to/installation"
 ```
 
 ## Assertion-free release SDKs
@@ -101,14 +96,17 @@ Set `assertions: false` to select the native assertion-free SDK:
     assertions: false
 ```
 
-The standalone installers accept `-a OFF` in Bash and `-no_assertions` in
-PowerShell. Defaults retain assertions. The `_noassert.tar.zst` companion
-archive must exist in the same release; installation fails if it is unavailable.
-Tool-cache directories separate the two variants. Use headers and libraries from
-the same variant because LLVM's assertion mode affects its ABI checks.
+The installers accept `-a OFF` in Bash and `-no_assertions` in PowerShell.
+Assertions are enabled by default. Tool-cache directories separate the two
+variants. Use headers and libraries from the same variant because LLVM's
+assertion mode affects its ABI checks.
 
-The version manifest retains one default archive per platform so older pinned
-actions continue to work. Publish the SDK companions before updating the
-manifest and pinning the new action downstream. A pinned action uses its bundled
-manifest for known LLVM versions; republishing the same LLVM version requires a
-new action pin.
+Each manifest entry describes one version, platform, and architecture.
+`asset_name` and `download_url` identify the SDK with assertions;
+`noassert_asset_name` and `noassert_download_url` identify the assertion-free
+SDK when available. Installers select the requested URL directly and report an
+unavailable variant before downloading assets. The optional fields are ignored
+by older actions.
+
+The action uses its bundled manifest and checks `main` for versions absent from
+that manifest.

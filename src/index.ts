@@ -19,24 +19,23 @@ import * as core from "@actions/core";
 import * as tc from "@actions/tool-cache";
 import * as exec from "@actions/exec";
 import * as io from "@actions/io";
-import { getMLIRUrl, getZstdUrl } from "./utils/download.js";
+import { getDownloadUrls } from "./utils/download.js";
 import path from "node:path";
 import process from "node:process";
 import fs from "node:fs";
 import os from "node:os";
 import { spawn } from "node:child_process";
+import { once } from "node:events";
+import { pipeline } from "node:stream/promises";
 
-/**
- * Set up MLIR toolchain
- * @returns {Promise<void>}
- */
+/** Install the selected SDK into the Actions tool cache and export its paths. */
 export async function run(): Promise<void> {
   const llvm_version = core.getInput("llvm-version", { required: true });
   const platform = core.getInput("platform", { required: true });
   const architecture = core.getInput("architecture", { required: true });
   const assertions = core.getBooleanInput("assertions");
 
-  // Validate LLVM version (either X.Y.Z format or commit hash)
+  /// Validate LLVM version (either X.Y.Z format or commit hash)
   const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
   const isCommitHash = RegExp("^[0-9a-f]{7,40}$", "i").test(llvm_version);
   if (!isVersionTag && !isCommitHash) {
@@ -45,15 +44,19 @@ export async function run(): Promise<void> {
     );
   }
 
-  core.debug("==> Determining download URL for zstd binary");
-  const zstdAsset = await getZstdUrl(llvm_version, platform, architecture);
-  core.debug(`==> Downloading zstd binary: ${zstdAsset.url}`);
-  const zstdFile = await tc.downloadTool(zstdAsset.url);
+  const urls = await getDownloadUrls(
+    llvm_version,
+    platform,
+    architecture,
+    assertions,
+  );
+  core.debug(`==> Downloading zstd binary: ${urls.zstd}`);
+  const zstdFile = await tc.downloadTool(urls.zstd);
 
   core.debug("==> Extracting zstd binary");
   const zstdDir = await tc.extractTar(zstdFile);
 
-  // zstd archive contains a single executable file
+  /// zstd archive contains a single executable file
   const zstdExecutableName = process.platform === "win32" ? "zstd.exe" : "zstd";
   const zstdPath = path.join(zstdDir, zstdExecutableName);
 
@@ -61,20 +64,13 @@ export async function run(): Promise<void> {
     throw new Error(`zstd executable not found at ${zstdPath}`);
   }
 
-  // Make sure zstd is executable on Unix
+  /// Make sure zstd is executable on Unix
   if (process.platform !== "win32") {
     await exec.exec("chmod", ["+x", zstdPath]);
   }
 
-  core.debug("==> Determining download URL for LLVM distribution");
-  const asset = await getMLIRUrl(
-    llvm_version,
-    platform,
-    architecture,
-    assertions,
-  );
-  core.debug(`==> Downloading LLVM distribution: ${asset.url}`);
-  const file = await tc.downloadTool(asset.url);
+  core.debug(`==> Downloading LLVM distribution: ${urls.llvm}`);
+  const file = await tc.downloadTool(urls.llvm);
 
   core.debug("==> Decompressing and extracting LLVM distribution");
   const extractDir = path.join(
@@ -83,51 +79,34 @@ export async function run(): Promise<void> {
   );
   await io.mkdirP(extractDir);
 
-  // Extract the archive to a specific directory
+  /// Extract the archive to a specific directory
   const extractedDir = path.join(extractDir, "extracted");
   await io.mkdirP(extractedDir);
 
   let cachedPath: string;
   try {
-    // Pipe zstd decompression directly to tar extraction
-    // This avoids creating an intermediate tar file on disk
-    //
-    // Note on process ordering: tar's successful close is treated as the
-    // definitive success signal. If tar closes stdin early (satisfied with
-    // input), zstd may receive SIGPIPE and exit non-zero, which is acceptable.
-    // In practice, both processes typically complete successfully.
-    await new Promise<void>((resolve, reject) => {
-      const zstd = spawn(zstdPath, ["-d", file, "--long=31", "--stdout"]);
-      const tar = spawn("tar", ["-x", "-f", "-", "-C", extractedDir]);
-
-      // Pipe zstd stdout to tar stdin
-      zstd.stdout.pipe(tar.stdin);
-
-      // Handle errors
-      zstd.on("error", (err: Error) =>
-        reject(new Error(`zstd failed: ${err.message}`)),
-      );
-      tar.on("error", (err: Error) =>
-        reject(new Error(`tar failed: ${err.message}`)),
-      );
-
-      // Handle process exit
-      tar.on("close", (code: number | null) => {
-        if (code !== 0) {
-          reject(new Error(`tar exited with code ${code}`));
-        } else {
-          resolve();
-        }
-      });
-
-      zstd.on("close", (code: number | null) => {
-        if (code !== 0) {
-          reject(new Error(`zstd exited with code ${code}`));
-        }
-      });
+    /// Stream decompression to tar without an intermediate archive.
+    const zstd = spawn(zstdPath, ["-d", file, "--long=31", "--stdout"], {
+      stdio: ["ignore", "pipe", "inherit"],
     });
+    const tar = spawn("tar", ["-x", "-f", "-", "-C", extractedDir], {
+      stdio: ["pipe", "ignore", "inherit"],
+    });
+    const exits = [zstd, tar].map(async (child) => {
+      const [code] = await once(child, "close");
+      if (code !== 0) {
+        throw new Error(`${child.spawnfile} exited with code ${code}`);
+      }
+    });
+    try {
+      await Promise.all([pipeline(zstd.stdout, tar.stdin), ...exits]);
+    } finally {
+      zstd.kill();
+      tar.kill();
+      await Promise.allSettled(exits);
+    }
 
-    // Find the actual LLVM directory (might be nested)
+    /// Find the actual LLVM directory (might be nested)
     const entries = fs.readdirSync(extractedDir);
     const dir =
       entries.length === 1 &&
@@ -142,13 +121,11 @@ export async function run(): Promise<void> {
       llvm_version,
     );
   } finally {
-    // Clean up temp directories
+    /// Clean up temp directories
     await io.rmRF(extractDir);
     await io.rmRF(zstdDir);
-    // Clean up archive file
-    try {
-      fs.unlinkSync(file);
-    } catch {}
+    await io.rmRF(zstdFile);
+    await io.rmRF(file);
   }
 
   core.debug("==> Adding MLIR toolchain to PATH");
@@ -165,8 +142,6 @@ export async function run(): Promise<void> {
   );
 }
 
-// Run if this module is executed directly (not during tests)
-// Note: In production, this is bundled by ncc, so this check doesn't affect the action
 if (process.env.NODE_ENV !== "test") {
   (async () => {
     try {

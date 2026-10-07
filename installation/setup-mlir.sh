@@ -18,7 +18,6 @@
 
 set -euo pipefail
 
-# Parse arguments
 ASSERTIONS=ON
 while getopts ":v:p:a:" opt; do
   case $opt in
@@ -30,189 +29,84 @@ while getopts ":v:p:a:" opt; do
   esac
 done
 
+if [[ -z "${LLVM_VERSION:-}" || -z "${INSTALL_PREFIX:-}" ]]; then
+  echo "Usage: $0 -v <LLVM version> -p <installation directory> [-a ON|OFF]" >&2
+  exit 1
+fi
 if [[ "$ASSERTIONS" != ON && "$ASSERTIONS" != OFF ]]; then
   echo "Error: Assertions (-a) must be ON or OFF." >&2
   exit 1
 fi
-
-# Check arguments
-if [ -z "${LLVM_VERSION:-}" ]; then
-  echo "Error: LLVM version (-v) is required" >&2
-  echo "Usage: $0 -v <LLVM version> -p <installation directory> [-a ON|OFF]" >&2
-  exit 1
-fi
-if [ -z "${INSTALL_PREFIX:-}" ]; then
-  echo "Error: Installation directory (-p) is required" >&2
-  echo "Usage: $0 -v <LLVM version> -p <installation directory> [-a ON|OFF]" >&2
+LLVM_VERSION=$(printf '%s' "$LLVM_VERSION" | tr '[:upper:]' '[:lower:]')
+if [[ "$LLVM_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  VERSION_PATTERN="$LLVM_VERSION\""
+elif [[ "$LLVM_VERSION" =~ ^[0-9a-f]{7,40}$ ]]; then
+  VERSION_PATTERN="$LLVM_VERSION"
+else
+  echo "Error: Invalid LLVM version: $LLVM_VERSION. Expected X.Y.Z or a commit hash (minimum 7 characters)." >&2
   exit 1
 fi
 
-# Check if tar is installed
-if ! command -v tar >/dev/null 2>&1; then
-  echo "Error: tar not found. Please install tar." >&2
-  exit 1
-fi
-
-# Create installation directory if it does not exist
-mkdir -p "$INSTALL_PREFIX"
-
-# Turn the installation directory into an absolute path
-INSTALL_PREFIX="$(cd "$INSTALL_PREFIX" && pwd -P)"
-
-# Use the checkout's manifest before changing directories; standalone scripts use main.
-MANIFEST_FILE="$(dirname "${BASH_SOURCE[0]:-}")/../version-manifest.json"
-if [[ -n "${BASH_SOURCE[0]:-}" && -f "$MANIFEST_FILE" ]]; then
-  MANIFEST_JSON=$(cat "$MANIFEST_FILE")
-elif ! MANIFEST_JSON=$(curl -fsSL https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json); then
-  echo "Error: Failed to download version manifest." >&2
-  exit 1
-fi
-
-# Change to installation directory
-pushd "$INSTALL_PREFIX" > /dev/null
-
-# Detect platform and architecture
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+OS=$(uname -s)
 ARCH=$(uname -m)
-
 case "$OS" in
-  linux) PLATFORM="linux" ;;
-  darwin) PLATFORM="macos" ;;
+  Linux) PLATFORM=linux ;;
+  Darwin) PLATFORM=macos ;;
   *) echo "Error: Unsupported OS: $OS" >&2; exit 1 ;;
 esac
 case "$ARCH" in
-  x86_64) ARCH_SUFFIX="x86_64" ;;
-  arm64|aarch64) ARCH_SUFFIX="arm64" ;;
+  x86_64) ARCHITECTURE=x86 ;;
+  arm64|aarch64) ARCHITECTURE=aarch64 ;;
   *) echo "Error: Unsupported architecture: $ARCH" >&2; exit 1 ;;
 esac
+if [[ "$PLATFORM" == macos && "$ARCHITECTURE" != aarch64 ]]; then
+  echo "Error: macOS requires AArch64 architecture." >&2
+  exit 1
+fi
 
-# Determine whether version is version or commit SHA
-if [[ "$LLVM_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  VERSION_PATTERN="llvm-mlir_llvmorg-${LLVM_VERSION}_"
-elif [[ "$LLVM_VERSION" =~ ^[0-9a-f]{7,40}$ ]]; then
-  VERSION_PATTERN="llvm-mlir_${LLVM_VERSION}"
+# Checkout and source-archive installers use the adjacent manifest; standalone scripts use main.
+MANIFEST_FILE="$(dirname "${BASH_SOURCE[0]:-}")/../version-manifest.json"
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "$MANIFEST_FILE" ]]; then
+  MANIFEST_JSON=$(cat "$MANIFEST_FILE")
 else
-  echo "Error: Invalid LLVM version format: $LLVM_VERSION. Must be a version (e.g., 22.1.0) or a commit SHA." >&2
-  exit 1
+  MANIFEST_JSON=$(curl -fsSL https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json)
 fi
 
-# Helper function to find zstd asset URL in version-manifest.json
-find_zstd_asset_url() {
-  local manifest_json=$1
-  local pattern=$2
-
-  echo "$manifest_json" | \
-    grep -o '"zstd_download_url": "[^"]*"' | \
-    sed 's/"zstd_download_url": "//;s/"$//' | \
-    grep -E "$pattern" | \
-    head -n 1
-}
-
-# Helper function to find LLVM asset URL in version-manifest.json
-find_llvm_asset_url() {
-  local manifest_json=$1
-  local version_pattern=$2
-  local llvm_pattern=$3
-  local legacy_llvm_pattern=$4
-
-  echo "$manifest_json" | \
-    grep -o '"download_url": "[^"]*"' | \
-    sed 's/"download_url": "//;s/"$//' | \
-    grep -F "$version_pattern" | \
-    grep -E "$llvm_pattern|$legacy_llvm_pattern" | \
-    head -n 1
-}
-
-# Helper function to download file from URL
-download_file() {
-  local url=$1
-  local output_file=$2
-
-  echo "Downloading from $url..."
-  if ! curl -fL -o "$output_file" "$url"; then
-    echo "Error: Download failed." >&2
-    exit 1
-  fi
-}
-
-# Determine asset patterns based on platform/architecture
-if [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "x86_64" ]]; then
-  LLVM_PATTERN="_x86_64-unknown-linux-gnu\.tar\.zst"
-  LEGACY_LLVM_PATTERN="_linux_x86_64_X86\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_x86_64-unknown-linux-gnu\.tar\.gz$"
-elif [[ "$PLATFORM" == "linux" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  LLVM_PATTERN="_aarch64-unknown-linux-gnu\.tar\.zst"
-  LEGACY_LLVM_PATTERN="_linux_aarch64_AArch64\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_aarch64-unknown-linux-gnu\.tar\.gz$"
-elif [[ "$PLATFORM" == "macos" && "$ARCH_SUFFIX" == "arm64" ]]; then
-  LLVM_PATTERN="_arm64-apple-darwin\.tar\.zst"
-  LEGACY_LLVM_PATTERN="_macos_arm64_AArch64\.tar\.zst"
-  ZSTD_PATTERN="zstd-[^/]*_arm64-apple-darwin\.tar\.gz$"
-else
-  echo "Unsupported platform/architecture combination: ${PLATFORM}/${ARCH_SUFFIX}" >&2
+# The generated manifest has flat objects with one field per line.
+if ! ENTRY=$(awk -v RS='}' -v platform="$PLATFORM" -v architecture="$ARCHITECTURE" -v version="$VERSION_PATTERN" '
+  index($0, "\"platform\": \"" platform "\"") &&
+  index($0, "\"architecture\": \"" architecture "\"") &&
+  index($0, "\"version\": \"" version) { print; matches++ }
+  END { exit matches != 1 }
+' <<< "$MANIFEST_JSON"); then
+  echo "Error: Expected one release with LLVM $LLVM_VERSION for $PLATFORM/$ARCHITECTURE." >&2
   exit 1
 fi
-
-# Download zstd binary
-echo "Downloading zstd binary..."
-ZSTD_URL=$(find_zstd_asset_url "$MANIFEST_JSON" "$ZSTD_PATTERN")
-
-if [ -z "$ZSTD_URL" ]; then
-  echo "Error: No zstd binary found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
-  exit 1
-fi
-
-download_file "$ZSTD_URL" "zstd.tar.gz"
-
-# Extract zstd binary
-echo "Extracting zstd binary..."
-if ! tar -xzf "zstd.tar.gz"; then
-  echo "Error: Failed to extract zstd binary." >&2
-  exit 1
-fi
-rm -f "zstd.tar.gz"
-
-# zstd archive contains a single executable file at the root
-# The archive extracts to a single file in the current directory
-ZSTD_BIN="$(pwd -P)/zstd"
-if [ ! -f "$ZSTD_BIN" ]; then
-  echo "Error: zstd executable not found in extracted archive." >&2
-  exit 1
-fi
-
-# Ensure zstd is executable
-chmod +x "$ZSTD_BIN"
-
-# Download LLVM distribution
-echo "Downloading LLVM distribution..."
-LLVM_URL=$(find_llvm_asset_url "$MANIFEST_JSON" "$VERSION_PATTERN" "$LLVM_PATTERN" "$LEGACY_LLVM_PATTERN")
-
-if [ -z "$LLVM_URL" ]; then
-  echo "Error: No release with LLVM $LLVM_VERSION found for ${PLATFORM}/${ARCH_SUFFIX}." >&2
-  exit 1
-fi
-
+LLVM_FIELD=download_url
 if [[ "$ASSERTIONS" == OFF ]]; then
-  LLVM_URL="${LLVM_URL%.tar.zst}_noassert.tar.zst"
+  LLVM_FIELD=noassert_download_url
 fi
-download_file "$LLVM_URL" "llvm.tar.zst"
-
-# Decompress and extract LLVM distribution
-echo "Extracting LLVM distribution..."
-if ! "$ZSTD_BIN" -d --long=31 "llvm.tar.zst" --stdout | tar -x; then
-  echo "Error: Failed to extract LLVM distribution." >&2
+LLVM_URL=$(sed -n "s/^[[:space:]]*\"$LLVM_FIELD\": \"\([^\"]*\)\".*/\1/p" <<< "$ENTRY")
+ZSTD_URL=$(sed -n 's/^[[:space:]]*"zstd_download_url": "\([^"]*\)".*/\1/p' <<< "$ENTRY")
+if [[ -z "$LLVM_URL" || -z "$ZSTD_URL" ]]; then
+  echo "Error: LLVM $LLVM_VERSION for $PLATFORM/$ARCHITECTURE with assertions=$ASSERTIONS is unavailable." >&2
   exit 1
 fi
 
-# Cleanup
-rm -f "llvm.tar.zst"
-rm -f "$ZSTD_BIN"
+command -v tar >/dev/null
+mkdir -p "$INSTALL_PREFIX"
+INSTALL_PREFIX="$(cd "$INSTALL_PREFIX" && pwd -P)"
+pushd "$INSTALL_PREFIX" > /dev/null
 
-# Return to original directory
+curl -fL -o zstd.tar.gz "$ZSTD_URL"
+tar -xzf zstd.tar.gz
+chmod +x zstd
+curl -fL -o llvm.tar.zst "$LLVM_URL"
+./zstd -d --long=31 llvm.tar.zst --stdout | tar -x
+rm -f zstd.tar.gz llvm.tar.zst zstd
 popd > /dev/null
 
-# Output instructions
-echo "MLIR toolchain has been installed"
+echo "MLIR toolchain has been installed."
 echo "Run the following commands to set up your environment:"
 echo "  export LLVM_DIR=$INSTALL_PREFIX/lib/cmake/llvm"
 echo "  export MLIR_DIR=$INSTALL_PREFIX/lib/cmake/mlir"
