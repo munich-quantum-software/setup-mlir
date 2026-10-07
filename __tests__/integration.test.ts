@@ -233,7 +233,9 @@ describe("Full setup", () => {
       RUNNER_TEMP: process.env.RUNNER_TEMP,
       RUNNER_TOOL_CACHE: process.env.RUNNER_TOOL_CACHE,
     };
-    const temp = fs.mkdtempSync(path.join(os.tmpdir(), "setup-mlir-test-"));
+    const temp = fs.mkdtempSync(
+      path.join(previous.RUNNER_TEMP || os.tmpdir(), "setup-mlir-test-"),
+    );
     process.env.RUNNER_TEMP = temp;
     process.env.RUNNER_TOOL_CACHE = path.join(temp, "cache");
     const installed: string[] = [];
