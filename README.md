@@ -50,7 +50,7 @@ For more information on the available LLVM versions and commit hashes, see
 
 ```yaml
 - name: Set up MLIR
-  uses: munich-quantum-software/setup-mlir@v1.4.2
+  uses: munich-quantum-software/setup-mlir@v1.5.0
   with:
     llvm-version: 23.1.2
 ```
@@ -90,7 +90,7 @@ pwsh -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.co
 Set `assertions: false` to select the native assertion-free SDK:
 
 ```yaml
-- uses: munich-quantum-software/setup-mlir@v1
+- uses: munich-quantum-software/setup-mlir@v1.5.0
   with:
     llvm-version: 23.1.2
     assertions: false
