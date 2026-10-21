@@ -58,15 +58,13 @@ For more information on the available LLVM versions and commit hashes, see
 This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and
 defines `$LLVM_DIR` and `$MLIR_DIR`.
 
-### eMudhra CA incident: download trust
+### Download trust
 
-The [October 2026 eMudhra incident](https://emudhra.we-have-a-problem.com/)
-affects HTTPS clients that still trust the compromised intermediates. This
-action uses the runner's Node 24 runtime to download MLIR, zstd, and fallback
-manifests. Its bundled CA store is independent of browser revocation updates.
-
-Until the runner supplies a patched Node runtime, Ubuntu 24.04 users can select
-a patched OpenSSL trust store explicitly:
+This action downloads MLIR, zstd, and fallback manifests through the runner's
+Node 24 runtime. Keep that runtime and its CA store current. For the
+[October 2026 eMudhra incident](https://emudhra.we-have-a-problem.com/), a
+GitHub-hosted Ubuntu 24.04 runner with an unpatched Node CA store can
+temporarily select a patched system store for this action:
 
 ```yaml
 # Job prerequisite: runs-on: ubuntu-24.04
@@ -87,26 +85,24 @@ a patched OpenSSL trust store explicitly:
     NODE_EXTRA_CA_CERTS: ""
 ```
 
-The package check fails if the security update is unavailable; it checks the
-package version, not the effective trust store. Use the advisory's offline chain
-verification instructions to check that the final store rejects every affected
-chain, including any custom CA additions on self-hosted runners. As described in
-[Node's CA options](https://nodejs.org/api/cli.html#--use-bundled-ca---use-openssl-ca),
-`SSL_CERT_FILE` alone does not replace the bundled store; `NODE_EXTRA_CA_CERTS`
-adds trust rather than removing it. Other platforms need an independently
-verified patched trust store. Keep TLS verification enabled. This step-level
-environment replaces inherited `NODE_OPTIONS` for this action only; other
-actions and container jobs need their own trust-store updates.
-
-The Bash installer and the initial `curl` command below also need a patched CA
-bundle before any download. Browser or macOS Keychain updates alone do not
-establish that `/usr/bin/curl` has an updated PEM bundle; follow the advisory's
-platform guidance or supply an independently verified patched bundle through
-`CURL_CA_BUNDLE` where supported by your curl build. Verify the effective bundle
-against the advisory's affected chains before downloading installers. Do not use
-`curl -k` or `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+Verify rejection of all advisory test chains using the runner's bundled Node
+runtime and the effective bundle and CA directory; a package version alone is
+insufficient. On self-hosted runners, preserve required private CAs in the
+verified store before clearing `NODE_EXTRA_CA_CERTS`.
+[Node's CA options](https://nodejs.org/api/cli.html#--use-bundled-ca---use-openssl-ca)
+explain why `SSL_CERT_FILE` alone does not replace its bundled roots and why
+`NODE_EXTRA_CA_CERTS` only adds trust. This example replaces inherited
+`NODE_OPTIONS` for this action and cannot protect runner bootstrap or preceding
+downloads. Other actions, platforms, and containers need their own verified
+stores. Remove this temporary override once the runner image's Node trust store
+is verified to reject all affected chains.
 
 ## Installation Scripts
+
+The Bash installer's initial `curl` download and the PowerShell installer also
+need patched effective trust stores. Follow the advisory for the actual client
+and TLS backend; browser or Keychain updates alone do not verify a PEM bundle.
+Keep TLS verification enabled.
 
 If you want to use the pre-built MLIR installations locally, we also provide
 installation scripts. The scripts require the LLVM version or commit hash (e.g.,
