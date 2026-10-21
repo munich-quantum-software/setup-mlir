@@ -58,6 +58,54 @@ For more information on the available LLVM versions and commit hashes, see
 This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and
 defines `$LLVM_DIR` and `$MLIR_DIR`.
 
+### eMudhra CA incident: download trust
+
+The [October 2026 eMudhra incident](https://emudhra.we-have-a-problem.com/)
+affects HTTPS clients that still trust the compromised intermediates. This
+action uses the runner's Node 24 runtime to download MLIR, zstd, and fallback
+manifests. Its bundled CA store is independent of browser revocation updates.
+
+Until the runner supplies a patched Node runtime, Ubuntu 24.04 users can select
+a patched OpenSSL trust store explicitly:
+
+```yaml
+# Job prerequisite: runs-on: ubuntu-24.04
+- name: Update and check the system CA package
+  shell: bash
+  run: |
+    sudo apt-get update
+    sudo apt-get install -y --only-upgrade ca-certificates
+    dpkg --compare-versions "$(dpkg-query -W -f='${Version}' ca-certificates)" ge 20260816ubuntu0.24.04.1
+- name: Set up MLIR using the updated trust store
+  uses: munich-quantum-software/setup-mlir@v1.5.0
+  with:
+    llvm-version: 23.1.2
+  env:
+    NODE_OPTIONS: --use-openssl-ca
+    SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+    SSL_CERT_DIR: /etc/ssl/certs
+    NODE_EXTRA_CA_CERTS: ""
+```
+
+The package check fails if the security update is unavailable; it checks the
+package version, not the effective trust store. Use the advisory's offline chain
+verification instructions to check that the final store rejects every affected
+chain, including any custom CA additions on self-hosted runners. As described in
+[Node's CA options](https://nodejs.org/api/cli.html#--use-bundled-ca---use-openssl-ca),
+`SSL_CERT_FILE` alone does not replace the bundled store; `NODE_EXTRA_CA_CERTS`
+adds trust rather than removing it. Other platforms need an independently
+verified patched trust store. Keep TLS verification enabled. This step-level
+environment replaces inherited `NODE_OPTIONS` for this action only; other
+actions and container jobs need their own trust-store updates.
+
+The Bash installer and the initial `curl` command below also need a patched CA
+bundle before any download. Browser or macOS Keychain updates alone do not
+establish that `/usr/bin/curl` has an updated PEM bundle; follow the advisory's
+platform guidance or supply an independently verified patched bundle through
+`CURL_CA_BUNDLE` where supported by your curl build. Verify the effective bundle
+against the advisory's affected chains before downloading installers. Do not use
+`curl -k` or `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+
 ## Installation Scripts
 
 If you want to use the pre-built MLIR installations locally, we also provide
