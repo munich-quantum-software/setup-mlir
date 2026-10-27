@@ -45,9 +45,9 @@ by
 - Use Node.js 24 and `npm ci`. Run `npm test` while changing TypeScript, then
   `npm run test:coverage` for the final code change. Run `uvx prek run -a`
   before a PR and rerun checks after any formatter changes.
-- After changing `src/`, action metadata, or the manifest bundled in `dist/`,
-  run `npm run build` and commit the regenerated `dist/` files. Never edit the
-  bundles by hand. Check that a subsequent build leaves `dist/` unchanged.
+- After changing `src/` or `version-manifest.json`, run `npm run build` and
+  commit the regenerated `dist/` files. Never edit the bundles by hand. Check
+  that a subsequent build leaves `dist/` unchanged.
 - For installer or SDK-selection changes, use the hosted matrix to check Linux,
   macOS, and Windows on supported architectures, with both assertion modes.
   Verify the installed CMake files and `mlir-opt`, not only the download result.
