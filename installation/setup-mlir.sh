@@ -96,15 +96,14 @@ fi
 command -v tar >/dev/null
 mkdir -p "$INSTALL_PREFIX"
 INSTALL_PREFIX="$(cd "$INSTALL_PREFIX" && pwd -P)"
-pushd "$INSTALL_PREFIX" > /dev/null
+scratch=$(mktemp -d)
+trap 'rm -rf "$scratch"' EXIT
 
-curl -fL -o zstd.tar.gz "$ZSTD_URL"
-tar -xzf zstd.tar.gz
-chmod +x zstd
-curl -fL -o llvm.tar.zst "$LLVM_URL"
-./zstd -d --long=31 llvm.tar.zst --stdout | tar -x
-rm -f zstd.tar.gz llvm.tar.zst zstd
-popd > /dev/null
+curl -fL -o "$scratch/zstd.tar.gz" "$ZSTD_URL"
+tar -xzf "$scratch/zstd.tar.gz" -C "$scratch"
+chmod +x "$scratch/zstd"
+curl -fL -o "$scratch/llvm.tar.zst" "$LLVM_URL"
+"$scratch/zstd" -d --long=31 "$scratch/llvm.tar.zst" --stdout | tar -x -C "$INSTALL_PREFIX"
 
 echo "MLIR toolchain has been installed."
 echo "Run the following commands to set up your environment:"

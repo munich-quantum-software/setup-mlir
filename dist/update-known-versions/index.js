@@ -37008,6 +37008,7 @@ async function updateManifest() {
         return a.architecture.localeCompare(b.architecture);
     });
     await external_node_fs_namespaceObject.promises.writeFile(MANIFEST_FILE, JSON.stringify(manifest, null, 2) + "\n");
+    await external_node_fs_namespaceObject.promises.copyFile(MANIFEST_FILE, (0,external_node_path_namespaceObject.join)(REPOSITORY_ROOT, "dist", "version-manifest.json"));
     await updateReadme(new Set(manifest.map((entry) => entry.version)));
     setOutput("latest-tag", releases[0]?.tag_name);
 }

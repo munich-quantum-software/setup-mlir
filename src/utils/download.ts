@@ -26,13 +26,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const MANIFEST_FILE = join(__dirname, "..", "..", "version-manifest.json");
 
-/** Resolve the SDK and decompressor together for the requested build. */
-export async function getDownloadUrls(
+/** Resolve the published SDK URL for the requested build. */
+export async function getDownloadUrl(
   version: string,
   platform: string,
   architecture: string,
   assertions: boolean = true,
-): Promise<{ llvm: string; zstd: string }> {
+): Promise<string> {
+  if (!/^(\d+\.\d+\.\d+|[0-9a-f]{7,40})$/i.test(version)) {
+    throw new Error(
+      `Invalid LLVM version: ${version}. Expected format: X.Y.Z or a commit hash (minimum 7 characters).`,
+    );
+  }
   version = version.toLowerCase();
   platform = getPlatform(platform);
   architecture = getArchitecture(architecture);
@@ -78,10 +83,10 @@ export async function getDownloadUrls(
   }
   const entry = entries[0];
   const llvm = assertions ? entry.download_url : entry.noassert_download_url;
-  if (!llvm || !entry.zstd_download_url) {
+  if (!llvm) {
     throw new Error(
       `LLVM ${version} for ${platform}/${architecture} with assertions=${assertions ? "ON" : "OFF"} is unavailable.`,
     );
   }
-  return { llvm, zstd: entry.zstd_download_url };
+  return llvm;
 }
