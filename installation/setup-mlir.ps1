@@ -55,18 +55,14 @@ if (-not $llvm_url -or -not $entries[0].zstd_download_url) {
 
 New-Item -ItemType Directory -Path $install_prefix -Force | Out-Null
 $install_prefix = (Resolve-Path $install_prefix).Path
-Push-Location $install_prefix
+$scratch = [System.IO.Directory]::CreateTempSubdirectory().FullName
 try {
-    Invoke-WebRequest -Uri $entries[0].zstd_download_url -OutFile zstd.tar.gz
-    New-Item -ItemType Directory -Path zstd_temp -Force | Out-Null
-    tar -xzf zstd.tar.gz -C zstd_temp
-
-    Invoke-WebRequest -Uri $llvm_url -OutFile llvm.tar.zst
-    & ./zstd_temp/zstd.exe -d llvm.tar.zst --long=31 --stdout | tar -x
-    Remove-Item zstd.tar.gz, llvm.tar.zst -Force
-    Remove-Item zstd_temp -Recurse -Force
+    Invoke-WebRequest -Uri $entries[0].zstd_download_url -OutFile "$scratch/zstd.tar.gz"
+    tar -xzf "$scratch/zstd.tar.gz" -C $scratch
+    Invoke-WebRequest -Uri $llvm_url -OutFile "$scratch/llvm.tar.zst"
+    & "$scratch/zstd.exe" -d "$scratch/llvm.tar.zst" --long=31 --stdout | tar -x -C $install_prefix
 } finally {
-    Pop-Location
+    Remove-Item -LiteralPath $scratch -Recurse -Force
 }
 
 Write-Host "MLIR toolchain has been installed."

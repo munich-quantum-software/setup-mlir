@@ -31914,11 +31914,6 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("util");
 /************************************************************************/
 var __webpack_exports__ = {};
 
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  e: () => (/* binding */ run)
-});
-
 ;// CONCATENATED MODULE: external "os"
 const external_os_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("os");
 ;// CONCATENATED MODULE: ./node_modules/@actions/core/lib/utils.js
@@ -33389,7 +33384,7 @@ const IS_WINDOWS = process.platform === 'win32';
  */
 function readlink(fsPath) {
     return io_util_awaiter(this, void 0, void 0, function* () {
-        const result = yield external_fs_namespaceObject.promises.readlink(fsPath);
+        const result = yield fs.promises.readlink(fsPath);
         // On Windows, restore Node 20 behavior: add trailing backslash to all results
         // since junctions on Windows are always directory links
         if (IS_WINDOWS && !result.endsWith('\\')) {
@@ -33565,19 +33560,19 @@ var io_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argum
 function io_cp(source_1, dest_1) {
     return io_awaiter(this, arguments, void 0, function* (source, dest, options = {}) {
         const { force, recursive, copySourceDirectory } = readCopyOptions(options);
-        const destStat = (yield exists(dest)) ? yield stat(dest) : null;
+        const destStat = (yield ioUtil.exists(dest)) ? yield ioUtil.stat(dest) : null;
         // Dest is an existing file, but not forcing
         if (destStat && destStat.isFile() && !force) {
             return;
         }
         // If dest is an existing directory, should copy inside.
         const newDest = destStat && destStat.isDirectory() && copySourceDirectory
-            ? external_path_namespaceObject.join(dest, external_path_namespaceObject.basename(source))
+            ? path.join(dest, path.basename(source))
             : dest;
-        if (!(yield exists(source))) {
+        if (!(yield ioUtil.exists(source))) {
             throw new Error(`no such file or directory: ${source}`);
         }
-        const sourceStat = yield stat(source);
+        const sourceStat = yield ioUtil.stat(source);
         if (sourceStat.isDirectory()) {
             if (!recursive) {
                 throw new Error(`Failed to copy. ${source} is a directory, but tried to copy without recursive flag.`);
@@ -33587,7 +33582,7 @@ function io_cp(source_1, dest_1) {
             }
         }
         else {
-            if (external_path_namespaceObject.relative(source, newDest) === '') {
+            if (path.relative(source, newDest) === '') {
                 // a file cannot be copied to itself
                 throw new Error(`'${newDest}' and '${source}' are the same file`);
             }
@@ -33769,11 +33764,11 @@ function cpDirRecursive(sourceDir, destDir, currentDepth, force) {
             return;
         currentDepth++;
         yield mkdirP(destDir);
-        const files = yield readdir(sourceDir);
+        const files = yield ioUtil.readdir(sourceDir);
         for (const fileName of files) {
             const srcFile = `${sourceDir}/${fileName}`;
             const destFile = `${destDir}/${fileName}`;
-            const srcFileStat = yield lstat(srcFile);
+            const srcFileStat = yield ioUtil.lstat(srcFile);
             if (srcFileStat.isDirectory()) {
                 // Recurse
                 yield cpDirRecursive(srcFile, destFile, currentDepth, force);
@@ -33783,32 +33778,32 @@ function cpDirRecursive(sourceDir, destDir, currentDepth, force) {
             }
         }
         // Change the mode for the newly created directory
-        yield chmod(destDir, (yield stat(sourceDir)).mode);
+        yield ioUtil.chmod(destDir, (yield ioUtil.stat(sourceDir)).mode);
     });
 }
 // Buffered file copy
 function io_copyFile(srcFile, destFile, force) {
     return io_awaiter(this, void 0, void 0, function* () {
-        if ((yield lstat(srcFile)).isSymbolicLink()) {
+        if ((yield ioUtil.lstat(srcFile)).isSymbolicLink()) {
             // unlink/re-link it
             try {
-                yield lstat(destFile);
-                yield unlink(destFile);
+                yield ioUtil.lstat(destFile);
+                yield ioUtil.unlink(destFile);
             }
             catch (e) {
                 // Try to override file permission
                 if (e.code === 'EPERM') {
-                    yield chmod(destFile, '0666');
-                    yield unlink(destFile);
+                    yield ioUtil.chmod(destFile, '0666');
+                    yield ioUtil.unlink(destFile);
                 }
                 // other errors = it doesn't exist, no work to do
             }
             // Copy over symlink
-            const symlinkFull = yield readlink(srcFile);
-            yield symlink(symlinkFull, destFile, IS_WINDOWS ? 'junction' : null);
+            const symlinkFull = yield ioUtil.readlink(srcFile);
+            yield ioUtil.symlink(symlinkFull, destFile, ioUtil.IS_WINDOWS ? 'junction' : null);
         }
-        else if (!(yield exists(destFile)) || force) {
-            yield copyFile(srcFile, destFile);
+        else if (!(yield ioUtil.exists(destFile)) || force) {
+            yield ioUtil.copyFile(srcFile, destFile);
         }
     });
 }
@@ -34427,14 +34422,14 @@ var exec_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arg
  */
 function exec_exec(commandLine, args, options) {
     return exec_awaiter(this, void 0, void 0, function* () {
-        const commandArgs = argStringToArray(commandLine);
+        const commandArgs = tr.argStringToArray(commandLine);
         if (commandArgs.length === 0) {
             throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
         }
         // Path to tool to execute should be first arg
         const toolPath = commandArgs[0];
         args = commandArgs.slice(1).concat(args || []);
-        const runner = new ToolRunner(toolPath, args, options);
+        const runner = new tr.ToolRunner(toolPath, args, options);
         return runner.exec();
     });
 }
@@ -34866,6 +34861,173 @@ function getIDToken(aud) {
  */
 
 //# sourceMappingURL=core.js.map
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
+var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+;// CONCATENATED MODULE: external "node:process"
+const external_node_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:process");
+var external_node_process_default = /*#__PURE__*/__nccwpck_require__.n(external_node_process_namespaceObject);
+;// CONCATENATED MODULE: external "node:fs"
+const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
+// EXTERNAL MODULE: external "node:url"
+var external_node_url_ = __nccwpck_require__(3136);
+;// CONCATENATED MODULE: ./src/utils/platform.ts
+/*
+ * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
+ * may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+/**
+ * Verify and normalize a platform string
+ * @param platform The platform string to verify
+ * @returns The normalized platform string
+ */
+function getPlatform(platform) {
+    platform = platform.toLowerCase();
+    if (platform !== "host" &&
+        platform !== "linux" &&
+        platform !== "macos" &&
+        platform !== "windows") {
+        throw new Error(`Invalid platform: ${platform}. Expected host, linux, macOS, or windows.`);
+    }
+    if (platform === "host") {
+        platform = determinePlatform();
+    }
+    return platform;
+}
+/**
+ * Verify and normalize an architecture string
+ * @param architecture The architecture string to verify
+ * @returns The normalized architecture string
+ */
+function getArchitecture(architecture) {
+    architecture = architecture.toLowerCase();
+    if (architecture !== "host" &&
+        architecture !== "x86" &&
+        architecture !== "aarch64") {
+        throw new Error(`Invalid architecture: ${architecture}. Expected host, X86, or AArch64.`);
+    }
+    if (architecture === "host") {
+        architecture = determineArchitecture();
+    }
+    return architecture;
+}
+/**
+ * Determine the platform of the current host.
+ * @returns {string} - platform of the current host (either linux, macOS, or windows)
+ */
+function determinePlatform() {
+    if (process.platform === "linux") {
+        return "linux";
+    }
+    else if (process.platform === "darwin") {
+        return "macos";
+    }
+    else if (process.platform === "win32") {
+        return "windows";
+    }
+    else {
+        throw new Error(`Unsupported platform: ${process.platform}`);
+    }
+}
+/**
+ * Determine the architecture of the current host.
+ * @returns {string} - architecture of the current host (either X86 or AArch64)
+ */
+function determineArchitecture() {
+    if (process.arch === "x64") {
+        return "x86";
+    }
+    else if (process.arch === "arm64") {
+        return "aarch64";
+    }
+    else {
+        throw new Error(`Unsupported architecture: ${process.arch}`);
+    }
+}
+
+;// CONCATENATED MODULE: ./src/utils/download.ts
+/*
+ * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
+ * may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+
+
+
+
+const download_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
+const download_dirname = (0,external_node_path_namespaceObject.dirname)(download_filename);
+const MANIFEST_FILE = __nccwpck_require__.ab + "version-manifest.json";
+/** Resolve the published SDK URL for the requested build. */
+async function getDownloadUrl(version, platform, architecture, assertions = true) {
+    if (!/^(\d+\.\d+\.\d+|[0-9a-f]{7,40})$/i.test(version)) {
+        throw new Error(`Invalid LLVM version: ${version}. Expected format: X.Y.Z or a commit hash (minimum 7 characters).`);
+    }
+    version = version.toLowerCase();
+    platform = getPlatform(platform);
+    architecture = getArchitecture(architecture);
+    if (platform === "macos" && architecture !== "aarch64") {
+        throw new Error("macOS requires AArch64 architecture.");
+    }
+    const matches = (entry) => (version.includes(".")
+        ? entry.version === version
+        : entry.version.startsWith(version)) &&
+        entry.platform === platform &&
+        entry.architecture === architecture;
+    let manifest = [];
+    try {
+        manifest = JSON.parse(await external_node_fs_namespaceObject.promises.readFile(__nccwpck_require__.ab + "version-manifest.json", "utf-8"));
+    }
+    catch (error) {
+        if (!(error instanceof Error &&
+            "code" in error &&
+            error.code === "ENOENT")) {
+            throw error;
+        }
+    }
+    let entries = manifest.filter(matches);
+    if (entries.length === 0) {
+        const url = "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json";
+        const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch version manifest from ${url}: ${response.status} ${response.statusText}`);
+        }
+        entries = (await response.json()).filter(matches);
+    }
+    if (entries.length !== 1) {
+        throw new Error(`Expected exactly one ${architecture} ${platform} archive for LLVM ${version}, but found ${entries.length}.`);
+    }
+    const entry = entries[0];
+    const llvm = assertions ? entry.download_url : entry.noassert_download_url;
+    if (!llvm) {
+        throw new Error(`LLVM ${version} for ${platform}/${architecture} with assertions=${assertions ? "ON" : "OFF"} is unavailable.`);
+    }
+    return llvm;
+}
+
 // EXTERNAL MODULE: ./node_modules/semver/index.js
 var node_modules_semver = __nccwpck_require__(2088);
 ;// CONCATENATED MODULE: ./node_modules/@actions/tool-cache/lib/manifest.js
@@ -35244,9 +35406,9 @@ function extractTar(file_1, dest_1) {
         // Create dest
         dest = yield _createExtractFolder(dest);
         // Determine whether GNU tar
-        core_debug('Checking tar --version');
+        core.debug('Checking tar --version');
         let versionOutput = '';
-        yield exec_exec('tar --version', [], {
+        yield exec('tar --version', [], {
             ignoreReturnCode: true,
             silent: true,
             listeners: {
@@ -35254,7 +35416,7 @@ function extractTar(file_1, dest_1) {
                 stderr: (data) => (versionOutput += data.toString())
             }
         });
-        core_debug(versionOutput.trim());
+        core.debug(versionOutput.trim());
         const isGnuTar = versionOutput.toUpperCase().includes('GNU TAR');
         // Initialize args
         let args;
@@ -35264,7 +35426,7 @@ function extractTar(file_1, dest_1) {
         else {
             args = [flags];
         }
-        if (isDebug() && !flags.includes('v')) {
+        if (core.isDebug() && !flags.includes('v')) {
             args.push('-v');
         }
         let destArg = dest;
@@ -35282,7 +35444,7 @@ function extractTar(file_1, dest_1) {
             args.push('--overwrite');
         }
         args.push('-C', destArg, '-f', fileArg);
-        yield exec_exec(`tar`, args);
+        yield exec(`tar`, args);
         return dest;
     });
 }
@@ -35409,20 +35571,20 @@ function extractZipNix(file, dest) {
  */
 function cacheDir(sourceDir, tool, version, arch) {
     return tool_cache_awaiter(this, void 0, void 0, function* () {
-        version = node_modules_semver.clean(version) || version;
-        arch = arch || external_os_namespaceObject.arch();
-        core_debug(`Caching tool ${tool} ${version} ${arch}`);
-        core_debug(`source dir: ${sourceDir}`);
-        if (!external_fs_namespaceObject.statSync(sourceDir).isDirectory()) {
+        version = semver.clean(version) || version;
+        arch = arch || os.arch();
+        core.debug(`Caching tool ${tool} ${version} ${arch}`);
+        core.debug(`source dir: ${sourceDir}`);
+        if (!fs.statSync(sourceDir).isDirectory()) {
             throw new Error('sourceDir is not a directory');
         }
         // Create the tool dir
         const destPath = yield _createToolPath(tool, version, arch);
         // copy each child item. do not move. move can fail on Windows
         // due to anti-virus software having an open handle on a file.
-        for (const itemName of external_fs_namespaceObject.readdirSync(sourceDir)) {
-            const s = external_path_namespaceObject.join(sourceDir, itemName);
-            yield io_cp(s, destPath, { recursive: true });
+        for (const itemName of fs.readdirSync(sourceDir)) {
+            const s = path.join(sourceDir, itemName);
+            yield io.cp(s, destPath, { recursive: true });
         }
         // write .complete
         _completeToolPath(tool, version, arch);
@@ -35567,28 +35729,28 @@ function _createExtractFolder(dest) {
     return tool_cache_awaiter(this, void 0, void 0, function* () {
         if (!dest) {
             // create a temp dir
-            dest = external_path_namespaceObject.join(_getTempDirectory(), external_crypto_namespaceObject.randomUUID());
+            dest = path.join(_getTempDirectory(), crypto.randomUUID());
         }
-        yield mkdirP(dest);
+        yield io.mkdirP(dest);
         return dest;
     });
 }
 function _createToolPath(tool, version, arch) {
     return tool_cache_awaiter(this, void 0, void 0, function* () {
-        const folderPath = external_path_namespaceObject.join(_getCacheDirectory(), tool, node_modules_semver.clean(version) || version, arch || '');
-        core_debug(`destination ${folderPath}`);
+        const folderPath = path.join(_getCacheDirectory(), tool, semver.clean(version) || version, arch || '');
+        core.debug(`destination ${folderPath}`);
         const markerPath = `${folderPath}.complete`;
-        yield rmRF(folderPath);
-        yield rmRF(markerPath);
-        yield mkdirP(folderPath);
+        yield io.rmRF(folderPath);
+        yield io.rmRF(markerPath);
+        yield io.mkdirP(folderPath);
         return folderPath;
     });
 }
 function _completeToolPath(tool, version, arch) {
-    const folderPath = external_path_namespaceObject.join(_getCacheDirectory(), tool, node_modules_semver.clean(version) || version, arch || '');
+    const folderPath = path.join(_getCacheDirectory(), tool, semver.clean(version) || version, arch || '');
     const markerPath = `${folderPath}.complete`;
-    external_fs_namespaceObject.writeFileSync(markerPath, '');
-    core_debug('finished caching tool');
+    fs.writeFileSync(markerPath, '');
+    core.debug('finished caching tool');
 }
 /**
  * Check if version string is explicit
@@ -35638,7 +35800,7 @@ function evaluateVersions(versions, versionSpec) {
  */
 function _getCacheDirectory() {
     const cacheDirectory = process.env['RUNNER_TOOL_CACHE'] || '';
-    (0,external_assert_.ok)(cacheDirectory, 'Expected RUNNER_TOOL_CACHE to be defined');
+    ok(cacheDirectory, 'Expected RUNNER_TOOL_CACHE to be defined');
     return cacheDirectory;
 }
 /**
@@ -35666,180 +35828,115 @@ function _unique(values) {
     return Array.from(new Set(values));
 }
 //# sourceMappingURL=tool-cache.js.map
-;// CONCATENATED MODULE: external "node:fs"
-const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
-var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_namespaceObject);
-;// CONCATENATED MODULE: external "node:path"
-const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
-var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
-// EXTERNAL MODULE: external "node:url"
-var external_node_url_ = __nccwpck_require__(3136);
-;// CONCATENATED MODULE: ./src/utils/platform.ts
-/*
- * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
- * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
- * All rights reserved.
- *
- * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
- * may not use this file except in compliance with the License. You may obtain a
- * copy of the License at https://llvm.org/LICENSE.txt
- *
- * Unless required by applicable law or agreed to in writing, software distributed
- * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- */
-/**
- * Verify and normalize a platform string
- * @param platform The platform string to verify
- * @returns The normalized platform string
- */
-function getPlatform(platform) {
-    platform = platform.toLowerCase();
-    if (platform !== "host" &&
-        platform !== "linux" &&
-        platform !== "macos" &&
-        platform !== "windows") {
-        throw new Error(`Invalid platform: ${platform}. Expected host, linux, macOS, or windows.`);
-    }
-    if (platform === "host") {
-        platform = determinePlatform();
-    }
-    return platform;
-}
-/**
- * Verify and normalize an architecture string
- * @param architecture The architecture string to verify
- * @returns The normalized architecture string
- */
-function getArchitecture(architecture) {
-    architecture = architecture.toLowerCase();
-    if (architecture !== "host" &&
-        architecture !== "x86" &&
-        architecture !== "aarch64") {
-        throw new Error(`Invalid architecture: ${architecture}. Expected host, X86, or AArch64.`);
-    }
-    if (architecture === "host") {
-        architecture = determineArchitecture();
-    }
-    return architecture;
-}
-/**
- * Determine the platform of the current host.
- * @returns {string} - platform of the current host (either linux, macOS, or windows)
- */
-function determinePlatform() {
-    if (process.platform === "linux") {
-        return "linux";
-    }
-    else if (process.platform === "darwin") {
-        return "macos";
-    }
-    else if (process.platform === "win32") {
-        return "windows";
-    }
-    else {
-        throw new Error(`Unsupported platform: ${process.platform}`);
-    }
-}
-/**
- * Determine the architecture of the current host.
- * @returns {string} - architecture of the current host (either X86 or AArch64)
- */
-function determineArchitecture() {
-    if (process.arch === "x64") {
-        return "x86";
-    }
-    else if (process.arch === "arm64") {
-        return "aarch64";
-    }
-    else {
-        throw new Error(`Unsupported architecture: ${process.arch}`);
-    }
-}
-
-;// CONCATENATED MODULE: ./src/utils/download.ts
-/*
- * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
- * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
- * All rights reserved.
- *
- * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
- * may not use this file except in compliance with the License. You may obtain a
- * copy of the License at https://llvm.org/LICENSE.txt
- *
- * Unless required by applicable law or agreed to in writing, software distributed
- * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- */
-
-
-
-
-const download_filename = (0,external_node_url_.fileURLToPath)(import.meta.url);
-const download_dirname = (0,external_node_path_namespaceObject.dirname)(download_filename);
-const MANIFEST_FILE = __nccwpck_require__.ab + "version-manifest.json";
-/** Resolve the SDK and decompressor together for the requested build. */
-async function getDownloadUrls(version, platform, architecture, assertions = true) {
-    version = version.toLowerCase();
-    platform = getPlatform(platform);
-    architecture = getArchitecture(architecture);
-    if (platform === "macos" && architecture !== "aarch64") {
-        throw new Error("macOS requires AArch64 architecture.");
-    }
-    const matches = (entry) => (version.includes(".")
-        ? entry.version === version
-        : entry.version.startsWith(version)) &&
-        entry.platform === platform &&
-        entry.architecture === architecture;
-    let manifest = [];
-    try {
-        manifest = JSON.parse(await external_node_fs_namespaceObject.promises.readFile(__nccwpck_require__.ab + "version-manifest.json", "utf-8"));
-    }
-    catch (error) {
-        if (!(error instanceof Error &&
-            "code" in error &&
-            error.code === "ENOENT")) {
-            throw error;
-        }
-    }
-    let entries = manifest.filter(matches);
-    if (entries.length === 0) {
-        const url = "https://raw.githubusercontent.com/munich-quantum-software/setup-mlir/main/version-manifest.json";
-        const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
-        if (!response.ok) {
-            throw new Error(`Failed to fetch version manifest from ${url}: ${response.status} ${response.statusText}`);
-        }
-        entries = (await response.json()).filter(matches);
-    }
-    if (entries.length !== 1) {
-        throw new Error(`Expected exactly one ${architecture} ${platform} archive for LLVM ${version}, but found ${entries.length}.`);
-    }
-    const entry = entries[0];
-    const llvm = assertions ? entry.download_url : entry.noassert_download_url;
-    if (!llvm || !entry.zstd_download_url) {
-        throw new Error(`LLVM ${version} for ${platform}/${architecture} with assertions=${assertions ? "ON" : "OFF"} is unavailable.`);
-    }
-    return { llvm, zstd: entry.zstd_download_url };
-}
-
-;// CONCATENATED MODULE: external "node:process"
-const external_node_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:process");
-var external_node_process_default = /*#__PURE__*/__nccwpck_require__.n(external_node_process_namespaceObject);
-;// CONCATENATED MODULE: external "node:os"
-const external_node_os_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:os");
-var external_node_os_default = /*#__PURE__*/__nccwpck_require__.n(external_node_os_namespaceObject);
 ;// CONCATENATED MODULE: external "node:child_process"
 const external_node_child_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:child_process");
-// EXTERNAL MODULE: external "node:events"
-var external_node_events_ = __nccwpck_require__(8474);
+// EXTERNAL MODULE: external "node:crypto"
+var external_node_crypto_ = __nccwpck_require__(7598);
 ;// CONCATENATED MODULE: external "node:stream/promises"
 const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:stream/promises");
+// EXTERNAL MODULE: external "node:zlib"
+var external_node_zlib_ = __nccwpck_require__(8522);
+;// CONCATENATED MODULE: ./src/utils/install.ts
+/*
+ * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
+ * Copyright (c) 2025 - 2026 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions (the "License"); you
+ * may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+
+
+
+
+
+
+
+
+async function isSdk(directory) {
+    const exists = async (file) => external_node_fs_namespaceObject.promises.stat(external_node_path_default().join(directory, file)).then((stat) => stat.isFile(), () => false);
+    const [llvm, mlir, unixTool, windowsTool] = await Promise.all([
+        exists("lib/cmake/llvm/LLVMConfig.cmake"),
+        exists("lib/cmake/mlir/MLIRConfig.cmake"),
+        exists("bin/mlir-opt"),
+        exists("bin/mlir-opt.exe"),
+    ]);
+    return llvm && mlir && (unixTool || windowsTool);
+}
+/** Reuse complete SDKs; publish new entries with one atomic directory rename. */
+async function installSdk(url, cacheRoot) {
+    // The resolved URL includes the release, full commit or version, target and variant.
+    const key = (0,external_node_crypto_.createHash)("sha256").update(url).digest("hex");
+    const cachedPath = external_node_path_default().join(cacheRoot, key);
+    if (await isSdk(cachedPath)) {
+        info(`Using cached MLIR SDK: ${cachedPath}`);
+        return cachedPath;
+    }
+    await external_node_fs_namespaceObject.promises.mkdir(cacheRoot, { recursive: true });
+    // Keep staging on the cache filesystem so publication cannot become a partial copy.
+    const staging = await external_node_fs_namespaceObject.promises.mkdtemp(external_node_path_default().join(cacheRoot, ".install-"));
+    try {
+        const archive = await downloadTool(url, external_node_path_default().join(staging, "sdk.tar.zst"));
+        const extracted = external_node_path_default().join(staging, "extracted");
+        await external_node_fs_namespaceObject.promises.mkdir(extracted);
+        // Read through EOF so tar cannot close the pipe before zstd finishes validating.
+        const tar = (0,external_node_child_process_namespaceObject.spawn)("tar", ["-x", "--ignore-zeros", "-f", "-", "-C", extracted], {
+            stdio: ["pipe", "ignore", "inherit"],
+        });
+        // Wait for close even after a spawn error so cleanup never races a live extractor.
+        let spawnError;
+        tar.on("error", (error) => {
+            spawnError = error;
+        });
+        const closed = new Promise((resolve) => {
+            tar.on("close", resolve);
+        });
+        const exited = closed.then((code) => {
+            if (spawnError)
+                throw spawnError;
+            if (code !== 0)
+                throw new Error(`tar exited with code ${code}`);
+        });
+        const pumping = (0,promises_namespaceObject.pipeline)((0,external_node_fs_namespaceObject.createReadStream)(archive), (0,external_node_zlib_.createZstdDecompress)({
+            params: { [external_node_zlib_.constants.ZSTD_d_windowLogMax]: 31 },
+        }), tar.stdin);
+        try {
+            await Promise.all([pumping, exited]);
+        }
+        finally {
+            tar.kill();
+            await Promise.allSettled([pumping, exited]);
+        }
+        const entries = await external_node_fs_namespaceObject.promises.readdir(extracted, { withFileTypes: true });
+        const sdk = entries.length === 1 && entries[0].isDirectory()
+            ? external_node_path_default().join(extracted, entries[0].name)
+            : extracted;
+        if (!(await isSdk(sdk))) {
+            throw new Error(`Downloaded archive is not a complete MLIR SDK: ${url}`);
+        }
+        try {
+            await external_node_fs_namespaceObject.promises.rename(sdk, cachedPath);
+        }
+        catch (error) {
+            // A concurrent installer may have published the same immutable SDK first.
+            if (!(await isSdk(cachedPath)))
+                throw error;
+        }
+        return cachedPath;
+    }
+    finally {
+        await external_node_fs_namespaceObject.promises.rm(staging, { recursive: true, force: true });
+    }
+}
+
 ;// CONCATENATED MODULE: ./src/index.ts
 /*
  * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
@@ -35862,116 +35959,22 @@ const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.ur
 
 
 
-
-
-
-
-
-
-
 /** Install the selected SDK into the Actions tool cache and export its paths. */
 async function run() {
-    const llvm_version = getInput("llvm-version", { required: true });
-    const platform = getInput("platform", { required: true });
-    const architecture = getInput("architecture", { required: true });
+    const version = getInput("llvm-version", { required: true });
     const assertions = getBooleanInput("assertions");
-    /// Validate LLVM version (either X.Y.Z format or commit hash)
-    const isVersionTag = RegExp("^\\d+\\.\\d+\\.\\d+$").test(llvm_version);
-    const isCommitHash = RegExp("^[0-9a-f]{7,40}$", "i").test(llvm_version);
-    if (!isVersionTag && !isCommitHash) {
-        throw new Error(`Invalid LLVM version: ${llvm_version}. Expected format: X.Y.Z or a commit hash (minimum 7 characters).`);
+    const url = await getDownloadUrl(version, getInput("platform", { required: true }), getInput("architecture", { required: true }), assertions);
+    if (!(external_node_process_default()).env.RUNNER_TOOL_CACHE) {
+        throw new Error("RUNNER_TOOL_CACHE is not set.");
     }
-    const urls = await getDownloadUrls(llvm_version, platform, architecture, assertions);
-    core_debug(`==> Downloading zstd binary: ${urls.zstd}`);
-    const zstdFile = await downloadTool(urls.zstd);
-    core_debug("==> Extracting zstd binary");
-    const zstdDir = await extractTar(zstdFile);
-    /// zstd archive contains a single executable file
-    const zstdExecutableName = (external_node_process_default()).platform === "win32" ? "zstd.exe" : "zstd";
-    const zstdPath = external_node_path_default().join(zstdDir, zstdExecutableName);
-    if (!external_node_fs_default().existsSync(zstdPath)) {
-        throw new Error(`zstd executable not found at ${zstdPath}`);
-    }
-    /// Make sure zstd is executable on Unix
-    if ((external_node_process_default()).platform !== "win32") {
-        await exec_exec("chmod", ["+x", zstdPath]);
-    }
-    core_debug(`==> Downloading LLVM distribution: ${urls.llvm}`);
-    const file = await downloadTool(urls.llvm);
-    core_debug("==> Decompressing and extracting LLVM distribution");
-    const extractDir = external_node_path_default().join((external_node_process_default()).env.RUNNER_TEMP || external_node_os_default().tmpdir(), `mlir-extract-${Date.now()}`);
-    await mkdirP(extractDir);
-    /// Extract the archive to a specific directory
-    const extractedDir = external_node_path_default().join(extractDir, "extracted");
-    await mkdirP(extractedDir);
-    let cachedPath;
-    try {
-        /// Stream decompression to tar without an intermediate archive.
-        const zstd = (0,external_node_child_process_namespaceObject.spawn)(zstdPath, ["-d", file, "--long=31", "--stdout"], {
-            stdio: ["ignore", "pipe", "inherit"],
-        });
-        const tar = (0,external_node_child_process_namespaceObject.spawn)("tar", ["-x", "-f", "-", "-C", extractedDir], {
-            stdio: ["pipe", "ignore", "inherit"],
-        });
-        const exits = [zstd, tar].map(async (child) => {
-            const [code] = await (0,external_node_events_.once)(child, "close");
-            if (code !== 0) {
-                throw new Error(`${child.spawnfile} exited with code ${code}`);
-            }
-        });
-        try {
-            await Promise.all([(0,promises_namespaceObject.pipeline)(zstd.stdout, tar.stdin), ...exits]);
-        }
-        finally {
-            zstd.kill();
-            tar.kill();
-            await Promise.allSettled(exits);
-        }
-        /// Find the actual LLVM directory (might be nested)
-        const entries = external_node_fs_default().readdirSync(extractedDir);
-        const dir = entries.length === 1 &&
-            external_node_fs_default().statSync(external_node_path_default().join(extractedDir, entries[0])).isDirectory()
-            ? external_node_path_default().join(extractedDir, entries[0])
-            : extractedDir;
-        core_debug("==> Adding MLIR toolchain to tool cache");
-        cachedPath = await cacheDir(dir, assertions ? "mlir-toolchain" : "mlir-toolchain-noassert", llvm_version);
-    }
-    finally {
-        /// Clean up temp directories
-        await rmRF(extractDir);
-        await rmRF(zstdDir);
-        await rmRF(zstdFile);
-        await rmRF(file);
-    }
-    core_debug("==> Adding MLIR toolchain to PATH");
+    const cachedPath = await installSdk(url, external_node_path_default().join((external_node_process_default()).env.RUNNER_TOOL_CACHE, assertions ? "mlir-toolchain" : "mlir-toolchain-noassert"));
     addPath(external_node_path_default().join(cachedPath, "bin"));
-    core_debug("==> Exporting LLVM_DIR");
     exportVariable("LLVM_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "llvm"));
-    core_debug("==> Exporting MLIR_DIR");
     exportVariable("MLIR_DIR", external_node_path_default().join(cachedPath, "lib", "cmake", "mlir"));
 }
-if ((external_node_process_default()).env.NODE_ENV !== "test") {
-    (async () => {
-        try {
-            core_debug("==> Starting MLIR toolchain setup");
-            await run();
-            core_debug("==> Finished MLIR toolchain setup");
-        }
-        catch (error) {
-            if (typeof error === "string") {
-                setFailed(error);
-            }
-            else if (error instanceof Error) {
-                setFailed(error.message);
-            }
-            else {
-                setFailed(`Unknown error: ${JSON.stringify(error)}`);
-            }
-        }
-    })();
-}
+run().catch((error) => {
+    setFailed(error instanceof Error ? error.message : String(error));
+});
 
-var __webpack_exports__run = __webpack_exports__.e;
-export { __webpack_exports__run as run };
 
 //# sourceMappingURL=index.js.map

@@ -48,6 +48,8 @@ by
 - After changing `src/` or `version-manifest.json`, run `npm run build` and
   commit the regenerated `dist/` files. Never edit the bundles by hand. Check
   that a subsequent build leaves `dist/` unchanged.
+- The known-version updater refreshes both manifest copies. Keep the root and
+  bundled manifest identical without hand-editing either generated file.
 - For installer or SDK-selection changes, use the hosted matrix to check Linux,
   macOS, and Windows on supported architectures, with both assertion modes.
   Verify the installed CMake files and `mlir-opt`, not only the download result.

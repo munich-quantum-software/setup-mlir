@@ -241,6 +241,10 @@ export async function updateManifest(): Promise<void> {
   });
 
   await fs.writeFile(MANIFEST_FILE, JSON.stringify(manifest, null, 2) + "\n");
+  await fs.copyFile(
+    MANIFEST_FILE,
+    join(REPOSITORY_ROOT, "dist", "version-manifest.json"),
+  );
   await updateReadme(new Set(manifest.map((entry) => entry.version)));
 
   core.setOutput("latest-tag", releases[0]?.tag_name);

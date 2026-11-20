@@ -62,11 +62,9 @@ defines `$LLVM_DIR` and `$MLIR_DIR`.
 
 ## Installation Scripts
 
-If you want to use the pre-built MLIR installations locally, we also provide
-installation scripts. The scripts require the LLVM version or commit hash (e.g.,
-`23.1.2` or `f8cb798`) and the desired installation directory to be passed. The
-scripts automatically download and use a platform-specific `zstd` binary for
-decompression, so only `tar` needs to be installed on the host system.
+Pass the LLVM version or commit hash and an installation directory to the
+installer. The Bash installer requires `curl`, `tar`, and standard Unix tools.
+Both installers download their own `zstd` decompressor.
 
 When run from a repository checkout or source archive, the installers use its
 `version-manifest.json`. Standalone or piped scripts read the manifest from

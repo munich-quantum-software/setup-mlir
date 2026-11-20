@@ -98,7 +98,12 @@ describe("Manifest generation", () => {
     request.mockResolvedValue({ data: releases });
     jest.spyOn(fs, "readFile").mockResolvedValue(readme);
     const write = jest.spyOn(fs, "writeFile").mockResolvedValue(undefined);
+    const copy = jest.spyOn(fs, "copyFile").mockResolvedValue(undefined);
     await updateManifest();
+    expect(copy).toHaveBeenCalledWith(
+      expect.stringMatching(/[/\\]version-manifest\.json$/),
+      expect.stringMatching(/[/\\]dist[/\\]version-manifest\.json$/),
+    );
     const manifest: ManifestEntry[] = JSON.parse(
       String(
         write.mock.calls.find(([file]) =>
