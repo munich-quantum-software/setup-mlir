@@ -42,7 +42,7 @@ repos:
 
   ## Check for security issues in GitHub Actions workflows
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.33.0
+    rev: v1.33.1
     hooks:
       - id: zizmor
         priority: 0
@@ -81,7 +81,7 @@ repos:
 
   ## Format Markdown files with rumdl
   - repo: https://github.com/rvben/rumdl-pre-commit
-    rev: v0.3.5
+    rev: v0.3.6
     hooks:
       - id: rumdl
         args: [--fix]
