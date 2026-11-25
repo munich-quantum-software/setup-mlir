@@ -10,6 +10,31 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-25
+
+### Added
+
+- ✨ Add LLVM 23.1.6 for Linux and Windows on x86-64 and ARM64 and macOS on
+  Apple silicon, with both SDK assertion variants
+  ([portable-mlir-toolchain#137]) ([**@burgholzer**])
+- ✨ Add LLVM 23.1.3 and 23.1.4 ([#296]) ([**@denialhaag**])
+
+### Changed
+
+- ⚡ Reuse completed GitHub Actions SDK installs for the same release asset and
+  assertion mode ([#310]) ([**@burgholzer**])
+- ⚡ Stream SDK decompression inside the action with Node.js 24. The action can
+  extract SDKs for a different target without running a target-specific
+  decompressor ([#310]) ([**@burgholzer**])
+
+### Fixed
+
+- 🐛 Use private temporary directories for downloads and decompressor binaries
+  in the Bash and PowerShell installers. Existing files with those names in the
+  installation directory are preserved ([#310]) ([**@burgholzer**])
+- 🐛 Update the bundled manifest alongside the source manifest when registering
+  SDK releases ([#310]) ([**@burgholzer**])
+
 ## [1.5.0] - 2026-10-07
 
 ### Added
@@ -161,7 +186,8 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- Version links -->
 
-[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.5.0...HEAD
+[unreleased]: https://github.com/munich-quantum-software/setup-mlir/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.5.1
 [1.5.0]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.5.0
 [1.4.2]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.4.2
 [1.4.1]: https://github.com/munich-quantum-software/setup-mlir/releases/tag/v1.4.1
@@ -176,6 +202,8 @@ _This is the initial release of the `setup-mlir` project._
 
 <!-- PR links -->
 
+[#310]: https://github.com/munich-quantum-software/setup-mlir/pull/310
+[#296]: https://github.com/munich-quantum-software/setup-mlir/pull/296
 [#260]: https://github.com/munich-quantum-software/setup-mlir/pull/260
 [#258]: https://github.com/munich-quantum-software/setup-mlir/pull/258
 [#257]: https://github.com/munich-quantum-software/setup-mlir/pull/257
@@ -215,6 +243,7 @@ _This is the initial release of the `setup-mlir` project._
 [#6]: https://github.com/munich-quantum-software/setup-mlir/pull/6
 [#3]: https://github.com/munich-quantum-software/setup-mlir/pull/3
 [#1]: https://github.com/munich-quantum-software/setup-mlir/pull/1
+[portable-mlir-toolchain#137]: https://github.com/munich-quantum-software/portable-mlir-toolchain/pull/137
 [munich-quantum-software/portable-mlir-toolchain#30]: https://github.com/munich-quantum-software/portable-mlir-toolchain/pull/30
 
 <!-- Contributor -->
