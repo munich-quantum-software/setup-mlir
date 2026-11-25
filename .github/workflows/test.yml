@@ -30,7 +30,7 @@ jobs:
             windows-2025,
             windows-11-arm,
           ]
-        version: ["23.1.2"]
+        version: ["23.1.6"]
         assertions: ["ON", "OFF"]
         include:
           - os: ubuntu-26.04
@@ -54,7 +54,7 @@ jobs:
         shell: bash
         run: |
           installer=installation/setup-mlir.sh
-          if [[ '${{ matrix.version }}' != 23.1.2 ]]; then
+          if [[ '${{ matrix.version }}' != 23.1.6 ]]; then
             cp "$installer" /tmp/setup-mlir.sh
             installer=/tmp/setup-mlir.sh
           fi
@@ -71,10 +71,17 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          # Reproduce the Git for Windows PATH precedence in downstream builds.
+          $gitBin = Split-Path (Get-Command git.exe).Source
+          $gitUsrBin = (Resolve-Path (Join-Path $gitBin "../usr/bin")).Path
+          $env:PATH = "$gitUsrBin;$env:PATH"
+          if ((Get-Command tar.exe).Source -ne (Join-Path $gitUsrBin "tar.exe")) {
+            throw "Git's GNU tar must be first on PATH"
+          }
           $install_dir = Join-Path $env:TEMP "mlir-install"
 
           $installer = "installation/setup-mlir.ps1"
-          if ('${{ matrix.version }}' -ne '23.1.2') {
+          if ('${{ matrix.version }}' -ne '23.1.6') {
             $installer = Join-Path $env:TEMP "setup-mlir.ps1"
             Copy-Item installation/setup-mlir.ps1 $installer
           }
@@ -138,7 +145,7 @@ jobs:
       - name: Install assertion-enabled SDK
         uses: ./ # zizmor: ignore[self-repository] -- Test the checked-out action bundle.
         with:
-          llvm-version: 23.1.4
+          llvm-version: 23.1.6
 
       - name: Check assertion-enabled SDK
         id: enabled
@@ -149,7 +156,7 @@ jobs:
       - name: Install assertion-free SDK
         uses: ./ # zizmor: ignore[self-repository] -- Test the checked-out action bundle.
         with:
-          llvm-version: 23.1.4
+          llvm-version: 23.1.6
           assertions: false
 
       - name: Verify both SDKs and the active assertion-free environment

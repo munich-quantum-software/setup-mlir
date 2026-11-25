@@ -34,6 +34,7 @@ List of available LLVM versions:
 - `23.1.2`
 - `23.1.3`
 - `23.1.4`
+- `23.1.6`
 
 List of available LLVM commit hashes:
 
@@ -52,13 +53,16 @@ For more information on the available LLVM versions and commit hashes, see
 
 ```yaml
 - name: Set up MLIR
-  uses: munich-quantum-software/setup-mlir@v1.5.0
+  uses: munich-quantum-software/setup-mlir@v1.6.0
   with:
-    llvm-version: 23.1.2
+    llvm-version: 23.1.6
 ```
 
 This extracts a pre-built MLIR installation, adds the binaries to `$PATH`, and
 defines `$LLVM_DIR` and `$MLIR_DIR`.
+
+The Linux LLVM 23.1.6 SDK includes the `mold` linker in `bin/` and the LLVMgold
+plugin in `lib/LLVMgold.so` for linking compatible Clang ThinLTO objects.
 
 ## Installation Scripts
 
@@ -74,7 +78,7 @@ archive at the desired commit and run its installer.
 On Linux and macOS, use the following Bash command:
 
 ```bash
-curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -v 23.1.2 -p /path/to/installation
+curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | bash -s -- -v 23.1.6 -p /path/to/installation
 ```
 
 On Windows, use PowerShell 7.4 or newer, which supports the
@@ -82,7 +86,7 @@ On Windows, use PowerShell 7.4 or newer, which supports the
 used for extraction. `tar` is included with Windows 10 and Windows 11.
 
 ```powershell
-pwsh -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 23.1.2 -install_prefix /path/to/installation"
+pwsh -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.ps1))) -llvm_version 23.1.6 -install_prefix /path/to/installation"
 ```
 
 ## Assertion-free release SDKs
@@ -90,9 +94,9 @@ pwsh -ExecutionPolicy ByPass -c "& ([scriptblock]::Create((irm https://github.co
 Set `assertions: false` to select the native assertion-free SDK:
 
 ```yaml
-- uses: munich-quantum-software/setup-mlir@v1.5.0
+- uses: munich-quantum-software/setup-mlir@v1.6.0
   with:
-    llvm-version: 23.1.2
+    llvm-version: 23.1.6
     assertions: false
 ```
 

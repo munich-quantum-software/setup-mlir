@@ -26,7 +26,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $true
-Get-Command tar -ErrorAction Stop | Out-Null
+# Git's GNU tar interprets the drive letter in an archive path as a remote host.
+$tar = Join-Path ([Environment]::SystemDirectory) "tar.exe"
 
 $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
 switch ($arch) {
@@ -58,9 +59,9 @@ $install_prefix = (Resolve-Path $install_prefix).Path
 $scratch = [System.IO.Directory]::CreateTempSubdirectory().FullName
 try {
     Invoke-WebRequest -Uri $entries[0].zstd_download_url -OutFile "$scratch/zstd.tar.gz"
-    tar -xzf "$scratch/zstd.tar.gz" -C $scratch
+    & $tar -xzf "$scratch/zstd.tar.gz" -C $scratch
     Invoke-WebRequest -Uri $llvm_url -OutFile "$scratch/llvm.tar.zst"
-    & "$scratch/zstd.exe" -d "$scratch/llvm.tar.zst" --long=31 --stdout | tar -x -C $install_prefix
+    & "$scratch/zstd.exe" -d "$scratch/llvm.tar.zst" --long=31 --stdout | & $tar -xf - -C $install_prefix
 } finally {
     Remove-Item -LiteralPath $scratch -Recurse -Force
 }
