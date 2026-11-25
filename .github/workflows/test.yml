@@ -71,6 +71,13 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          # Reproduce the Git for Windows PATH precedence in downstream builds.
+          $gitBin = Split-Path (Get-Command git.exe).Source
+          $gitUsrBin = (Resolve-Path (Join-Path $gitBin "../usr/bin")).Path
+          $env:PATH = "$gitUsrBin;$env:PATH"
+          if ((Get-Command tar.exe).Source -ne (Join-Path $gitUsrBin "tar.exe")) {
+            throw "Git's GNU tar must be first on PATH"
+          }
           $install_dir = Join-Path $env:TEMP "mlir-install"
 
           $installer = "installation/setup-mlir.ps1"
