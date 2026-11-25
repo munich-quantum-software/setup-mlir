@@ -17,6 +17,7 @@ import os
 import pathlib
 import shutil
 import subprocess
+import sys
 
 root = pathlib.Path(os.environ["LLVM_DIR"]).parents[2]
 executable = "mlir-opt.exe" if os.name == "nt" else "mlir-opt"
@@ -33,6 +34,13 @@ for directory, assertions in installed:
     assert f"set(LLVM_ENABLE_ASSERTIONS {assertions})" in config
     assert (directory / "lib/cmake/mlir/MLIRConfig.cmake").is_file()
     version = subprocess.check_output([directory / "bin" / executable, "--version"], text=True)
-    assert "LLVM version 23.1.4" in version
+    assert "LLVM version 23.1.6" in version
+    if sys.platform == "linux":
+        assert (directory / "lib/LLVMgold.so").is_file()
+        mold_version = subprocess.check_output(
+            [directory / "bin/mold", "--version"], text=True
+        )
+        assert mold_version.startswith("mold 3.0.0")
+
 with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
     print(f"root={root}", file=output)
